@@ -31,7 +31,6 @@ archives = [
   "build-arm-driver.py ArmCpu",
   "build-libpthread-kernel.py",
   "build-sheng-platform-power.py",
-  "build-boot-progress.py",
 ]
 
 [kernel.prelink]
@@ -50,7 +49,7 @@ title = "shennong XNU first entry (no system volume)"
 dram_size = "0x10000000"
 panic_screen = false
 timeout = 0
-kernel_args = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "sheng-pmgr=2", "boot-progress=2"]
+kernel_args = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "sheng-pmgr=2"]
 
 [payload.adt]
 tool = "scripts/make-shennong-adt.py"
