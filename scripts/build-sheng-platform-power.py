@@ -95,7 +95,9 @@ bindings = {'__ZN9ApplePMGRC2EPK11OSMetaClass': 0xfffffff0049f003c,
             '__ZN9ApplePMGR7readAonEv': 0xfffffff004a20fbc,
             '__ZN9ApplePMGR8writeAonEy': 0xfffffff004a20fc4,
             '__ZN9ApplePMGRD2Ev': 0xfffffff0049f019c,
-            '__ZN9ApplePMGR10gMetaClassE': 0xfffffff006adf490}
+            '__ZN9ApplePMGR10gMetaClassE': 0xfffffff006adf490,
+            '__ZN9ApplePMGR7readAonEv': 0xfffffff004a20fbc,
+            '__ZN9ApplePMGR8writeAonEy': 0xfffffff004a20fc4}
 print('ABI reference validation skipped: no prelink candidate during kernel step')
 bindings.update({'_sheng_original_pmgr_nub_create': 0xfffffff004a22568,
                  '_sheng_original_pmgr_nub_read': 0xfffffff004a24adc,
