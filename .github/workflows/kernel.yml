@@ -1,0 +1,55 @@
+name: shennong kernel
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  kernel:
+    runs-on: macos-26
+    timeout-minutes: 360
+    env:
+      UNIXNU_DEVICE: ${{ github.workspace }}/device
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - name: Check out UniXNU
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/UniXNU
+          ref: main
+          path: unixnu
+      - name: Check out the device repository
+        uses: actions/checkout@v4
+        with:
+          path: device
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Install host tools
+        run: |
+          brew install llvm lld mtools dtc
+          if ! command -v unifdef >/dev/null; then brew install unifdef; echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"; fi
+      - name: Defconfig
+        working-directory: unixnu
+        run: ./unixnu defconfig shennong_defconfig -D "$UNIXNU_DEVICE"
+      - name: Build kernel
+        working-directory: unixnu
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: ./unixnu build kernel
+      - name: Upload kernel
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: shennong-kernel-${{ github.run_attempt }}
+          if-no-files-found: warn
+          retention-days: 7
+          path: |
+            unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
+            unixnu/out/shennong/kernel/kernel.macho*
+            unixnu/out/shennong/logs/*.log
+  logs:
+    needs: kernel
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "kernel job finished"
