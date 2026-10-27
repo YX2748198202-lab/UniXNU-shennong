@@ -41,6 +41,7 @@ jobs:
         working-directory: unixnu
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
