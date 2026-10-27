@@ -46,7 +46,7 @@ size_mib = 192
 loader = "firmware"
 title = "shennong XNU first entry (no system volume)"
 dram_size = "0x10000000"
-panic_screen = false
+panic_screen = true
 timeout = 0
 kernel_args = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1"]
 
