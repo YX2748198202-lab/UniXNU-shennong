@@ -36,6 +36,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: ./unixnu build kernel
+      - name: Build payload
+        working-directory: unixnu
+        run: ./unixnu build payload
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
@@ -46,6 +49,8 @@ jobs:
           path: |
             unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
             unixnu/out/shennong/kernel/kernel.macho*
+            unixnu/out/shennong/payload/payload.img
+            unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
   logs:
     needs: kernel
