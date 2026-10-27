@@ -17,6 +17,12 @@ jobs:
           repository: UniXNU/UniXNU
           ref: main
           path: unixnu
+      - name: Check out uefi-sheng (panic screen font)
+        uses: actions/checkout@v4
+        with:
+          repository: UniXNU/uefi-sheng
+          ref: sheng
+          path: uefi
       - name: Check out the device repository
         uses: actions/checkout@v4
         with:
@@ -38,7 +44,7 @@ jobs:
         run: ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
-        run: ./unixnu build payload
+        run: ./unixnu build payload --uefi "/uefi"
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
