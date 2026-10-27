@@ -92,6 +92,8 @@ for segment in info['segments']:
 entries = [relocations.get(vtable + 16 + i * 8) for i in range(340)]
 require(all(entries) and vtable + 16 + 340 * 8 not in relocations, 'Exact 340-entry provider table')
 bindings = {'__ZN9ApplePMGRC2EPK11OSMetaClass': 0xfffffff0049f003c,
+            '__ZN9ApplePMGR7readAonEv': 0xfffffff004a20fbc,
+            '__ZN9ApplePMGR8writeAonEy': 0xfffffff004a20fc4,
             '__ZN9ApplePMGRD2Ev': 0xfffffff0049f019c,
             '__ZN9ApplePMGR10gMetaClassE': 0xfffffff006adf490}
 print('ABI reference validation skipped: no prelink candidate during kernel step')
