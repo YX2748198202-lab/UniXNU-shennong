@@ -44,7 +44,7 @@ jobs:
         run: ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
-        run: ./unixnu build payload --uefi "/uefi"
+        run: ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
