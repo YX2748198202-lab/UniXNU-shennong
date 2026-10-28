@@ -1,0 +1,17 @@
+# Never commit Apple firmware, OEM binaries or device-unique data
+*.ipsw
+*.dmg
+*.im4p
+*.img
+*.partial
+kernelcache*
+
+# Build outputs
+out/
+build/
+Build/
+*.log
+
+# Local backups (device-unique)
+backups/
+*.tar.gz
