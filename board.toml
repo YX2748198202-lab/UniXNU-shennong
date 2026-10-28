@@ -61,3 +61,9 @@ tool = "scripts/make-shennong-adt.py"
 owned_memory_size = "0x10000000"
 cpu_regs = "0"
 psci_method = "smc"
+
+[userdata]
+first_lba = 2260480
+last_lba = 64049146
+lba_bytes = 4096
+windows = [{ name = "OS", component = "OS" }, { name = "SystemOS", component = "Cryptex1,SystemOS" }]
