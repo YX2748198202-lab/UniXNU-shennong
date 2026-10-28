@@ -17,6 +17,7 @@ jobs:
           repository: UniXNU/UniXNU
           ref: main
           path: unixnu
+          submodules: recursive
       - name: Check out uefi-sheng (panic screen font)
         uses: actions/checkout@v4
         with:
