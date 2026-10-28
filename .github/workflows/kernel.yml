@@ -56,6 +56,12 @@ jobs:
           echo "count=$(grep -c 'VERBOSE=YES' "$SRC_SCRIPT" || true)"
           grep -n 'VERBOSE=YES' "$SRC_SCRIPT" | head -2 | cut -c1-180
           echo "=== INJECT SOURCE END ==="
+          # symbols helper must tolerate objects the failed link pass removed
+          SYMFILE=scripts/xnu_symbols.py
+          if [ -f "$SYMFILE" ] && ! grep -q 'if Path(path).is_file()' "$SYMFILE"; then
+            sed -i '' 's|paths = \[str(path) for path in paths\]|paths = [str(path) for path in paths if Path(path).is_file()]|' "$SYMFILE" || true
+          fi
+          echo "symbols-helper patched: $(grep -c 'if Path(path).is_file()' "$SYMFILE" || true)"
           ./unixnu build kernel || echo "first pass failed as expected"
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           echo "tree=$TREE"
