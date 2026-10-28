@@ -46,7 +46,9 @@ jobs:
           ./unixnu build kernel || echo "first pass failed as expected (PMGR archive / component sources not ready)"
           test -d out/shennong/tree || exit 1
           mkdir -p out/shennong/tree/drivers
-          git clone --depth 1 https://github.com/UniXNU/NativeUfs.git out/shennong/tree/drivers/ShengUfs || true
+          rm -rf out/shennong/tree/drivers/ShengUfs out/shennong/tree/drivers/ShengUfs.tmp
+          git clone --depth 1 https://github.com/UniXNU/NativeUfs.git out/shennong/tree/drivers/ShengUfs.tmp || true
+          cp -a out/shennong/tree/drivers/ShengUfs.tmp/. out/shennong/tree/drivers/ShengUfs/ 2>/dev/null || true
           git clone --depth 1 https://github.com/UniXNU/VerifiedRoot.git /tmp/VerifiedRoot || true
           cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h out/shennong/tree/drivers/ShengUfs/ 2>/dev/null || find /tmp/VerifiedRoot -name 'verified_root.h' -exec cp {} out/shennong/tree/drivers/ShengUfs/ \;
           ls out/shennong/tree/drivers/ShengUfs/ | head -20
