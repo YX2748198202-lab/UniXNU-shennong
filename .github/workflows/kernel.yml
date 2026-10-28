@@ -139,7 +139,8 @@ jobs:
           echo "=== STORAGE ABI AUDIT ==="
           python3 "$TREE/scripts/audit-storage-interface.py" || echo "audit failed"
           echo "=== AUDIT END ==="
-          ./unixnu build kernel
+          if ! ./unixnu build kernel; then SECOND_RC=1; else SECOND_RC=0; fi
+          echo "second pass rc=$SECOND_RC"
           echo "=== LINK ARGS DUMP ==="
           for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
             echo "--- $f"
@@ -148,6 +149,44 @@ jobs:
             echo
           done
           echo "=== DUMP END ==="
+          exit $SECOND_RC
+      - name: Report failure details
+        if: failure()
+        working-directory: unixnu
+        run: |
+          python3 - <<'PY'
+          import glob, os, re
+          def esc(s):
+              return s.replace('%', '%25').replace('\r', '').replace('\n', '%0A')
+          parts = []
+          logs = sorted(glob.glob('out/shennong/logs/*.log'), key=os.path.getmtime, reverse=True)
+          parts.append('LOGS=' + ','.join(logs))
+          for lg in logs[:3]:
+              try:
+                  txt = open(lg, errors='replace').read()
+              except Exception as exc:
+                  parts.append('%s: %s' % (lg, exc))
+                  continue
+              for m in re.finditer(r'Undefined symbols', txt):
+                  st = m.start()
+                  parts.append('--- %s @%d' % (lg, st))
+                  parts.append(txt[st:st + 6000])
+              lines = txt.splitlines()
+              parts.append('--- TAIL %s' % lg)
+              parts.append('\n'.join(lines[-120:]))
+          for f in glob.glob('out/shennong/*/shennong/tree/.cache/xnu-work/osfmk/conf/files'):
+              for i, line in enumerate(open(f, errors='replace'), 1):
+                  if 'vm_tests' in line:
+                      parts.append('%s:%d %s' % (f, i, line.rstrip()))
+          for f in glob.glob('out/shennong/*/shennong/tree/.cache/xnu-work/makedefs/MakeInc.kernel'):
+              for i, line in enumerate(open(f, errors='replace'), 1):
+                  if '$(LD)' in line and 'LDFLAGS_KERNEL' in line:
+                      parts.append('%s:%d %s' % (f, i, line.rstrip()[:400]))
+          blob = '\n'.join(parts)
+          print('report bytes', len(blob))
+          for k in range(0, min(len(blob), 150000), 30000):
+              print('::error::' + esc(blob[k:k + 30000]))
+          PY
       - name: Build payload
         working-directory: unixnu
         run: ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"
