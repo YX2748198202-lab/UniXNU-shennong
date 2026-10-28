@@ -34,6 +34,9 @@ jobs:
         run: |
           brew install llvm lld mtools dtc
           if ! command -v unifdef >/dev/null; then brew install unifdef; echo "$(brew --prefix unifdef)/bin" >> "$GITHUB_PATH"; fi
+      - name: Fetch device modules
+        working-directory: unixnu
+        run: ./unixnu fetch -D "$UNIXNU_DEVICE"
       - name: Defconfig
         working-directory: unixnu
         run: ./unixnu defconfig shennong_defconfig -D "$UNIXNU_DEVICE"
