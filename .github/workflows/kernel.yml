@@ -42,7 +42,12 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
-        run: ./unixnu build kernel
+        run: |
+          ./unixnu build kernel || echo "first pass failed as expected (PMGR archive not built yet)"
+          test -d out/shennong/tree || exit 1
+          python3 out/shennong/tree/scripts/build-sheng-platform-power.py
+          ls -la out/shennong/tree/build/sheng-platform-power/ || true
+          ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
         run: ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"
