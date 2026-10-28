@@ -47,7 +47,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
+          bash "$UNIXNU_DEVICE/scripts/patch-xnu-link.sh" || true
           ./unixnu build kernel || echo "first pass failed as expected"
+          bash "$UNIXNU_DEVICE/scripts/patch-xnu-link.sh" || true
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           echo "tree=$TREE"
           test -d "$TREE" || exit 1
