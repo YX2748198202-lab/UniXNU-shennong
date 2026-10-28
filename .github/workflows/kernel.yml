@@ -57,19 +57,19 @@ jobs:
           python3 out/shennong/tree/scripts/build-sheng-platform-power.py
           ls -la out/shennong/tree/build/sheng-platform-power/ || true
           cat > /tmp/ufs_stub.cpp <<'STUBEOF'
-#include "verified_root.h"
-struct NativeVerifiedBlockPolicy { uint8_t opaque[256]; };
-extern "C" {
-const uint8_t verified_root_key[VR_KEY_BYTES] = {0};
-const NativeVerifiedBlockPolicy verified_root_policies[1] = {};
-const uint64_t verified_root_policy_count = 0;
-static int stub_sha256(const void *a, size_t b, uint8_t c[32]) { (void)a;(void)b;(void)c; return 1; }
-static int stub_rsa(const uint8_t a[VR_KEY_BYTES], const uint8_t b[32], const uint8_t c[VR_SIGNATURE_BYTES]) { (void)a;(void)b;(void)c; return 1; }
-const struct vr_crypto vr_xnu_crypto = { stub_sha256, stub_rsa };
-int vr_open(const uint8_t *a, size_t b, const uint8_t c[VR_KEY_BYTES], uint64_t d, const struct vr_crypto *e, struct vr_view *f) { (void)a;(void)b;(void)c;(void)d;(void)e;(void)f; return 1; }
-int vr_verify_block(const struct vr_view *a, uint64_t b, const void *c, size_t d, const struct vr_crypto *e) { (void)a;(void)b;(void)c;(void)d;(void)e; return 1; }
-void boot_progress_poll(void) {}
-}
+          #include "verified_root.h"
+          struct NativeVerifiedBlockPolicy { uint8_t opaque[256]; };
+          extern "C" {
+          const uint8_t verified_root_key[VR_KEY_BYTES] = {0};
+          const NativeVerifiedBlockPolicy verified_root_policies[1] = {};
+          const uint64_t verified_root_policy_count = 0;
+          static int stub_sha256(const void *a, size_t b, uint8_t c[32]) { (void)a;(void)b;(void)c; return 1; }
+          static int stub_rsa(const uint8_t a[VR_KEY_BYTES], const uint8_t b[32], const uint8_t c[VR_SIGNATURE_BYTES]) { (void)a;(void)b;(void)c; return 1; }
+          const struct vr_crypto vr_xnu_crypto = { stub_sha256, stub_rsa };
+          int vr_open(const uint8_t *a, size_t b, const uint8_t c[VR_KEY_BYTES], uint64_t d, const struct vr_crypto *e, struct vr_view *f) { (void)a;(void)b;(void)c;(void)d;(void)e;(void)f; return 1; }
+          int vr_verify_block(const struct vr_view *a, uint64_t b, const void *c, size_t d, const struct vr_crypto *e) { (void)a;(void)b;(void)c;(void)d;(void)e; return 1; }
+          void boot_progress_poll(void) {}
+          }
 STUBEOF
           mkdir -p out/shennong/tree/build/sheng-ufs-stub
           xcrun clang++ -target arm64-apple-ios17.0 -isysroot "$(xcrun --sdk iphoneos --show-sdk-path)" -I out/shennong/tree/drivers/ShengUfs -O2 -c /tmp/ufs_stub.cpp -o /tmp/ufs_stub.o
