@@ -43,8 +43,14 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
-          ./unixnu build kernel || echo "first pass failed as expected (PMGR archive not built yet)"
+          ./unixnu build kernel || echo "first pass failed as expected (PMGR archive / component sources not ready)"
           test -d out/shennong/tree || exit 1
+          mkdir -p out/shennong/tree/drivers
+          git clone --depth 1 https://github.com/UniXNU/NativeUfs.git out/shennong/tree/drivers/ShengUfs || true
+          git clone --depth 1 https://github.com/UniXNU/VirtioMmioBlock.git out/shennong/tree/drivers/VirtioMmioBlock || true
+          git clone --depth 1 https://github.com/UniXNU/RamBlock.git out/shennong/tree/drivers/RamBlock || true
+          ls out/shennong/tree/drivers/
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
           python3 out/shennong/tree/scripts/build-sheng-platform-power.py
           ls -la out/shennong/tree/build/sheng-platform-power/ || true
           ./unixnu build kernel
