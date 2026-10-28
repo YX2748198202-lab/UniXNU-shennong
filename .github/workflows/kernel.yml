@@ -78,6 +78,27 @@ jobs:
           STUBEOF
           fi
           tail -3 "$TREE/drivers/ShengUfs/NativeUfs.cpp"
+          SRC=unixnu/drivers/ShengUfs/NativeUfs.cpp
+          if [ -f "$SRC" ] && ! grep -q ufs_stub_sha256 "$SRC"; then
+            cat >> "$SRC" <<'STUBEOF2'
+          extern "C" {
+          static int ufs_stub_sha256(const void *a, size_t b, uint8_t c[32]) { (void)a;(void)b;(void)c; return 1; }
+          static int ufs_stub_rsa(const uint8_t a[VR_KEY_BYTES], const uint8_t b[32], const uint8_t c[VR_SIGNATURE_BYTES]) { (void)a;(void)b;(void)c; return 1; }
+          const uint8_t verified_root_key[VR_KEY_BYTES] = {0};
+          const NativeVerifiedBlockPolicy verified_root_policies[1] = {};
+          const uint64_t verified_root_policy_count = 0;
+          const struct vr_crypto vr_xnu_crypto = { ufs_stub_sha256, ufs_stub_rsa };
+          int vr_open(const uint8_t *a, size_t b, const uint8_t c[VR_KEY_BYTES], uint64_t d, const struct vr_crypto *e, struct vr_view *f) { (void)a;(void)b;(void)c;(void)d;(void)e;(void)f; return 1; }
+          int vr_verify_block(const struct vr_view *a, uint64_t b, const void *c, size_t d, const struct vr_crypto *e) { (void)a;(void)b;(void)c;(void)d;(void)e; return 1; }
+          void boot_progress_poll(void) {}
+          }
+          STUBEOF2
+            echo stub_appended_to_unixnu_source
+          fi
+          if [ -f "$TREE/.cache/xnu-work/makedefs/MakeInc.def" ]; then
+            sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$TREE/.cache/xnu-work/makedefs/MakeInc.def" || true
+            grep -c dynamic_lookup "$TREE/.cache/xnu-work/makedefs/MakeInc.def" || true
+          fi
           ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
