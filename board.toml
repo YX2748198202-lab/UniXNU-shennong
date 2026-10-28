@@ -9,6 +9,8 @@
 "kit" = "shennong"
 "soc_source" = "sm8550"
 "os_profile" = "ipados-17.7.11-21H461"
+["components"]
+"include" = ["ArmDTPlatform", "ArmCpu", "ShengUfs", "VirtioMmioBlock", "RamBlock", "VerifiedRoot", "XnuPrelink"]
 ["userdata"]
 "first_lba" = 2260480
 "last_lba" = 64049146
