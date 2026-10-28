@@ -123,6 +123,9 @@ jobs:
           echo "makeinc.kernel count=$(grep -c 'undefined,dynamic_lookup' "$MK" || true)"
           grep -n 'undefined,dynamic_lookup' "$MK" | head -3 | cut -c1-170
           echo "=== PATCH END ==="
+          echo "=== STORAGE ABI AUDIT ==="
+          python3 "$TREE/scripts/audit-storage-interface.py" || echo "audit failed"
+          echo "=== AUDIT END ==="
           ./unixnu build kernel
           echo "=== LINK ARGS DUMP ==="
           for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
