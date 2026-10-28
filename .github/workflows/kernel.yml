@@ -47,8 +47,9 @@ jobs:
           test -d out/shennong/tree || exit 1
           mkdir -p out/shennong/tree/drivers
           git clone --depth 1 https://github.com/UniXNU/NativeUfs.git out/shennong/tree/drivers/ShengUfs || true
-          git clone --depth 1 https://github.com/UniXNU/VirtioMmioBlock.git out/shennong/tree/drivers/VirtioMmioBlock || true
-          git clone --depth 1 https://github.com/UniXNU/RamBlock.git out/shennong/tree/drivers/RamBlock || true
+          git clone --depth 1 https://github.com/UniXNU/VerifiedRoot.git /tmp/VerifiedRoot || true
+          cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h out/shennong/tree/drivers/ShengUfs/ 2>/dev/null || find /tmp/VerifiedRoot -name 'verified_root.h' -exec cp {} out/shennong/tree/drivers/ShengUfs/ \;
+          ls out/shennong/tree/drivers/ShengUfs/ | head -20
           ls out/shennong/tree/drivers/
           export PATH="$(brew --prefix llvm)/bin:$PATH"
           python3 out/shennong/tree/scripts/build-sheng-platform-power.py
