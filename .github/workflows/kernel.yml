@@ -48,22 +48,23 @@ jobs:
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
           SRC_SCRIPT=scripts/build-xnu-4k-baseline.sh
-          if [ -f "$SRC_SCRIPT" ] && ! grep -q 'LDFLAGS_KERNEL_DEVELOPMENT' "$SRC_SCRIPT"; then
-            sed -i '' 's|make -C .cache/xnu-work|make -C .cache/xnu-work LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup"|' "$SRC_SCRIPT" || true
+          INJECT='LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup" LDFLAGS_KERNEL_ONLY="-Wl,-undefined,dynamic_lookup" BUILD_VERBOSE=YES'
+          if [ -f "$SRC_SCRIPT" ] && ! grep -q 'BUILD_VERBOSE=YES' "$SRC_SCRIPT"; then
+            sed -i '' "s|make -C .cache/xnu-work|make -C .cache/xnu-work $INJECT|" "$SRC_SCRIPT" || true
           fi
           echo "=== INJECT SOURCE ==="
-          echo "count=$(grep -c LDFLAGS_KERNEL_DEVELOPMENT "$SRC_SCRIPT" || true)"
-          grep -n 'LDFLAGS_KERNEL_DEVELOPMENT' "$SRC_SCRIPT" | head -2
+          echo "count=$(grep -c 'BUILD_VERBOSE=YES' "$SRC_SCRIPT" || true)"
+          grep -n 'BUILD_VERBOSE=YES' "$SRC_SCRIPT" | head -2 | cut -c1-200
           echo "=== INJECT SOURCE END ==="
           ./unixnu build kernel || echo "first pass failed as expected"
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           echo "tree=$TREE"
           test -d "$TREE" || exit 1
           echo "=== INJECT TREE COPY ==="
-          if [ -f "$TREE/scripts/build-xnu-4k-baseline.sh" ] && ! grep -q 'LDFLAGS_KERNEL_DEVELOPMENT' "$TREE/scripts/build-xnu-4k-baseline.sh"; then
-            sed -i '' 's|make -C .cache/xnu-work|make -C .cache/xnu-work LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup"|' "$TREE/scripts/build-xnu-4k-baseline.sh" || true
+          if [ -f "$TREE/scripts/build-xnu-4k-baseline.sh" ] && ! grep -q 'BUILD_VERBOSE=YES' "$TREE/scripts/build-xnu-4k-baseline.sh"; then
+            sed -i '' "s|make -C .cache/xnu-work|make -C .cache/xnu-work $INJECT|" "$TREE/scripts/build-xnu-4k-baseline.sh" || true
           fi
-          echo "tree count=$(grep -c LDFLAGS_KERNEL_DEVELOPMENT "$TREE/scripts/build-xnu-4k-baseline.sh" || true)"
+          echo "tree count=$(grep -c 'BUILD_VERBOSE=YES' "$TREE/scripts/build-xnu-4k-baseline.sh" || true)"
           echo "=== INJECT TREE END ==="
           mkdir -p "$TREE/drivers"
           if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
@@ -114,12 +115,17 @@ jobs:
             sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF" 2>/dev/null || true
             echo "makeinc patched $REF count=$(grep -c dynamic_lookup "$REF" || true)"
           done
+          echo "=== VERIFY LDFLAGS_KERNEL EXPANSION ==="
+          cd "$TREE"
+          make -C .cache/xnu-work -f makedefs/MakeInc.def -pn 2>/dev/null | grep -E '^LDFLAGS_KERNEL(_DEVELOPMENT)? *=' | head -5 || true
+          cd - >/dev/null
+          echo "=== VERIFY END ==="
           ./unixnu build kernel
           echo "=== LINK ARGS DUMP ==="
           for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
             echo "--- $f"
             echo "dynamic_lookup_count=$(grep -o 'dynamic_lookup' "$f" | wc -l)"
-            head -c 600 "$f"
+            head -c 800 "$f"
             echo
           done
           echo "=== DUMP END ==="
