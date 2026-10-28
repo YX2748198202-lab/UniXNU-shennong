@@ -30,12 +30,12 @@ archives = [
   "build-arm-driver.py ArmDTPlatform",
   "build-arm-driver.py ArmCpu",
   "build-libpthread-kernel.py",
-  "build-sheng-platform-power.py",
-  "component:ShengUfs",
-  "component:VirtioMmioBlock",
-  "component:RamBlock",
-  "build-virtio-mmio-bindings.py --component RamBlock --directory build/ram-block",
+  "build-arm-driver.py ShengUfs",
+  "build-arm-driver.py VirtioMmioBlock",
+  "build-arm-driver.py RamBlock",
   "build-virtio-mmio-bindings.py --component VirtioMmioBlock",
+  "build-virtio-mmio-bindings.py --component RamBlock --directory build/ram-block",
+  "build-sheng-platform-power.py",
 ]
 
 [kernel.prelink]
