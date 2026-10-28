@@ -95,6 +95,10 @@ jobs:
           STUBEOF2
             echo stub_appended_to_unixnu_source
           fi
+          echo "=== PROBE: link command definitions ==="
+          grep -rn -- '-headerpad,152' "$TREE/.cache/xnu-work" --include=Makefile* --include=*.template 2>/dev/null | head -10
+          grep -rn 'KERNEL_LDFLAGS\|LDFLAGS_KERNEL' "$TREE/.cache/xnu-work" --include=Makefile* --include=*.template --include=*.def --include=*.rule 2>/dev/null | head -15
+          echo "=== PROBE END ==="
           for REF in $(grep -rl -- '-Wl,-headerpad,152' "$TREE/.cache/xnu-work/makedefs" "$TREE/refer/xnu/makedefs" "$TREE/.cache/xnu-work/osfmk/conf" "$TREE/.cache/xnu-work/bsd/conf" 2>/dev/null); do
             cp "$REF" "$REF.orig" 2>/dev/null || true
             sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF" 2>/dev/null || sed -i 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF"
