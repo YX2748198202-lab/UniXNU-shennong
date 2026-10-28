@@ -47,8 +47,9 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
+          trap 'echo "::error::Build kernel failed at line $LINENO: $BASH_COMMAND"' ERR
           SRC_SCRIPT=scripts/build-xnu-4k-baseline.sh
-          INJECT='LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup" LDFLAGS_KERNEL_ONLY="-Wl,-undefined,dynamic_lookup" VERBOSE=YES'
+          INJECT='LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup" VERBOSE=YES'
           if [ -f "$SRC_SCRIPT" ] && ! grep -q 'VERBOSE=YES' "$SRC_SCRIPT"; then
             sed -i '' "s|make -C .cache/xnu-work|make -C .cache/xnu-work $INJECT|" "$SRC_SCRIPT" || true
           fi
@@ -81,7 +82,11 @@ jobs:
           cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h "$TREE/drivers/ShengUfs/". 2>/dev/null || true
           ls "$TREE/drivers/ShengUfs/" | head -20
           export PATH="$(brew --prefix llvm)/bin:$PATH"
-          python3 "$TREE/scripts/build-sheng-platform-power.py"
+          if ! python3 "$TREE/scripts/build-sheng-platform-power.py" > /tmp/bsp.out 2>&1; then
+            echo "::error::build-sheng-platform-power failed"
+            tail -8 /tmp/bsp.out | sed 's/^/::error::/'
+            tail -6 /tmp/bsp.out
+          fi
           python3 "$TREE/scripts/build-mockfs-fixture.py" || true
           if ! grep -q ufs_stub_sha256 "$TREE/drivers/ShengUfs/NativeUfs.cpp" 2>/dev/null; then
             cat >> "$TREE/drivers/ShengUfs/NativeUfs.cpp" <<'STUBEOF'
@@ -159,8 +164,11 @@ jobs:
           def esc(s):
               return s.replace('%', '%25').replace('\r', '').replace('\n', '%0A')
           parts = []
-          logs = sorted(glob.glob('out/shennong/logs/*.log'), key=os.path.getmtime, reverse=True)
+          logs = sorted(glob.glob('out/shennong/**/*.log', recursive=True), key=os.path.getmtime, reverse=True)
           parts.append('LOGS=' + ','.join(logs))
+          if os.path.exists('/tmp/bsp.out'):
+              parts.append('--- /tmp/bsp.out')
+              parts.append(open('/tmp/bsp.out', errors='replace').read()[-3000:])
           for lg in logs[:3]:
               try:
                   txt = open(lg, errors='replace').read()
