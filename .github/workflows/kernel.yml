@@ -113,6 +113,7 @@ jobs:
           echo "=== PATCH MakeInc.def ==="
           for REF in $(grep -rl -- '-Wl,-headerpad,152' "$TREE/.cache/xnu-work/makedefs" 2>/dev/null); do
             sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF" 2>/dev/null || true
+            sed -i '' 's/-Wl,-new_linker//g' "$REF" 2>/dev/null || true
             echo "makeinc.def patched $REF count=$(grep -c dynamic_lookup "$REF" || true)"
           done
           echo "=== PATCH MakeInc.kernel LD LINE ==="
