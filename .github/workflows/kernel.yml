@@ -130,6 +130,12 @@ jobs:
           echo "makeinc.kernel count=$(grep -c 'undefined,dynamic_lookup' "$MK" || true)"
           grep -n 'undefined,dynamic_lookup' "$MK" | head -3 | cut -c1-170
           echo "=== PATCH END ==="
+          # vm_tests.c pulls mach_vm_* that the iOS kernel does not export
+          FILES="$TREE/.cache/xnu-work/osfmk/conf/files"
+          if [ -f "$FILES" ] && ! grep -q "^#osfmk/vm/vm_tests.c" "$FILES"; then
+            sed -i '' 's|^osfmk/vm/vm_tests.c|#osfmk/vm/vm_tests.c|' "$FILES" || true
+          fi
+          echo "vm_tests disabled: $(grep -c '^#osfmk/vm/vm_tests.c' "$FILES" || true)"
           echo "=== STORAGE ABI AUDIT ==="
           python3 "$TREE/scripts/audit-storage-interface.py" || echo "audit failed"
           echo "=== AUDIT END ==="
