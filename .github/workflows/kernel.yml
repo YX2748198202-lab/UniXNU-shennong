@@ -47,9 +47,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
-          bash "$UNIXNU_DEVICE/scripts/patch-xnu-link.sh" || true
-          ./unixnu build kernel || echo "first pass failed as expected"
-          bash "$UNIXNU_DEVICE/scripts/patch-xnu-link.sh" || true
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           echo "tree=$TREE"
           test -d "$TREE" || exit 1
@@ -97,14 +94,28 @@ jobs:
           STUBEOF2
             echo stub_appended_to_unixnu_source
           fi
-          echo "=== PROBE: link command definitions ==="
-          grep -rn -- '-headerpad,152' "$TREE/.cache/xnu-work" --include=Makefile* --include=*.template 2>/dev/null | head -10
-          grep -rn 'KERNEL_LDFLAGS\|LDFLAGS_KERNEL' "$TREE/.cache/xnu-work" --include=Makefile* --include=*.template --include=*.def --include=*.rule 2>/dev/null | head -15
-          echo "=== PROBE END ==="
-          for REF in $(grep -rl -- '-Wl,-headerpad,152' "$TREE/.cache/xnu-work/makedefs" "$TREE/refer/xnu/makedefs" "$TREE/.cache/xnu-work/osfmk/conf" "$TREE/.cache/xnu-work/bsd/conf" 2>/dev/null); do
-            cp "$REF" "$REF.orig" 2>/dev/null || true
-            sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF" 2>/dev/null || sed -i 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF"
-            echo "patched $REF count=$(grep -c dynamic_lookup "$REF" || true)"
+          echo "=== INJECT: LDFLAGS_KERNEL_DEVELOPMENT ==="
+          for S in "$TREE/scripts/build-xnu-4k-baseline.sh" scripts/build-xnu-4k-baseline.sh; do
+            if [ ! -f "$S" ]; then echo "skip $S (missing)"; continue; fi
+            if ! grep -q 'LDFLAGS_KERNEL_DEVELOPMENT' "$S"; then
+              sed -i '' 's|make -C .cache/xnu-work|make -C .cache/xnu-work LDFLAGS_KERNEL_DEVELOPMENT="-Wl,-undefined,dynamic_lookup"|' "$S" || true
+            fi
+            echo "inject: $S count=$(grep -c LDFLAGS_KERNEL_DEVELOPMENT "$S" || true)"
+            grep -n 'LDFLAGS_KERNEL_DEVELOPMENT' "$S" | head -2
+          done
+          echo "=== INJECT END ==="
+          ./unixnu build kernel || echo "first pass failed as expected"
+          echo "=== LINK ARGS DUMP ==="
+          for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
+            echo "--- $f"
+            cat "$f" | tr ' ' '\n' | grep -E 'undefined|LDFLAGS|dynamic' | head -10
+            echo "--- flags present: $(grep -c 'dynamic_lookup' "$f" || true)"
+          done
+          echo "=== DUMP END ==="
+          echo "=== PATCH MakeInc.def (second pass safety) ==="
+          for REF in $(grep -rl -- '-Wl,-headerpad,152' "$TREE/.cache/xnu-work/makedefs" 2>/dev/null); do
+            sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$REF" 2>/dev/null || true
+            echo "makeinc patched $REF count=$(grep -c dynamic_lookup "$REF" || true)"
           done
           ./unixnu build kernel
       - name: Build payload
@@ -129,3 +140,4 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - run: echo "kernel job finished"
+
