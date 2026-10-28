@@ -23,6 +23,7 @@
   "build-corecrypto-14.py --namespace",
   "build-libpthread-kernel.py",
   "build-sheng-platform-power.py",
+  "build-mockfs-fixture.py",
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",
