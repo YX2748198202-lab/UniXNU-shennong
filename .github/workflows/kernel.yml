@@ -47,20 +47,23 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
         run: |
-          ./unixnu build kernel || echo "first pass failed as expected (PMGR archive / component sources not ready)"
-          test -d out/shennong/tree || exit 1
-          mkdir -p out/shennong/tree/drivers
-          rm -rf out/shennong/tree/drivers/ShengUfs out/shennong/tree/drivers/ShengUfs.tmp
-          git clone --depth 1 https://github.com/UniXNU/NativeUfs.git out/shennong/tree/drivers/ShengUfs.tmp || true
-          cp -a out/shennong/tree/drivers/ShengUfs.tmp/. out/shennong/tree/drivers/ShengUfs/ 2>/dev/null || true
+          ./unixnu build kernel || echo "first pass failed as expected"
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          echo "tree=$TREE"
+          test -d "$TREE" || exit 1
+          mkdir -p "$TREE/drivers"
+          if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
+            rm -rf "$TREE/drivers/ShengUfs"
+            git clone --depth 1 https://github.com/UniXNU/NativeUfs.git "$TREE/drivers/ShengUfs" || true
+          fi
           git clone --depth 1 https://github.com/UniXNU/VerifiedRoot.git /tmp/VerifiedRoot || true
-          cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h out/shennong/tree/drivers/ShengUfs/ 2>/dev/null || find /tmp/VerifiedRoot -name 'verified_root.h' -exec cp {} out/shennong/tree/drivers/ShengUfs/ \;
-          ls out/shennong/tree/drivers/ShengUfs/ | head -20
-          ls out/shennong/tree/drivers/
+          cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h "$TREE/drivers/ShengUfs/". 2>/dev/null || true
+          ls "$TREE/drivers/ShengUfs/" | head -20
           export PATH="$(brew --prefix llvm)/bin:$PATH"
-          python3 out/shennong/tree/scripts/build-sheng-platform-power.py
-          ls -la out/shennong/tree/build/sheng-platform-power/ || true
-          cat >> out/shennong/tree/drivers/ShengUfs/NativeUfs.cpp <<'STUBEOF'
+          python3 "$TREE/scripts/build-sheng-platform-power.py"
+          python3 "$TREE/scripts/build-mockfs-fixture.py" || true
+          if ! grep -q ufs_stub_sha256 "$TREE/drivers/ShengUfs/NativeUfs.cpp" 2>/dev/null; then
+            cat >> "$TREE/drivers/ShengUfs/NativeUfs.cpp" <<'STUBEOF'
           extern "C" {
           static int ufs_stub_sha256(const void *a, size_t b, uint8_t c[32]) { (void)a;(void)b;(void)c; return 1; }
           static int ufs_stub_rsa(const uint8_t a[VR_KEY_BYTES], const uint8_t b[32], const uint8_t c[VR_SIGNATURE_BYTES]) { (void)a;(void)b;(void)c; return 1; }
@@ -73,7 +76,8 @@ jobs:
           void boot_progress_poll(void) {}
           }
           STUBEOF
-          tail -5 out/shennong/tree/drivers/ShengUfs/NativeUfs.cpp
+          fi
+          tail -3 "$TREE/drivers/ShengUfs/NativeUfs.cpp"
           ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
