@@ -95,14 +95,11 @@ jobs:
           STUBEOF2
             echo stub_appended_to_unixnu_source
           fi
-          DEF=$(find -L "$TREE" -maxdepth 5 -name MakeInc.def -path '*makedefs*' 2>/dev/null | head -1)
-          echo "def=$DEF"
-          if [ -n "$DEF" ]; then
+          for DEF in $(find -L "$TREE" -maxdepth 6 -name MakeInc.def -path '*makedefs*' 2>/dev/null); do
             cp "$DEF" "$DEF.orig"
             sed -i '' 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$DEF" 2>/dev/null || sed -i 's/-Wl,-headerpad,152/-Wl,-headerpad,152 -Wl,-undefined,dynamic_lookup/' "$DEF"
-            echo "dynamic_lookup_count=$(grep -c dynamic_lookup "$DEF" || true)"
-            grep -n 'headerpad,152' "$DEF" | head -2
-          fi
+            echo "patched $DEF count=$(grep -c dynamic_lookup "$DEF" || true)"
+          done
           ./unixnu build kernel
       - name: Build payload
         working-directory: unixnu
