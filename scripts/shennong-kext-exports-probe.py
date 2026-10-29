@@ -5,6 +5,7 @@ kernel.macho only carries kernel-level exports, so kext-local symbols such as
 IOBlockStorageDevice::gMetaClass never appear there. The decompressed kernelcache
 keeps every kext's own LC_SYMTAB, which is the place to look.
 """
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -13,11 +14,25 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'kits' / 'XnuPrelink'))
 import native_prelink as np
 
+
+def nm_tool():
+    for candidate in ('llvm-nm', 'nm'):
+        found = shutil.which(candidate)
+        if found:
+            return found
+    for candidate in ('/opt/homebrew/opt/llvm/bin/llvm-nm', '/usr/local/opt/llvm/bin/llvm-nm', '/usr/bin/nm'):
+        if Path(candidate).is_file():
+            return candidate
+    raise SystemExit('no nm tool found')
+
+
 kernelcache, archive = sys.argv[1], sys.argv[2]
+NM = nm_tool()
+print('KEXTPROBE nm=%s' % NM)
 
 
 def undefined_storage_symbols(path):
-    out = subprocess.run(['llvm-nm', '-u', path], capture_output=True, text=True).stdout
+    out = subprocess.run([NM, '-u', path], capture_output=True, text=True).stdout
     names = []
     for line in out.splitlines():
         for token in line.split():
