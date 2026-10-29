@@ -183,10 +183,9 @@ jobs:
         run: |
           if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"; then
             echo "::error::build payload failed"
-            for f in out/shennong/*/*/logs/prelink.log; do
-              [ -f "$f" ] || continue
+            for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
               echo "--- $f ($(wc -c < "$f") bytes)"
-              tail -25 "$f" | sed 's/^/::error::/'
+              tail -14 "$f" | sed 's/^/::error::/'
             done
             for f in out/shennong/*/*/kernel/kernel.macho out/shennong/*/*/payload/payload.img; do
               [ -f "$f" ] && echo "found $(basename "$f") $(wc -c < "$f") bytes"
