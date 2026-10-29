@@ -101,6 +101,13 @@ jobs:
           for f in "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*; do
             [ -f "$f" ] && echo "macho $(basename "$f") $(wc -c < "$f") bytes"
           done
+          echo "::error::mock tree=$TREE"
+          echo "::error::mock mode=$(cat "$TREE/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/.source-mockfs-mode" 2>/dev/null || echo unset)"
+          echo "::error::mock fixture=$(ls "$TREE/build/mockfs-fixture/" 2>/dev/null | tr '\n' ',')"
+          echo "::error::mock cfg=$(find out -maxdepth 5 -name '.config' 2>/dev/null | head -1)"
+          for f in $(find out -maxdepth 5 -name '.config' 2>/dev/null | head -1); do
+            grep -E 'MOCKFS|NATIVE_UFS|SOURCE_PTHREAD' "$f" | sed 's/^/::error::mock key /'
+          done
           exit $SECOND_RC
       - name: Report failure details
         if: failure()
@@ -175,25 +182,6 @@ jobs:
           echo "::error::ARCH rc=$RC size=$SIZE ar=$AR members=[$MEMBERS] undef=$UNDEF storage=$STORAGE nmraw=[$NMRAW]"
           tail -4 /tmp/shengufs.out | tr '\n' '|' | sed 's/^/::error::arndrv: /'
           exit 0
-      - name: Mockfs and ABI state
-        if: always()
-        working-directory: unixnu
-        run: |
-          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
-          {
-            echo "tree=$TREE"
-            for f in $(find out -maxdepth 5 -name '.config' 2>/dev/null | head -3) out/shennong/*/shennong/*.config; do
-              [ -f "$f" ] || continue
-              echo "config=$f"
-              grep -E 'MOCKFS|NATIVE_UFS|SOURCE_PTHREAD|ARMCPU|NATIVE_RAM_BLOCK|CRYPTO_BOOTSTRAP' "$f" 2>/dev/null
-            done
-            echo "fixture-dir:"
-            ls -la "$TREE"/build/mockfs-fixture/ 2>&1
-            echo "mockfs-mode:"
-            cat "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/.source-mockfs-mode 2>&1
-            echo "mockfs-objects:"
-            ls "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/ 2>/dev/null | grep -i mock
-          } | sed 's/^/::error::mock /'
       - name: Build prelink
         if: always()
         working-directory: unixnu
