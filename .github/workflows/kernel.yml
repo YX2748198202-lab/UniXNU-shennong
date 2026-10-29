@@ -163,20 +163,16 @@ jobs:
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           export PATH="$(brew --prefix llvm)/bin:$PATH"
           [ -n "$TREE" ] || { echo "::error::no tree"; exit 0; }
-          python3 "$TREE/scripts/build-arm-driver.py" ShengUfs > /tmp/shengufs.out 2>&1 || {
-            echo "::error::arm-driver ShengUfs failed"
-            tail -10 /tmp/shengufs.out | sed 's/^/::error::/'
-          }
-          ls -la "$TREE/build/sheng-ufs/" 2>&1 | head -6 | sed 's/^/::error::/'
+          python3 "$TREE/scripts/build-arm-driver.py" ShengUfs > /tmp/shengufs.out 2>&1
+          RC=$?
           AR=$(ls -t "$TREE"/build/sheng-ufs/*.a 2>/dev/null | head -1)
-          echo "AR=$AR"
-          if [ -n "$AR" ]; then
-            echo "members: $(ar t "$AR" 2>/dev/null | tr '\n' ' ')"
-            N=$(nm -u "$AR" 2>/dev/null | grep -c ' U ')
-            echo "undef_total=$N"
-            nm -u "$AR" 2>/dev/null | grep 'IOBlockStorageDevice' | head -4
-            nm -u "$AR" 2>/dev/null | grep -c 'IOBlockStorageDevice' | sed 's/^/undef_storage=/'
-          fi
+          MEMBERS=$(ar t "$AR" 2>/dev/null | tr '\n' ' ')
+          UNDEF=$(nm -u "$AR" 2>/dev/null | grep -c ' U ')
+          STORAGE=$(nm -u "$AR" 2>/dev/null | grep -c 'IOBlockStorageDevice')
+          NMRAW=$(nm -u "$AR" 2>&1 | head -4 | tr '\n' '|')
+          SIZE=$(wc -c < "$AR" 2>/dev/null || echo 0)
+          echo "::error::ARCH rc=$RC size=$SIZE ar=$AR members=[$MEMBERS] undef=$UNDEF storage=$STORAGE nmraw=[$NMRAW]"
+          tail -4 /tmp/shengufs.out | tr '\n' '|' | sed 's/^/::error::arndrv: /'
           exit 0
       - name: Build prelink
         if: always()
