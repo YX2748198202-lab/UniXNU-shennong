@@ -217,19 +217,18 @@ jobs:
         run: |
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           M=$(ls -t out/shennong/*/kernel/kernel.macho 2>/dev/null | head -1)
-          P="$M.json"
           A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
-          echo "tree=$TREE"
-          echo "macho=$M plan=$P archive=$A"
-          [ -n "$TREE" ] || exit 0
-          [ -f "$M" ] || { echo "no kernel.macho yet"; exit 0; }
-          [ -f "$P" ] || { echo "no plan json"; exit 0; }
-          [ -f "$A" ] || { echo "no libShengUfs.a"; exit 0; }
-          python3 "$TREE/scripts/shennong-storage-probe.py" --macho "$M" --plan "$P" --archive "$A" --out /tmp/probe.json || echo "probe failed"
-          if [ -f /tmp/probe.json ]; then
-            cp -f /tmp/probe.json "$GITHUB_WORKSPACE/device/ci-logs/storage-probe.json" 2>/dev/null || true
-            python3 -c "import json;d=json.load(open('/tmp/probe.json'));print('resolved %d/%d exports %d' % (d['resolved_count'], len(d['undefined']), d['exports_total']));[print('MISS',m) for m in d['missing']]" | sed 's/^/::error::/'
+          P="$M.json"
+          echo "tree=$TREE macho=$M plan=$P archive=$A"
+          [ -n "$TREE" ] || { echo "::error::probe skip: no tree"; exit 0; }
+          [ -f "$M" ] || { echo "::error::probe skip: no kernel.macho"; exit 0; }
+          [ -f "$A" ] || { echo "::error::probe skip: no libShengUfs.a"; exit 0; }
+          if ! python3 "$TREE/scripts/shennong-storage-probe.py" --macho "$M" --plan "$P" --archive "$A" --out /tmp/probe.json > /tmp/probe.out 2>&1; then
+            echo "::error::probe crashed"
+            tail -15 /tmp/probe.out | sed 's/^/::error::/'
+            exit 0
           fi
+          tail -22 /tmp/probe.out | sed 's/^/::error::/'
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
