@@ -1,0 +1,37 @@
+{
+  "macho": "out/shennong/ipados-17.7.11-21H461/shennong/kernel/kernel.macho",
+  "macho_size": 51970048,
+  "macho_sha256": "be684d5dafb6e66b9d206d67385c90d7d3898362402d6b3848ec5081123bcfa1",
+  "plan_candidate_sha256": "be684d5dafb6e66b9d206d67385c90d7d3898362402d6b3848ec5081123bcfa1",
+  "plan_original_sha256": "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7",
+  "exports_total": 22550,
+  "storage_extents": [
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__TEXT",
+      "va": 18446744005059818880,
+      "size": 8144
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__TEXT_EXEC",
+      "va": 18446744005067063296,
+      "size": 82776
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__DATA_CONST",
+      "va": 18446744005087277568,
+      "size": 23568
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__DATA",
+      "va": 18446744005102129152,
+      "size": 945
+    }
+  ],
+  "undefined": [],
+  "missing": [],
+  "resolved_count": 0
+}
