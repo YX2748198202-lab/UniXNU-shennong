@@ -239,6 +239,7 @@ jobs:
         if: always()
         working-directory: unixnu
         run: |
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           KC=$(ls -t out/ipsw/*/kernelcache.decompressed out/shennong/ipsw/*/kernelcache.decompressed 2>/dev/null | head -1)
           A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
