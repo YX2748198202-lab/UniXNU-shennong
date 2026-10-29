@@ -29,7 +29,7 @@ def nm_undefined(path):
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--macho', required=True)
-parser.add_argument('--plan', required=True)
+parser.add_argument('--plan', default='')
 parser.add_argument('--archive', required=True)
 parser.add_argument('--out', default='')
 args = parser.parse_args()
@@ -41,7 +41,9 @@ image = np.macho(data)
 table = np.exports(data, image)
 by_name = {name: va for va, names in table.items() for name in names}
 
-plan = json.loads(Path(args.plan).read_text())
+plan = {}
+if args.plan and Path(args.plan).is_file():
+    plan = json.loads(Path(args.plan).read_text())
 extents = [e for e in plan.get('extents', []) if e.get('module') == 'com.apple.iokit.IOStorageFamily']
 
 report = {
