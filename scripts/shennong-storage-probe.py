@@ -20,9 +20,12 @@ def nm_undefined(path):
             continue
         names = []
         for line in out.splitlines():
-            parts = line.split()
-            if len(parts) == 2 and parts[0] == 'U':
-                names.append(parts[1])
+            # llvm-nm: "                 U _sym"
+            # macOS nm on archives: "archive(member.o):   U _sym"
+            if ' U ' in line:
+                token = line.split()[-1]
+                if token.startswith('_'):
+                    names.append(token)
         return names
     raise SystemExit('no nm available')
 
