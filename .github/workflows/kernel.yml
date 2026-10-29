@@ -2,7 +2,7 @@ name: shennong kernel
 on:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   kernel:
     runs-on: macos-26
@@ -160,41 +160,47 @@ jobs:
         working-directory: unixnu
         run: |
           python3 - <<'PY'
-          import glob, os, re
+          import glob, os
           def esc(s):
               return s.replace('%', '%25').replace('\r', '').replace('\n', '%0A')
           parts = []
           logs = sorted(glob.glob('out/shennong/**/*.log', recursive=True), key=os.path.getmtime, reverse=True)
-          parts.append('LOGS=' + ','.join(logs))
+          parts.append('LOGS n=%d first=%s' % (len(logs), ','.join(os.path.basename(x) for x in logs[:4])))
           if os.path.exists('/tmp/bsp.out'):
-              parts.append('--- /tmp/bsp.out')
-              parts.append(open('/tmp/bsp.out', errors='replace').read()[-3000:])
-          for lg in logs[:3]:
-              try:
-                  txt = open(lg, errors='replace').read()
-              except Exception as exc:
-                  parts.append('%s: %s' % (lg, exc))
-                  continue
-              for m in re.finditer(r'Undefined symbols', txt):
-                  st = m.start()
-                  parts.append('--- %s @%d' % (lg, st))
-                  parts.append(txt[st:st + 6000])
-              lines = txt.splitlines()
-              parts.append('--- TAIL %s' % lg)
-              parts.append('\n'.join(lines[-120:]))
-          for f in glob.glob('out/shennong/*/shennong/tree/.cache/xnu-work/osfmk/conf/files'):
-              for i, line in enumerate(open(f, errors='replace'), 1):
-                  if 'vm_tests' in line:
-                      parts.append('%s:%d %s' % (f, i, line.rstrip()))
-          for f in glob.glob('out/shennong/*/shennong/tree/.cache/xnu-work/makedefs/MakeInc.kernel'):
-              for i, line in enumerate(open(f, errors='replace'), 1):
-                  if '$(LD)' in line and 'LDFLAGS_KERNEL' in line:
-                      parts.append('%s:%d %s' % (f, i, line.rstrip()[:400]))
+              parts.append('== bsp.tail')
+              parts.append(open('/tmp/bsp.out', errors='replace').read()[-1200:])
+          kl = [p for p in logs if p.endswith('/logs/kernel.log')]
+          for p in kl[:1]:
+              t = open(p, errors='replace').read()
+              i = t.find('Undefined symbols')
+              parts.append('== kernel.log len=%d undef_at=%d' % (len(t), i))
+              if i >= 0:
+                  parts.append(t[i:i + 2200])
+              parts.append('== kernel.tail')
+              parts.append('\n'.join(t.splitlines()[-50:]))
+          for f in glob.glob('out/shennong/*/*/shennong/tree/.cache/xnu-work/osfmk/conf/files'):
+              for n, line in enumerate(open(f, errors='replace'), 1):
+                  if 'vm_tests.c' in line:
+                      parts.append('conf/files:%d %s' % (n, line.strip()))
+          for f in glob.glob('out/shennong/*/*/shennong/tree/.cache/xnu-work/makedefs/MakeInc.kernel'):
+              c = open(f, errors='replace').read()
+              parts.append('MakeInc.kernel dyn=%d newlinker=%d' % (c.count('dynamic_lookup'), c.count('new_linker')))
           blob = '\n'.join(parts)
           print('report bytes', len(blob))
-          for k in range(0, min(len(blob), 150000), 30000):
-              print('::error::' + esc(blob[k:k + 30000]))
+          for k in range(0, min(len(blob), 11000), 3800):
+              print('::error::' + esc(blob[k:k + 3800]))
           PY
+          cd "$GITHUB_WORKSPACE/device"
+          mkdir -p ci-logs
+          cp -f ../unixnu/out/shennong/*/*/logs/*.log ci-logs/ 2>/dev/null || true
+          cp -f /tmp/bsp.out ci-logs/ 2>/dev/null || true
+          ls ci-logs | head -8
+          git config user.name ci-bot
+          git config user.email ci-bot@local
+          git checkout -b "ci-logs-$GITHUB_RUN_ID" 2>/dev/null || git checkout "ci-logs-$GITHUB_RUN_ID"
+          git add -f ci-logs
+          git commit -m "ci: logs for run $GITHUB_RUN_ID" || echo nothing-to-commit
+          git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
       - name: Build payload
         working-directory: unixnu
         run: ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"
@@ -211,6 +217,7 @@ jobs:
             unixnu/out/shennong/payload/payload.img
             unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
+            unixnu/out/shennong/*/*/logs/*.log
   logs:
     needs: kernel
     if: always()
