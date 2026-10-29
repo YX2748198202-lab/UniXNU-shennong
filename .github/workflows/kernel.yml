@@ -175,6 +175,28 @@ jobs:
           echo "::error::ARCH rc=$RC size=$SIZE ar=$AR members=[$MEMBERS] undef=$UNDEF storage=$STORAGE nmraw=[$NMRAW]"
           tail -4 /tmp/shengufs.out | tr '\n' '|' | sed 's/^/::error::arndrv: /'
           exit 0
+      - name: Mockfs and ABI state
+        if: always()
+        working-directory: unixnu
+        run: |
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          CONF=$(ls -t out/shennong/*/shennong/*.config out/shennong/*/*/.config 2>/dev/null | head -1)
+          echo "tree=$TREE config=$CONF"
+          echo "=== resolved config keys ==="
+          if [ -n "$CONF" ]; then
+            grep -E 'MOCKFS|NATIVE_UFS|SOURCE_PTHREAD|ARMCPU|NATIVE_RAM_BLOCK|CRYPTO_BOOTSTRAP' "$CONF" | sed 's/^/::error::cfg /' || echo "::error::no matching keys in $CONF"
+          else
+            for f in $(find out -maxdepth 4 -name '.config' -o -maxdepth 4 -name 'shennong.config' 2>/dev/null | head -3); do
+              echo "found $f"
+              grep -E 'MOCKFS|NATIVE_UFS|SOURCE_PTHREAD' "$f" | sed 's/^/::error::cfg /'
+            done
+          fi
+          echo "=== mockfs fixture ==="
+          ls -la "$TREE"/build/mockfs-fixture/ 2>/dev/null | sed 's/^/::error::fix /' || echo "::error::no mockfs-fixture dir"
+          echo "=== vfs_conf mockfs flag ==="
+          for f in "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/.source-mockfs-mode; do
+            [ -f "$f" ] && echo "::error::mode $(cat "$f")"
+          done
       - name: Build prelink
         if: always()
         working-directory: unixnu
