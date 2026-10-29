@@ -235,6 +235,23 @@ jobs:
             done
             exit 1
           fi
+      - name: Probe kext symbol table
+        if: always()
+        working-directory: unixnu
+        run: |
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          KC=$(ls -t out/shennong/ipsw/*/kernelcache.decompressed 2>/dev/null | head -1)
+          A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
+          echo "kernelcache=$KC archive=$A"
+          [ -n "$TREE" ] || { echo "::error::kext probe skip: no tree"; exit 0; }
+          [ -f "$KC" ] || { echo "::error::kext probe skip: no kernelcache.decompressed"; exit 0; }
+          [ -f "$A" ] || { echo "::error::kext probe skip: no libShengUfs.a"; exit 0; }
+          if ! python3 "$TREE/scripts/shennong-kext-exports-probe.py" "$KC" "$A" > /tmp/kextprobe.out 2>&1; then
+            echo "::error::kext probe crashed"
+            tail -15 /tmp/kextprobe.out | sed 's/^/::error::/'
+            exit 0
+          fi
+          tail -20 /tmp/kextprobe.out | sed 's/^/::error::/'
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
