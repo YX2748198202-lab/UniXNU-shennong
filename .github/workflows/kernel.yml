@@ -184,7 +184,7 @@ jobs:
           RC=$?
           echo "prelink rc=$RC"
           tail -25 /tmp/prelink2.out | sed 's/^/::error::/'
-          ls -la out/shennong/*/kernel/ 2>&1 | head -8 | sed 's/^/::error::/'
+          ls -la out/shennong/*/shennong/kernel/ 2>&1 | head -8 | sed 's/^/::error::/'
           ls -la "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf 2>&1 | sed 's/^/::error::/'
           exit 0
       - name: Probe storage bindings
@@ -192,7 +192,7 @@ jobs:
         working-directory: unixnu
         run: |
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
-          M=$(ls -t out/shennong/*/kernel/kernel.macho 2>/dev/null | head -1)
+          M=$(ls -t out/shennong/*/shennong/kernel/kernel.macho 2>/dev/null | head -1)
           [ -n "$M" ] || M=$(ls -t out/shennong/*/payload/stage/EFI/UniXNU/Payloads/kernel.macho 2>/dev/null | head -1)
           A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
           P="$M.json"
@@ -232,9 +232,9 @@ jobs:
             unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
             unixnu/out/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.img
-            unixnu/out/shennong/*/payload/payload.img
-            unixnu/out/shennong/*/payload/payload.json
-            unixnu/out/shennong/*/kernel/kernel.macho*
+            unixnu/out/shennong/*/shennong/payload/payload.img
+            unixnu/out/shennong/*/shennong/payload/payload.json
+            unixnu/out/shennong/*/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
             unixnu/out/shennong/*/*/logs/*.log
