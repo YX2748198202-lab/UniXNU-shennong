@@ -192,9 +192,9 @@ jobs:
         working-directory: unixnu
         run: |
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
           M=$(ls -t out/shennong/*/shennong/kernel/kernel.macho 2>/dev/null | head -1)
           [ -n "$M" ] || M=$(ls -t out/shennong/*/payload/stage/EFI/UniXNU/Payloads/kernel.macho 2>/dev/null | head -1)
-          export PATH="$(brew --prefix llvm)/bin:$PATH"
           A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
           P=$(dirname "$M")/kernel.json
           [ -f "$P" ] || P="$M.json"
@@ -204,10 +204,21 @@ jobs:
           [ -f "$A" ] || { echo "::error::probe skip: no libShengUfs.a"; exit 0; }
           if ! python3 "$TREE/scripts/shennong-storage-probe.py" --macho "$M" --plan "$P" --archive "$A" --out /tmp/probe.json > /tmp/probe.out 2>&1; then
             echo "::error::probe crashed"
-            tail -15 /tmp/probe.out | sed 's/^/::error::/'
+            tail -8 /tmp/probe.out | sed 's/^/::error::/'
             exit 0
           fi
-          tail -22 /tmp/probe.out | sed 's/^/::error::/'
+          grep '^PROBE ' /tmp/probe.out | head -1 | sed 's/^/::error::/'
+          grep '^MISSING ' /tmp/probe.out | head -8 | sed 's/^/::error::/'
+          cp -f /tmp/probe.json /tmp/probe-keep.json 2>/dev/null || true
+          cd "$GITHUB_WORKSPACE/device"
+          cp -f /tmp/probe-keep.json ci-logs-probe.json 2>/dev/null || true
+          git config user.name ci-bot
+          git config user.email ci-bot@local
+          git checkout -q -B "ci-probe-$GITHUB_RUN_ID" 2>/dev/null || true
+          git add -f ci-logs-probe.json 2>/dev/null || true
+          git commit -q -m "probe run $GITHUB_RUN_ID" 2>/dev/null || echo nothing-to-commit
+          git push --force origin "HEAD:refs/heads/ci-probe-$GITHUB_RUN_ID" 2>/dev/null || echo push-failed
+          exit 0
       - name: Build payload
         working-directory: unixnu
         run: |
