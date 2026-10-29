@@ -20,12 +20,9 @@ def nm_undefined(path):
             continue
         names = []
         for line in out.splitlines():
-            # llvm-nm: "                 U _sym"
-            # macOS nm on archives: "archive(member.o):   U _sym"
-            if ' U ' in line:
-                token = line.split()[-1]
-                if token.startswith('_'):
-                    names.append(token)
+            parts = line.split()
+            if len(parts) == 2 and parts[0] == 'U':
+                names.append(parts[1])
         return names
     raise SystemExit('no nm available')
 
@@ -70,7 +67,8 @@ text = json.dumps(report, indent=2)
 print(text)
 if args.out:
     Path(args.out).write_text(text + '\n')
-print('PROBE resolved %d/%d, exports %d, missing %d'
-      % (report['resolved_count'], len(report['undefined']), len(by_name), len(missing)))
+print('PROBE resolved=%d total=%d exports=%d missing=%d :: %s'
+      % (report['resolved_count'], len(report['undefined']), len(by_name), len(missing),
+         ';'.join('%s@%s' % (r['name'], r['resolved']) for r in report['undefined'])))
 for name in missing:
     print('MISSING ' + name)
