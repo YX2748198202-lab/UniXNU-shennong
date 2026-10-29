@@ -160,6 +160,7 @@ jobs:
         if: always()
         working-directory: unixnu
         run: |
+          set +e
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           export PATH="$(brew --prefix llvm)/bin:$PATH"
           [ -n "$TREE" ] || { echo "::error::no tree"; exit 0; }
@@ -201,7 +202,7 @@ jobs:
           echo "tree=$TREE macho=$M plan=$P archive=$A"
           [ -n "$TREE" ] || { echo "::error::probe skip: no tree"; exit 0; }
           [ -f "$M" ] || { echo "::error::probe skip: no kernel.macho"; exit 0; }
-          [ -f "$A" ] || { echo "::error::probe skip: no libShengUfs.a"; exit 0; }
+          [ -f "$A" ] || echo "::error::no ShengUfs archive; probe uses the known 11-import list"
           if ! python3 "$TREE/scripts/shennong-storage-probe.py" --macho "$M" --plan "$P" --archive "$A" --out /tmp/probe.json > /tmp/probe.out 2>&1; then
             echo "::error::probe crashed"
             tail -8 /tmp/probe.out | sed 's/^/::error::/'
