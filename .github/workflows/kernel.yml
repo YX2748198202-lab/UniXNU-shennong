@@ -195,6 +195,7 @@ jobs:
         run: |
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           M=$(ls -t out/shennong/*/kernel/kernel.macho 2>/dev/null | head -1)
+          [ -n "$M" ] || M=$(ls -t out/shennong/*/payload/stage/EFI/UniXNU/Payloads/kernel.macho 2>/dev/null | head -1)
           A=$(ls -t "$TREE"/build/sheng-ufs/libShengUfs.a 2>/dev/null | head -1)
           P="$M.json"
           echo "tree=$TREE macho=$M plan=$P archive=$A"
