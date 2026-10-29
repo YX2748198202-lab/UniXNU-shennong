@@ -156,21 +156,6 @@ jobs:
           git add -f ci-logs
           git commit -m "ci: logs for run $GITHUB_RUN_ID" || echo nothing-to-commit
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
-      - name: Build payload
-        working-directory: unixnu
-        run: |
-          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" > /tmp/payload.out 2>&1; then
-            tail -40 /tmp/payload.out | sed 's/^/::error::/'
-            echo "::error::build payload failed"
-            for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
-              echo "--- $f ($(wc -c < "$f") bytes)"
-              tail -14 "$f" | sed 's/^/::error::/'
-            done
-            for f in out/shennong/*/*/kernel/kernel.macho out/shennong/*/*/payload/payload.img; do
-              [ -f "$f" ] && echo "found $(basename "$f") $(wc -c < "$f") bytes"
-            done
-            exit 1
-          fi
       - name: Build ShengUfs archive for probing
         if: always()
         working-directory: unixnu
@@ -189,6 +174,14 @@ jobs:
             exit 0
           }
           ls -la "$TREE/build/sheng-ufs/" 2>/dev/null | head -5
+      - name: Build prelink
+        if: always()
+        working-directory: unixnu
+        run: |
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          [ -n "$TREE" ] || exit 0
+          ./unixnu build prelink > /tmp/prelink2.out 2>&1 || { echo "::error::build prelink failed"; tail -12 /tmp/prelink2.out | sed 's/^/::error::/'; exit 0; }
+          ls -la out/shennong/*/kernel/kernel.macho 2>/dev/null
       - name: Probe storage bindings
         if: always()
         working-directory: unixnu
@@ -208,6 +201,21 @@ jobs:
             exit 0
           fi
           tail -22 /tmp/probe.out | sed 's/^/::error::/'
+      - name: Build payload
+        working-directory: unixnu
+        run: |
+          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" > /tmp/payload.out 2>&1; then
+            tail -40 /tmp/payload.out | sed 's/^/::error::/'
+            echo "::error::build payload failed"
+            for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
+              echo "--- $f ($(wc -c < "$f") bytes)"
+              tail -14 "$f" | sed 's/^/::error::/'
+            done
+            for f in out/shennong/*/*/kernel/kernel.macho out/shennong/*/*/payload/payload.img; do
+              [ -f "$f" ] && echo "found $(basename "$f") $(wc -c < "$f") bytes"
+            done
+            exit 1
+          fi
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
@@ -219,6 +227,9 @@ jobs:
             unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
             unixnu/out/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.img
+            unixnu/out/shennong/*/payload/payload.img
+            unixnu/out/shennong/*/payload/payload.json
+            unixnu/out/shennong/*/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
             unixnu/out/shennong/*/*/logs/*.log
