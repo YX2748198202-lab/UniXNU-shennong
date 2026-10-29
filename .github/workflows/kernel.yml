@@ -179,9 +179,14 @@ jobs:
         working-directory: unixnu
         run: |
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
-          [ -n "$TREE" ] || exit 0
-          ./unixnu build prelink > /tmp/prelink2.out 2>&1 || { echo "::error::build prelink failed"; tail -12 /tmp/prelink2.out | sed 's/^/::error::/'; exit 0; }
-          ls -la out/shennong/*/kernel/kernel.macho 2>/dev/null
+          [ -n "$TREE" ] || { echo "::error::no tree for prelink"; exit 0; }
+          ./unixnu build prelink > /tmp/prelink2.out 2>&1
+          RC=$?
+          echo "prelink rc=$RC"
+          tail -25 /tmp/prelink2.out | sed 's/^/::error::/'
+          ls -la out/shennong/*/kernel/ 2>&1 | head -8 | sed 's/^/::error::/'
+          ls -la "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf 2>&1 | sed 's/^/::error::/'
+          exit 0
       - name: Probe storage bindings
         if: always()
         working-directory: unixnu
