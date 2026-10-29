@@ -194,6 +194,14 @@ jobs:
           mkdir -p ci-logs
           cp -f ../unixnu/out/shennong/*/*/logs/*.log ci-logs/ 2>/dev/null || true
           cp -f /tmp/bsp.out ci-logs/ 2>/dev/null || true
+          : > ci-logs/errors.txt
+          for f in $(grep -rl -i -E 'error:|Error 1|fatal error' ../unixnu/out/shennong/*/*/shennong/tree/build --include='*.log' 2>/dev/null | head -12); do
+            echo "### $f" >> ci-logs/errors.txt
+            tail -25 "$f" >> ci-logs/errors.txt
+          done
+          if [ -s ci-logs/errors.txt ]; then
+            tail -60 ci-logs/errors.txt | sed 's/^/::error::/'
+          fi
           ls ci-logs | head -8
           git config user.name ci-bot
           git config user.email ci-bot@local
