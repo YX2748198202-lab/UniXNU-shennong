@@ -120,6 +120,9 @@ jobs:
             echo
           done
           echo "=== DUMP END ==="
+          for f in "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*; do
+            [ -f "$f" ] && echo "macho $(basename "$f") $(wc -c < "$f") bytes"
+          done
           exit $SECOND_RC
       - name: Report failure details
         if: failure()
@@ -177,7 +180,19 @@ jobs:
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
       - name: Build payload
         working-directory: unixnu
-        run: ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"
+        run: |
+          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"; then
+            echo "::error::build payload failed"
+            for f in out/shennong/*/*/logs/prelink.log; do
+              [ -f "$f" ] || continue
+              echo "--- $f ($(wc -c < "$f") bytes)"
+              tail -25 "$f" | sed 's/^/::error::/'
+            done
+            for f in out/shennong/*/*/kernel/kernel.macho out/shennong/*/*/payload/payload.img; do
+              [ -f "$f" ] && echo "found $(basename "$f") $(wc -c < "$f") bytes"
+            done
+            exit 1
+          fi
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
