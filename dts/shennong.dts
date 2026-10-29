@@ -646,52 +646,7 @@
 			};
 		};
 
-		cpu-map {
-
-			cluster0 {
-
-				core0 {
-					cpu = <0x19>;
-				};
-
-				core1 {
-					cpu = <0x1a>;
-				};
-			};
-
-			cluster1 {
-
-				core0 {
-					cpu = <0x1b>;
-				};
-
-				core1 {
-					cpu = <0x1c>;
-				};
-
-				core2 {
-					cpu = <0x1d>;
-				};
-			};
-
-			cluster2 {
-
-				core0 {
-					cpu = <0x1e>;
-				};
-
-				core1 {
-					cpu = <0x1f>;
-				};
-			};
-
-			cluster3 {
-
-				core0 {
-					cpu = <0x20>;
-				};
-			};
-		};
+;
 	};
 
 	idle-states {
