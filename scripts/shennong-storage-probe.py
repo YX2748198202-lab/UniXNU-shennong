@@ -12,6 +12,20 @@ sys.path.insert(0, str(ROOT / 'kits' / 'XnuPrelink'))
 import native_prelink as np
 
 
+KNOWN_IMPORTS = [
+    '__ZN20IOBlockStorageDevice10gMetaClassE',
+    '__ZN20IOBlockStorageDevice11requestIdleEv',
+    '__ZN20IOBlockStorageDevice13doSetPriorityEP26IOBlockStorageDeviceExtentjh',
+    '__ZN20IOBlockStorageDevice13setPropertiesEP8OSObject',
+    '__ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP34IOBlockStorageProvisionDeviceExtenty',
+    '__ZN20IOBlockStorageDevice4initEP12OSDictionary',
+    '__ZN20IOBlockStorageDevice7doUnmapEP26IOBlockStorageDeviceExtentjj',
+    '__ZN20IOBlockStorageDeviceC2EPK11OSMetaClass',
+    '__ZN20IOBlockStorageDeviceD2Ev',
+    '__ZNK20IOBlockStorageDevice11getPropertyEPK8OSSymbol',
+    '__ZTV20IOBlockStorageDevice',
+]
+
 def nm_undefined(path):
     for tool in (['llvm-nm'], ['nm']):
         try:
@@ -34,7 +48,12 @@ parser.add_argument('--archive', required=True)
 parser.add_argument('--out', default='')
 args = parser.parse_args()
 
-undef = [n for n in dict.fromkeys(nm_undefined(args.archive)) if 'IOBlockStorageDevice' in n]
+undef = []
+if args.archive and Path(args.archive).is_file():
+    undef = [n for n in dict.fromkeys(nm_undefined(args.archive)) if 'IOBlockStorageDevice' in n]
+if not undef:
+    undef = list(KNOWN_IMPORTS)
+    print('FALLBACK using known import list (%d)' % len(undef))
 
 data = Path(args.macho).read_bytes()
 image = np.macho(data)
@@ -67,8 +86,7 @@ text = json.dumps(report, indent=2)
 print(text)
 if args.out:
     Path(args.out).write_text(text + '\n')
-print('PROBE resolved=%d total=%d exports=%d missing=%d :: %s'
-      % (report['resolved_count'], len(report['undefined']), len(by_name), len(missing),
-         ';'.join('%s@%s' % (r['name'], r['resolved']) for r in report['undefined'])))
+print('PROBE resolved %d/%d, exports %d, missing %d'
+      % (report['resolved_count'], len(report['undefined']), len(by_name), len(missing)))
 for name in missing:
     print('MISSING ' + name)
