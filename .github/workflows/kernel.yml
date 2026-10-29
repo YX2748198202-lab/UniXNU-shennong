@@ -181,7 +181,8 @@ jobs:
       - name: Build payload
         working-directory: unixnu
         run: |
-          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi"; then
+          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" > /tmp/payload.out 2>&1; then
+            tail -40 /tmp/payload.out | sed 's/^/::error::/'
             echo "::error::build payload failed"
             for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
               echo "--- $f ($(wc -c < "$f") bytes)"
@@ -192,6 +193,24 @@ jobs:
             done
             exit 1
           fi
+      - name: Build ShengUfs archive for probing
+        if: always()
+        working-directory: unixnu
+        run: |
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          echo "tree=$TREE"
+          [ -n "$TREE" ] || exit 0
+          if [ -f "$TREE/build/sheng-ufs/libShengUfs.a" ]; then
+            echo "already built"
+            exit 0
+          fi
+          export PATH="$(brew --prefix llvm)/bin:$PATH"
+          python3 "$TREE/scripts/build-arm-driver.py" ShengUfs > /tmp/shengufs.out 2>&1 || {
+            echo "::error::build-arm-driver ShengUfs failed"
+            tail -12 /tmp/shengufs.out | sed 's/^/::error::/'
+            exit 0
+          }
+          ls -la "$TREE/build/sheng-ufs/" 2>/dev/null | head -5
       - name: Probe storage bindings
         if: always()
         working-directory: unixnu
