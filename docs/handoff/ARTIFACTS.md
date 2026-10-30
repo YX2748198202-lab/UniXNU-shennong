@@ -1,5 +1,12 @@
 # 产物清单与获取方式
 
+**本项目目标：让 Xiaomi 14 Pro（shennong）运行 iOS 用户态。**
+
+底座固件用的是 UniXNU 官方唯一的 OS profile `ipados-17.7.11-21H461`
+（`unixnu/profiles/os/` 下没有 iOS profile），即 iPad Pro `iPad7,1` 的 IPSW。
+XNU 内核 / IOKit / BSD 层同源，iOS 与 iPadOS 只在用户态套件与 UI 层不同，
+所以这不影响「移植 iOS」这个目标；涉及具体文件时才会出现 `ipados-` 字样。
+
 本仓库**只存源码、文档和脚本**。所有 Apple 派生的二进制（`kernel.macho`、`payload.img`、boot image）**刻意不入库**——它们包含原厂 kernelcache 的代码段（prelink 后的 `kernel.macho` 里就有完整的 `com.apple.iokit.IOStorageFamily`），公开分发有版权风险。
 
 二进制留在测试设备上，用 `adb pull` 取，或用下面的脚本重建。
