@@ -11,13 +11,17 @@ Xiaomi 14 Pro（`shennong` / 23116PN5BC / SM8650 "pineapple"）的 UniXNU 移植
 |---|---|---|
 | A | 构建链与加载器（BootShim / FD / boot.img 打包）| ✅ 完成 |
 | B | UEFI 实机（UniXNU 菜单稳定显示）| ✅ 完成（v6）|
-| C | XNU 早期启动（AMFI / bsd_init / 内核栈）| ✅ **完成**：到达 `Failed to mount root device @IOKitBSDInit.cpp:984` |
+| C | XNU 早期启动（AMFI / bsd_init / 内核栈）| ✅ **完成**：内核实际运行，panic 前移到 `AppleARMCPU.cpp:111`（已达过 `IOKitBSDInit.cpp:984`）|
 | D | 中断 / CPU / 内存 | 🟡 stage 探针与 CPU0 已通过，8 核拓扑待验证 |
 | E | UFS 驱动 + iOS 根卷 | 🟡 进行中：NativeUfs 接入 CI 构建，根卷镜像已生成 |
 | F | 用户态（launchd / SpringBoard）| ⬜ 待开始 |
 | G | 硬件功能（显示 / 触控 / GPU / Wi-Fi / 音频）| ⬜ 待开始 |
 
 关键里程碑证据见 [docs/bringup.md](docs/bringup.md)。
+
+> **接手 / 继续移植请先读这两份**：
+> - [docs/handoff/BRINGUP-STATUS.md](docs/handoff/BRINGUP-STATUS.md) —— 当前真实进度、panic 根因、**已证伪的路线**（别再走）、剩余步骤
+> - [docs/handoff/ARTIFACTS.md](docs/handoff/ARTIFACTS.md) —— 产物清单与 sha256、二进制为何不入库、本地重建产物的方法
 
 ## 本仓库包含
 
