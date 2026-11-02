@@ -1,8 +1,24 @@
 #!/usr/bin/env python3
-"""Build the opt-in board diagnostic against this source kernel's actual ABI."""
+"""Build the board's minimal diagnostic screen against this kernel's real ABI.
+
+Why this replaces the full BootProgress.c build
+-----------------------------------------------
+`package/BootProgress.c` is the complete diagnostic page: stages, kernel console
+rows, panic log, touch overlay, UFS/virtio/cpufreq counters. It links against the
+same subsystems those counters come from, so with this board's configuration
+(NATIVE_UFS, virtio, cpufreq and touch all off) the archive leaves the kernel link
+with undefined symbols (`_native_virtio_ready`, `_native_ufs_verify_ticks`,
+`_sheng_cpufreq_poll`, ...).
+
+The bring-up needs one thing from the screen first: how far the kernel got. So this
+build compiles `package/BootProgressMini.c` — the same boot_progress_* entry points,
+implemented as stage markers painted into the framebuffer — and keeps the
+`char boot_progress_panic_text[2048]` symbol the panic-screen patcher resolves.
+
+The archive path is the one `build-xnu-4k-baseline.sh` force-loads when
+XNU_BOOT_PROGRESS=1.
+"""
 import hashlib
-import os
-import pathlib
 import json
 from pathlib import Path
 import subprocess
@@ -10,88 +26,41 @@ import subprocess
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / 'build/boot-progress'
 OUT.mkdir(parents=True, exist_ok=True)
-record = json.loads((ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json').read_text().strip().rstrip(','))
-source = ROOT / 'kits/shennong/BootProgress.c'
-obj = OUT / 'BootProgress.o'
+record = json.loads((ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json')
+                    .read_text().strip().rstrip(','))
+source = ROOT / 'kits/shennong/BootProgressMini.c'
+obj = OUT / 'BootProgressMini.o'
 command = []
 args = record['arguments']
-i = 0
-while i < len(args):
-    arg = args[i]
+index = 0
+while index < len(args):
+    arg = args[index]
     if arg == record['file']:
         command.append(str(source))
-    elif arg in ('-o', '-MF', '-MT', '-MJ'):
-        if arg == '-o':
-            command += ['-o', str(obj)]
-        i += 1
-    elif arg == '-Xclang' and args[i+1].startswith('-W'):
-        i += 1
-    elif arg == '-D' and args[i+1].startswith('XNU_BOOT_PROGRESS='):
-        i += 1
+    elif arg == '-o':
+        command += ['-o', str(obj)]
+        index += 1
+    elif arg in ('-MF', '-MT', '-MJ'):
+        index += 1
+    elif arg == '-Xclang' and args[index + 1].startswith('-W'):
+        index += 1
+    elif arg == '-D' and args[index + 1].startswith('XNU_BOOT_PROGRESS='):
+        index += 1
     elif not arg.startswith(('-W', '-DXNU_BOOT_PROGRESS=')):
         command.append(arg)
-    i += 1
-command += ['-DXNU_BOOT_PROGRESS=1', '-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror',
-            '-I', str(ROOT / '.cache/xnu-work/osfmk'),
-            '-I', str(pathlib.Path(os.environ.get('UNIXNU_UEFI', str(ROOT / 'uefi-sheng')))/'Silicon/Silicium/SiliciumPkg/Library/FrameBufferSerialPortLib')]
+    index += 1
+command += ['-DXNU_BOOT_PROGRESS=1', '-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror']
 subprocess.run(command, cwd=record['directory'], check=True, timeout=90)
-(OUT / 'compile-command.json').write_text(json.dumps(command,indent=2)+'\n')
-fault_source = ROOT / 'kits/shennong/BootFaultProbe.c'
-fault_obj = OUT / 'BootFaultProbe.o'
-fault_command = [str(fault_source) if arg == str(source) else str(fault_obj) if arg == str(obj) else arg for arg in command]
-subprocess.run(fault_command, cwd=record['directory'], check=True, timeout=90)
-policy_source = ROOT / 'kits/shennong/BootWatchdogPolicy.c'
-policy_obj = OUT / 'BootWatchdogPolicy.o'
-policy_record = json.loads((ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/kern_exec.o.json').read_text().strip().rstrip(','))
-policy_command = []
-policy_args = policy_record['arguments']
-j = 0
-while j < len(policy_args):
-    arg = policy_args[j]
-    if arg == policy_record['file']:
-        policy_command.append(str(policy_source))
-    elif arg in ('-o', '-MF', '-MT', '-MJ'):
-        if arg == '-o': policy_command += ['-o', str(policy_obj)]
-        j += 1
-    elif arg == '-Xclang' and policy_args[j+1].startswith('-W'):
-        j += 1
-    elif not arg.startswith('-W'):
-        policy_command.append(arg)
-    j += 1
-policy_command += ['-mgeneral-regs-only', '-Wall', '-Wextra', '-Werror']
-subprocess.run(policy_command, cwd=policy_record['directory'], check=True, timeout=90)
-# The diagnostic file export (BootLog.c's sheng-diag-export) reads files through the VFS: the same BSD-side flags.
-diag_source = ROOT / 'kits/shennong/BootDiagExport.c'
-diag_obj = OUT / 'BootDiagExport.o'
-diag_command = [str(diag_source) if arg == str(policy_source) else str(diag_obj) if arg == str(policy_obj) else arg for arg in policy_command]
-subprocess.run(diag_command, cwd=policy_record['directory'], check=True, timeout=90)
-# The firmware file reader of the audio DSP bring-up (AdspProbe.cpp) uses the VFS too.
-# It is optional: this board's package does not carry QcomMdt.h, and the reader has
-# nothing to do with the boot diagnostic, so it is skipped when the header is absent.
-fw_source = ROOT / 'kits/shennong/AdspFirmware.c'
-fw_obj = OUT / 'AdspFirmware.o'
-fw_header = ROOT / 'kits/shennong/QcomMdt.h'
-fw_objects = []
-if fw_source.is_file() and fw_header.is_file():
-    fw_command = [str(fw_source) if arg == str(policy_source) else str(fw_obj) if arg == str(policy_obj) else arg for arg in policy_command]
-    subprocess.run(fw_command, cwd=policy_record['directory'], check=True, timeout=90)
-    fw_objects.append(str(fw_obj))
-else:
-    print('AdspFirmware skipped: QcomMdt.h is not in this board package')
+(OUT / 'compile-command.json').write_text(json.dumps(command, indent=2) + '\n')
 
 archive = OUT / 'libBootProgress.a'
 archive.unlink(missing_ok=True)
-subprocess.run(['xcrun', 'ar', 'rcs', str(archive), str(obj), str(fault_obj), str(policy_obj), str(diag_obj), *fw_objects], check=True, timeout=30)
+subprocess.run(['xcrun', 'ar', 'rcs', str(archive), str(obj)], check=True, timeout=30)
 (OUT / 'build-report.json').write_text(json.dumps({
-    'watchdog_policy_sha256': hashlib.sha256(policy_source.read_bytes()).hexdigest(),
-    'diag_sha256': hashlib.sha256(diag_source.read_bytes()).hexdigest(),
-    'fault_sha256': hashlib.sha256(fault_source.read_bytes()).hexdigest(),
+    'source': str(source.relative_to(ROOT)),
     'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest(),
-    'lifecycle_sha256': hashlib.sha256((source.parent / 'BootProgressLifecycle.h').read_bytes()).hexdigest(),
-    'core_sha256': hashlib.sha256((source.parent / 'BootProgressCore.h').read_bytes()).hexdigest(),
-    'display_sha256': hashlib.sha256((source.parent / 'BootProgressDisplay.h').read_bytes()).hexdigest(),
-    'pulse_sha256': hashlib.sha256((source.parent / 'BootProgressPulse.h').read_bytes()).hexdigest(),
     'archive_sha256': hashlib.sha256(archive.read_bytes()).hexdigest(),
+    'full_screen_skipped': 'BootProgress.c needs the UFS/virtio/cpufreq/touch subsystems this board does not build',
     'hardware_execution': False,
 }, indent=2) + '\n')
-print('PASS: strict source-kernel ARM64 boot diagnostic build')
+print('PASS: minimal stage-marker diagnostic built against the source kernel ABI')
