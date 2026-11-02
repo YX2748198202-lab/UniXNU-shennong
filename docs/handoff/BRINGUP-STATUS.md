@@ -73,6 +73,26 @@ Fres  = 0x0000000000000b450
 
 **这条证据的意义**：内核真的跑起来了，UEFI/BootShim/内核镜像这条链是好的。
 
+### 2.0 2026-11-02 晚：修法 B 的真机对照（已实测）
+
+| 镜像 | 彩条 | 内核文字 |
+|---|---|---|
+| `Mu-shennong-smp.img`（未打补丁，`6b1be67c…`） | 绿、蓝 **2 条** | `"CPU configuration in device tree is invalid" @AppleARMCPU.cpp:111` + frames + pages/free |
+| `Mu-shennong-xpu.img`（B，`b8c96d62…`） | 绿、蓝、品红 **3 条** | **无** |
+| `Mu-shennong-xpu-skipgic.img`（B + `armcpu-skip-gic=1`，`5d3dd179…`） | 同 B | 同 B |
+
+判读：
+
+- **B 生效**：旧 panic 消失，启动比对照多走一个 stage。
+- 现在**不是 panic 而是静默挂起**：panic 屏（`scripts/xnu-panic-screen.c`）会从 `h/8`
+  往下清屏再写白字，而 B 的画面 `h/8` 以下整片纯黑、无清屏痕迹 → `panic()` 未被调用。
+- `skip-gic` 变体画面完全相同 → 挂起点**不在 `ArmCpu::prepareGic()`**。
+- 剩余可能：`IOCpu::start` 之后的 `ml_processor_register()`（启动核已被 XNU 的
+  `cpu_bootstrap()` 注册过，重复注册可能失败）、`initCPU(true)` 的中断注册，
+  或 IOKit 匹配处 `/cpus` 无人认领。
+
+因此下一步不是再猜，而是**恢复可观测性**：让内核把阶段画到屏上（诊断屏构建已在 CI 里）。
+
 ### 2.1 一个尚未解释的回归（本轮新发现，未验证）
 
 历史记录里 `Mu-shennong-6-pmgr2`（2026-10-27/28）停在
@@ -420,7 +440,15 @@ shennong 目前两者都没有。
 
 ## 8. 剩余工作
 
-### P0'｜把修法 B 打到镜像上，真机确认（需要设备）
+### P0'｜修法 B：已完成真机确认（2026-11-02），现转入「让挂起可见」
+
+B 已在真机确认生效（见 2.0 节）：`AppleARMCPU.cpp:111` 消失、启动多走一个 stage、
+`skip-gic` 对照排除 `prepareGic()`。当前卡点是**静默挂起**，没有文字可判读，
+所以下一步是把诊断屏（`CONFIG_XNU_BOOT_PROGRESS=y` + `boot-progress=2`）构建出来，
+让屏幕直接写出阶段行与内核控制台最后几行。构建侧的坑（`QcomMdt.h` 缺失、
+上游的 UFS/owner-root 守卫）已在 `f2f758c` 处理。
+
+原始流程（留档）：
 
 ```bash
 # 在你自己的电脑上（设备已插入）
