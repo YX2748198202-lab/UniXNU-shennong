@@ -24,6 +24,7 @@
   "build-libpthread-kernel.py",
   "build-sheng-platform-power.py",
   "build-mockfs-fixture.py",
+  "build-boot-progress.py",
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",
@@ -67,7 +68,7 @@
 "dram_size" = "0x10000000"
 "panic_screen" = true
 "timeout" = 0
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "sheng-pmgr=2", "native-ufs-probe=3"]
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3"]
 ["payload"."adt"]
 "tool" = "scripts/make-shennong-adt.py"
 "owned_memory_size" = "0x10000000"
