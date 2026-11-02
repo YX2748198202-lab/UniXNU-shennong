@@ -1,8 +1,15 @@
 # UniXNU-shennong 移植状态报告
 
-最后更新：2026-10-30
+最后更新：2026-11-02（本轮接手核查，无真机）
 设备：Xiaomi 14 Pro / codename `shennong` / model `23116PN5BC` / SM8650 (pineapple) / 12 GB RAM / 当前 Android 16
 仓库：https://github.com/YX2748198202-lab/UniXNU-shennong
+
+> **本轮结论先行**：历史交接里的「P0：验证 `sheng-smp=1` 能否过 `AppleARMCPU.cpp:111`」
+> **在源码层面不成立**——`sheng-smp` 在本机配置下只影响副核心，不可能改变启动核心
+> `cpu0` 的驱动归属（第 3.2 节有完整证据链）。已改为实施并自测上游两个机型验证过的
+> **修法 B：把 `AppleARMPlatform.kext` 里 `AppleARMCPU` personality 的 `IONameMatch`
+> 由 `cpu` 改为 `xpu`**，工具 `scripts/patch-applearmcpu-ioname.py` 已完成并通过离线自检。
+> 真机验证仍是唯一未完成项，需要设备在场。
 
 ---
 
@@ -12,12 +19,18 @@
 
 但必须说明一个客观事实，否则接手时会困惑：
 
-**UniXNU 官方 `profiles/os/` 目录下只有一个 OS profile —— `ipados-17.7.11-21H461`，iOS profile 数量为 0。**
+**UniXNU 官方 `profiles/os/` 目录下的 OS profile 全部是 iPadOS，iOS profile 数量为 0。**
+2026-11-02 核对（上游 `main`，tarball 下载）：
 
 ```
-$ ls unixnu/profiles/os/
+$ ls profiles/os/
 ipados-17.7.11-21H461
+ipados-26.5.2-23F84
+ipados-27.0.1-24A446
 ```
+
+> 历史交接写的是「只有一个 profile」。本轮核对是**三个**，但「没有 iOS profile」这一
+> 关键结论不变。
 
 `board.toml` 里 `os_profile = "ipados-17.7.11-21H461"`，`[ipsw]` 段下载的是 iPad Pro（`iPad7,1`）的
 `iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw`。
@@ -32,12 +45,13 @@ ipados-17.7.11-21H461
 
 ## 1. 当前状态（一句话）
 
-**UEFI → BootShim → XNU 内核这条链已经完全打通**，内核能真正运行并输出 panic。
-最新卡点在 `AppleARMCPU.cpp:111` 的 CPU 配置校验，根因已定位，修复镜像已产出但**尚未实测**。
+**UEFI → BootShim → XNU 内核这条链已打通**，内核真正运行并输出 panic。
+最新卡点是 `AppleARMCPU.cpp:111`「CPU configuration in device tree is invalid」；
+根因已定位到 IOKit 的 `/cpus` 驱动归属，修法 B 已实现并离线验证，**等真机确认**。
 
 ---
 
-## 2. 最新实测记录（决定性证据）
+## 2. 最新实测记录（决定性证据，2026-10-30）
 
 镜像：`Mu-shennong-mockfs-v0.img`（v0 header，203,726,848 B，sha256 `e46ea1f3…`）
 
@@ -57,20 +71,40 @@ Fpage = 0x000000000000bb4c
 Fres  = 0x0000000000000b450
 ```
 
-**这条证据的意义**：内核真的跑起来了。此前阶段 C 停在 `IOKitBSDInit.cpp:984`（挂根设备），
-现在停得更早（CPU 初始化）——说明内核镜像、BootShim、UEFI 这条链本身是好的。
+**这条证据的意义**：内核真的跑起来了，UEFI/BootShim/内核镜像这条链是好的。
+
+### 2.1 一个尚未解释的回归（本轮新发现，未验证）
+
+历史记录里 `Mu-shennong-6-pmgr2`（2026-10-27/28）停在
+`Failed to mount root device @IOKitBSDInit.cpp:984`，那是 **bsd_init 之后**的阶段；
+`vfs_mountroot` 远晚于 IOKit 匹配。所以那两个镜像在 CPU 这一关表现不同。
+
+本轮核对后发现**无法用 ADT 或 prelink roots 解释这个差异**：
+
+- `scripts/make-shennong-adt.py` 自加入起就只有 `cpu0`（`git log -p --follow` 只有一次新增）
+- `board.toml` 的 `[kernel.prelink] roots` 自首次提交（`03d1970`，2026-10-27）就包含
+  `com.apple.driver.AppleARMPlatform`
+- `configs/shennong_defconfig` 自首个 defconfig（`f82292d`）就 `CONFIG_XNU_ARMCPU=y`
+- `6-pmgr2` → `mockfs` 之间唯一的配置改动是 `dfd4690` 增加 `CONFIG_XNU_SOURCE_MOCKFS=y`
+
+**推断（未验证）**：`/cpus` 的归属取决于 IOKit 匹配顺序/同分竞态，内核镜像内容一变
+（mockfs + pthread 改变镜像布局与 personality 顺序）结果就翻转。这条推断如果成立，
+就说明**不能依赖 ArmCpu 靠 probe 分数赢下匹配**，必须是修法 B 这种确定性做法。
+
+**隔离办法（需要真机或 CI 各跑一次）**：
+- `MOCKFS=n` 重建（历史给的「回退隔离变量」），确认是否回到 `IOKitBSDInit.cpp:984`
+- 若回到，则 mockfs 与 CPU 匹配之间存在镜像布局耦合，B 仍然适用，但记录要写清
 
 ---
 
-## 3. 该 panic 的根因（有官方文档原文依据）
+## 3. 该 panic 的根因（两层，均已静态核实）
 
-`unixnu/docs/.vitepress/device-records/sirius.toml:121`：
+### 3.1 第一层：Apple ARM CPU 类的 personality 会前缀匹配 `cpu0`
 
-> With `sheng-smp=1` the native ArmCpu claims every /cpus nub; **without it the kernelcache
-> AppleARMCPU takes the nubs and panics with "CPU configuration in device tree is invalid"**
-> because it requires /cpus/max_cpus.
+官方 device record 原文（`unixnu@main`，本轮逐字核对）：
 
-同文件 `:422` 更详细：
+`docs/.vitepress/device-records/sirius.toml:437`
+（历史文档写 `:422`，本轮实际行号是 437，内容一致）：
 
 > AppleARMPlatform's CPU class matches cpu0..cpu7 because IODTPlatformExpert compares
 > IONameMatch **by prefix（'cpu' matches 'cpu0'）**, starts first, and panics with
@@ -81,23 +115,125 @@ Fres  = 0x0000000000000b450
 > IONameMatch from `cpu` to `xpu`** in the personality plist inside kernel.macho
 >（equal length, nothing moves）.
 
-**本项目的实际情况**：`board.toml:70` 的 kernel_args 是
+同文件 `:121`：
+
+> With `sheng-smp=1` the native ArmCpu claims every /cpus nub; **without it the kernelcache
+> AppleARMCPU takes the nubs and panics** ... because it requires /cpus/max_cpus.
+
+本机 ADT（`scripts/make-shennong-adt.py:80-82`）里 `/cpus` 只有一个子节点：
 
 ```
--v serial=3 debug=0x14e armcpu-diagnostics=1 sheng-pmgr=2 native-ufs-probe=3
+cpu0: state=running, reg=0, device_type=cpu, compatible=qcom,kryo, timebase-frequency=19200000
 ```
 
-**缺少 `sheng-smp=1`**，这就是 panic 的直接原因。
+**没有** `/cpus/max_cpus`，也没有每核的 `cpu-id` / `interrupts` / `function-*`。
+也就是说 AppleARMCPU 一旦拿到这个 nub，它要校验的输入全都不存在 → 必然 panic。
+（推断：ADT 缺属性是 panic 的**直接输入条件**；本轮无真机，未逐字节对照原厂
+`DeviceTree.j120ap.im4p`。）
 
-**两种修法**：
+### 3.2 第二层：为什么 `sheng-smp=1` 解决不了这件事（本轮核心结论）
 
-- **A（已产出镜像，未验证）**：kernel args 加 `sheng-smp=1`，让原生 ArmCpu 抢占 `/cpus` nub
-- **B（未做，更硬）**：改写 `kernel.macho` 里 AppleARMCPU personality 的 `IONameMatch`，
-  `cpu` → `xpu`（等长替换，不移动任何字节）。sirius 最终用的是 B，因为 A 有时打不赢 probe 竞争
+ArmCpu 组件是 `UniXNU/ArmCpu`，`board.toml` 里 `component:ArmCpu` 由上游
+`components.toml` 固定到 revision `93a5030c5d983d0ef90f0fca93879d6e36ad1ba8`。
+该 revision 的 `ArmCpu.cpp:209-227`（本轮逐行核对）：
+
+```cpp
+IOService *ArmCpu::probe (IOService *provider, SInt32 *score)
+{
+  ... device_type must be "cpu", reg must be >= 4 bytes ...
+  memcpy (&id, reg->getBytesNoCopy (), sizeof (id));
+  if (ml_get_cpu_number (id) != ml_get_boot_cpu_number ()) {   // 只在“不是启动核”时
+    unsigned smp = 0;
+    PE_parse_boot_argn ("sheng-smp", &smp, sizeof (smp));
+    if (smp == 0 || ml_get_cpu_number (id) < 0 || ml_get_cpu_number (id) >= ARMCPU_SMP_SLOTS) {
+      return nullptr; // Secondary startup is opt-in (sheng-smp=1).
+    }
+  }
+  return IOCPU::probe (provider, score);   // 启动核无条件进入这里
+}
+```
+
+也就是说：
+
+- `sheng-smp` 只控制**副核心**的 `probe` 是否被拒绝；
+- 对启动核 `cpu0`（`reg = 0`，`ml_get_cpu_number(0) == ml_get_boot_cpu_number() == 0`）
+  `sheng-smp` **完全不参与判断**；
+- `ArmCpu.cpp:439` 的 `start()` 里读 `sheng-smp` 只用于 `gSmpWanted` / 副核心 `drainPending`，
+  同样不改变启动核的归属；
+- 本机 ADT **只暴露一个 CPU 节点**，没有副核心节点可启动。
+
+**结论（静态证明，非真机实测）**：只加 `sheng-smp=1`、ADT 不变，`/cpus` 的竞争关系
+一个字都不会变。因此待测的 `Mu-shennong-smp.img` 极可能**复现同一个 panic**。
+这条结论对「ArmCpu 到底有没有赢下 cpu0」两种情形都成立：
+
+- 若 AppleARMCPU 赢了 → 加 `sheng-smp` 不影响竞争，照样 panic；
+- 若 ArmCpu 因为 `ml_get_cpu_number(0) < 0` 之类的理由拒绝了 cpu0 → `sheng-smp` 分支里
+  仍然会 `return nullptr`，也照样 panic。
+
+所以「加 `sheng-smp=1` 就能过这一关」这个前提，可以不用真机就否掉。
+
+### 3.3 两条可用修法
+
+| | 做法 | 证据 |
+|---|---|---|
+| **B（已实现，推荐）** | 改 `kernel.macho` 里 `AppleARMPlatform.kext` 的 `AppleARMCPU` personality，`IONameMatch` `cpu` → `xpu`（等长，1 字节差） | rmx1971 实测记录：`docs/devices/rmx1971.md:142`「rewritten cpu -> xpu at payload assembly time so the native ArmCpu owns /cpus」、`:494`「Kernel patches applied at assembly: ... the IONameMatch cpu->xpu rewrite」；sirius/sirius-huajifruit/sirius-dddqmmx/sirius-yooglery 同 |
+| **C（备选，未实现）** | 直接改 AppleARMCPU 代码，绕过 `_validateConfiguration` | mondrian-mzyxsl 记录：`docs/devices/mondrian-mzyxsl.md:149`「the AppleARMCPU multi-CPU validation is bypassed by the kext patch on `_validateConfiguration`」；需要符号地址解析，未做 |
+
+**为什么选 B 而不是「给 ADT 补 `max_cpus`」**：补属性是让 **Apple 的** CPU 管理代码
+跑起来，而 UniXNU 的设计是用原生 ArmCpu 取代它（GIC/定时器/PSCI 全在 ArmCpu
+里）。补齐 Apple 属性只会让它继续往前走，然后在更后期以更难诊断的方式失败。
+上游所有能进用户态的机型都选 B。
+
+### 3.4 修法 B 的实现与验证（本轮完成）
+
+`scripts/patch-applearmcpu-ioname.py`：
+
+- 解析 Mach-O，找 `__PRELINK_INFO` **segment**（与上游
+  `kits/XnuPrelink/emit_prelink.py:272` 的产出方式一致：`ET.tostring(...)` 序列化、
+  根节点是 `<dict>`、**没有 `<plist>` 包裹**、末尾补 `\0`）；
+- 用 ElementTree 解析，定位 `_PrelinkInfoDictionary` 里
+  `com.apple.driver.AppleARMPlatform` 的 `IOKitPersonalities` → `AppleARMCPU`；
+- 只改该 personality **所在 `<dict>` 内**的那个 `IONameMatch` 值，写回同一位置；
+- 逐项读回校验：结构 diff 必须**恰好一处**、路径必须是
+  `…/IOKitPersonalities/AppleARMCPU/IONameMatch`、值必须是 `cpu`→`xpu`、
+  文件长度不变、变化的字节数必须等于 1。
+
+支持三种输入（都自带读回校验）：
+
+```bash
+# v0 boot image：抽 payload → 改 kernel.macho → 回写 → 用原 header 重打包（输出等长）
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img \
+    --out Mu-shennong-xpu.img --report Mu-shennong-xpu.json
+
+# payload FAT 卷
+python3 scripts/patch-applearmcpu-ioname.py --payload payload.img --out payload-xpu.img
+
+# 裸 kernel.macho
+python3 scripts/patch-applearmcpu-ioname.py --macho kernel.macho --out kernel-xpu.macho
+
+# 只看不改
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img --check
+
+# 不需要任何产物的离线自检
+python3 scripts/patch-applearmcpu-ioname.py --self-test
+```
+
+离线自检覆盖 3 个夹具（手写 XML、上游 `emit_prelink` 序列化格式、`<plist>` 包裹 +
+`IONameMatch` 为数组），并验证：另一个 kext 的同名 `"cpu"` 诱饵不动、`__TEXT`
+里的诱饵字节不动、二次运行是 no-op、缺少 AppleARMPlatform 时报错而不是静默通过。
+实际输出与哈希记在 [VERIFICATION-2026-11-02.md](VERIFICATION-2026-11-02.md)。
+
+**未验证**：真实 `kernel.macho` 上的效果（产物不在本机），以及真机现象变化。
+**副作用（已实测，已消除）**：`mcopy` 回写默认会改 payload FAT 目录项的时间戳。
+现在读写都用 `mcopy -p -m` 保留原 FAT 时间戳，因此**整个产物相对输入只差 1 个字节**
+（离线夹具上实测：`payload.img` 与 `payload-xpu.img` 只在偏移 `0x4443b`（279611）差
+`c`→`x`，长度相同，跨时间重跑哈希一致）。
 
 ---
 
-## 4. 待实测的修复镜像
+## 4. 待测镜像与新镜像构造
+
+### 4.1 历史待测镜像（`sheng-smp=1`，**预期无效**）
 
 ```
 Mu-shennong-smp.img
@@ -106,66 +242,76 @@ sha256 6b1be67c03cafd75d77559297e9ac12f8e6bbaabff5b6ba3720f75befdba4842
 header: v0  ksize=2393623  kaddr=0x8000  rsize=201326592  raddr=0x1000000  page=4096
 ```
 
-构造方式：沿用 `Mu-shennong-6-pmgr2.img` 的 v0 头 + kernel 区（前 2,400,256 字节），
-ramdisk 段换成改过 args 的 payload。改动仅一处（payload 内 `/EFI/UniXNU/unixnu.toml`）：
+按第 3.2 节，它不会改变 `AppleARMCPU.cpp:111`。**仍然建议测一次**，因为它是
+「B 之前」的对照，且能顺便验证 2.1 那个未解释的回归。
 
-```
-args = "-v serial=3 debug=0x14e armcpu-diagnostics=1 sheng-smp=1 sheng-pmgr=2 native-ufs-probe=3"
+### 4.2 本轮产出的新镜像（待生成，产物在设备上）
+
+```bash
+adb pull /sdcard/Download/Mu-shennong-smp.img .
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img \
+    --out Mu-shennong-xpu.img --report Mu-shennong-xpu.json
+fastboot boot Mu-shennong-xpu.img        # 仅启动，不写分区
 ```
 
-**未验证**：`sheng-smp=1` 是否真能让 ArmCpu 抢到 nub。若仍是同一 panic，直接改用修法 B。
+`--image` 模式会自动核对：输出字节数与输入相同、v0 header 的 8 个字段逐项不变、
+payload 读回一致。**这仍然需要你本人在设备旁执行**（本会话无设备）。
+
+### 4.3 CI 侧
+
+`kernel.yml` 已新增 `Patch AppleARMCPU IONameMatch (cpu -> xpu)` 步骤，在
+`Build payload` 之后：
+
+- 对 `out/shennong/.../payload/payload.img` 打补丁，产出 `payload-xpu.img` +
+  `payload-xpu.json`，并上传；
+- 再把 `payload-xpu.img` 以 `--check` 重跑一次，日志里必须出现
+  `"status": "already-patched"`（幂等性证据）；
+- 补丁失败会让 job 变红（不会静默产出未打补丁的镜像）。
+
+拿到 `payload-xpu.img` 后，**若没有 boot image 模板**，仍用
+`scripts/repack-v0-bootimg.py` 配 `shennong/Mu-shennong-6-pmgr2.img` 打包；
+若设备上有 `Mu-shennong-smp.img`，直接用 4.2 的 `--image` 模式更简单（一步到位）。
 
 ---
 
-## 5. boot image 打包（关键，官方流程有缺口）
+## 5. boot image 打包（官方流程的缺口，本轮补充核实）
 
 **`unixnu payload` 产出的是 FAT 卷（ramdisk 内容），不是可刷的 boot image。**
-`payload.py` 第 1 行与末行都写明：
+`payload.py` 首行与末行都写明。`kernel.yml` 里没有 `bootimg` 步骤。
 
-```
-"""Boot payload: the FAT volume that becomes the ramdisk of the boot image."""
-log('next: run ./unixnu bootimg to pack this payload into the boot image')
-```
+**`unixnu bootimg` 的真实行为（本轮读源码核实，`scripts/unixnu/bootimg.py`）**：
 
-而 `kernel.yml` 里**没有 `bootimg` 步骤**，所以 CI artifact 直接 `fastboot boot` 必然失败。
+1. `DEFAULTS = {'header_version': 0, ...}` —— **默认就是 v0**；
+2. 实际值 `values.update(config.get('boot_image', {}))` 来自
+   `<uefi>/Resources/Configs/<[firmware].config>.toml`，再被 `board.toml` 的
+   `[bootimg.image]` 覆盖（`values.update(ctx.board.get('bootimg', {}).get('image', {}))`）；
+3. 所以「bootimg 生成 v4」**不是代码行为，而是设备配置的选择**；
+4. `verify()`（`bootimg.py:122-123`）用 v0 布局解包并比较 `kernel_address`（偏移 12），
+   在 v4 头里那个位置是 `os_version`，因此对 v4 必然抛
+   `boot image header does not match the requested parameters`——**但文件已正确写出**。
 
-**`unixnu bootimg` 有两个坑**：
+**为什么 CI 还是不能加 bootimg 步骤（本轮新证据）**：
+`unixnu bootimg` 会 `load_toml(uefi/Resources/Configs/shennong.toml)`。本轮用
+GitHub API 核对：
 
-1. 它生成 **v4 header**。BootShim 需要 v0 header 的 `ramdisk_addr`（`0x1000000`），
-   v4 没有这个字段 → UEFI 找不到 payload FAT 卷 → UniXNU `no boot entry found`
-   → UEFI `Failed to Find an Operating System`
-2. 它的 `verify()`（`bootimg.py:122-123`）用 **v0 布局**解析 v4 镜像，必然抛
-   `boot image header does not match the requested parameters`，**但文件已经正确写出**
+- `GET /repos/UniXNU/uefi-sheng/contents/Resources/Configs/shennong.toml?ref=sheng` → **404**
+- `Resources/Configs/` 目录里有 87 个机型配置（`sheng.toml`、`houji` 没有、`pagani`、
+  `pipa`、`sweet_k6a` …），**没有 `shennong.toml`**
+- `BootShim/BootShim.S` 与 `Resources/Scripts/mkbootimg.py` 在 `uefi-sheng@sheng` 里**存在**
 
-**可靠打包法（已验证）**：用 `scripts/repack-v0-bootimg.py`
-复用已知良好镜像的 v0 头 + kernel 区，追加新的 ramdisk：
+结论：shennong 的 Mu-Silicium 设备层（`Resources/Configs/shennong.toml` + FD + DTB）
+既不在本仓库，也不在 `uefi-sheng@sheng`。它当初是在另一处本地环境构建的。
+**要把 bootimg 自动化，先要把这一层固化进仓库**（或把 `[firmware]` 指向一个确实含
+`shennong.toml` 的 checkout）。在那之前，`[bootimg.image]` 写什么都不起作用。
 
-```bash
-python3 scripts/repack-v0-bootimg.py \
-    --template shennong/Mu-shennong-6-pmgr2.img \
-    --payload  payload.img \
-    --out      Mu-shennong-new.img
-```
+**可靠打包法（已验证）**：`scripts/repack-v0-bootimg.py`，复用已知良好镜像的 v0 头 +
+kernel 区，追加新 payload。前提是新 payload 必须**正好 201,326,592 字节**。
 
-前提：新 payload 必须**正好 201,326,592 字节**（`unixnu payload` 用固定 size_mib 生成，天然对齐）。
-
-模板必须满足：
-
-```
-ANDROID! magic
-header_version = 0
-page = 4096
-kernel_size  = 2,393,623      (gzip 后的 BootShim + UEFI FD)
-kernel_addr  = 0x8000
-ramdisk_size = 201,326,592
-ramdisk_addr = 0x1000000
-```
-
-**若要改用官方 `bootimg`**，还需满足两个前置条件：
-
-- `board.toml` 的 `["bootimg"]` 里 `dtb_node` 必须清空成 `[]`，否则 `fdtput` 报
+**若要改用官方 `bootimg`**（本机有 Mu-Silicium shennong checkout 时）还需：
+- `board.toml` 的 `["bootimg"]` 里 `dtb_node` 清空成 `[]`，否则 `fdtput` 报
   `Error at 'splash_region': FDT_ERR_EXISTS`（dtb 里已有该节点）
-- SoC feed 必须就位：`--local <dir>` 下需要有 `socs/sm8550/`，否则报 `SoC sm8550 is not cached`
+- `--local <dir>` 下需要有 `socs/sm8550/`，否则报 `SoC sm8550 is not cached`
+- 要在 `board.toml` 加 `["bootimg"."image"] "header_version" = 0` 才能得到 v0
 
 ---
 
@@ -173,14 +319,16 @@ ramdisk_addr = 0x1000000
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| A | 构建链（XNU 编译 / 链接） | ✅ 完成，CI 多轮成功 |
+| A | 构建链（XNU 编译 / 链接） | ✅ 完成，CI 多轮成功（最近 run 40868470568 / #87） |
 | B | UEFI 菜单（Device Tree / ADT 四道校验） | ✅ 完成 |
-| C | XNU 内核启动 | ✅ **已达成**：内核运行，panic 前移到 `AppleARMCPU.cpp:111` |
+| C | XNU 内核启动（AMFI / bsd_init / 内核栈） | ✅ 已达成 |
 | D | prelink（合并原厂 IOStorageFamily） | ✅ 完成 |
-| E1 | payload / boot image 打包 | ✅ 完成（CI 仍缺 `bootimg` 步骤，待补） |
-| E2 | UFS 块设备 ABI 绑定（11 个 `IOBlockStorageDevice` 符号） | ❌ **静态路线已证伪** |
-| E3 | mockfs / RAM-only 根卷 | ⬜ 未开始（panic 发生在更早阶段，mockfs 尚未被验证） |
-| E4 | iOS 用户态（launchd） | ⬜ 未开始 |
+| E1 | payload / boot image 打包 | 🟡 payload 完成；CI 现会产出打过 B 的 payload；boot image 仍缺设备层（见 §5） |
+| E2 | UFS 块设备 ABI 绑定（11 个 `IOBlockStorageDevice` 符号） | ❌ 静态路线已证伪 |
+| E2.5 | `/cpus` 归属（修法 B） | 🟡 已实现并离线自检，**等真机** |
+| E3 | mockfs / RAM-only 根卷 | ⬜ 未验证（panic 发生在更早阶段） |
+| E4 | 8 核 SMP | ⬜ 未开始（ADT 现只有 cpu0） |
+| E5 | iOS 用户态（launchd） | ⬜ 未开始 |
 | F | 硬件功能（显示 / 触控 / GPU / Wi-Fi / 音频） | ⬜ 未开始 |
 
 ---
@@ -244,21 +392,39 @@ shennong 目前两者都没有。
 
 **结论**：「跑到 UI」这个目标**不需要**可写 UFS 真根卷。
 
+### 7.5 「加上 `sheng-smp=1` 就能过 AppleARMCPU」（本轮证伪）
+
+见第 3.2 节：`sheng-smp` 只作用于副核心的 probe 门控，启动核 `cpu0` 无条件进入
+`IOCPU::probe`；本机 ADT 又只有一个 CPU 节点。所以这条路线**数学上不可能改变结果**。
+
 ---
 
 ## 8. 剩余工作
 
-### P0｜验证 `sheng-smp=1`
-刷 `Mu-shennong-smp.img`：
+### P0'｜把修法 B 打到镜像上，真机确认（需要设备）
 
-- 过了 `AppleARMCPU.cpp:111` → 继续 P1
-- 同一 panic → 改用**修法 B**（改写 `kernel.macho` 内 AppleARMCPU personality 的 IONameMatch）
-- panic 更早 / 黑屏 → 回退 `MOCKFS=n` 重建，隔离变量
+```bash
+# 在你自己的电脑上（设备已插入）
+adb devices                                    # 应看到 23116PN5BC
+adb pull /sdcard/Download/Mu-shennong-smp.img .
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img --check
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img \
+    --out Mu-shennong-xpu.img --report Mu-shennong-xpu.json
+fastboot boot Mu-shennong-xpu.img
+```
+
+判读：
+
+- panic 不再是 `AppleARMCPU.cpp:111` → **本轮验收达成**，记录新的 panic 点
+  （预期回到 `IOKitBSDInit.cpp:984`，或进 mockfs 的更后面）
+- 仍是同一个 panic → B 在该镜像上没生效。先看 `--check` 是否真的找到并改了
+  （工具会打印 `offset`、`status`、`changed_bytes`），再看 `payload` 里的
+  `kernel.macho` 是否被 UniXNU loader 真正加载（对比 sha256）
+- panic 更早 / 黑屏 → 回退 `MOCKFS=n` 重建，把两个变量分开
 
 ### P1｜mockfs 验证（E3）
 
-mockfs 已**确实链接进内核**（`kernel.macho` 里可查到 `mockfs_fixture.a`、`mockfs_vfsops`、
-`mockfs_vnops`、`mockfs_fsnode_*`、`mockfs_mountroot` 相关符号）。两个已知缺口：
+mockfs 已**确实链接进内核**。两个已知缺口：
 
 - `build-mockfs-fixture.py:54` 自称 `"Offline minimal-root fixture only"` —— **只有代码，没有真实 launchd**
 - `mockfs-test-file.patch` 定义 `struct mockfs_test_header`
@@ -266,31 +432,23 @@ mockfs 已**确实链接进内核**（`kernel.macho` 里可查到 `mockfs_fixtur
   `/sbin/launchd` 与 `/probe.bin` 打进 fixture。这两个文件需从固件的 `Cryptex1,SystemOS` 提取
 
 **触发机制**：`mockfs_vfsops.c` 提供 `mockfs_mountroot()`，XNU 的 `vfs_mountroot()` 会自动遍历尝试，
-**不需要额外 bootarg**。`vfs_conf.c` 在 `-DMOCKFS=1` 时会把它注册进 vfsconf
-（`build-xnu-4k-baseline.sh:252` 的 `vfs_conf.o_CFLAGS_ADD=-DMOCKFS=$MOCKFS_MODE`）。
+**不需要额外 bootarg**。`vfs_conf.c` 在 `-DMOCKFS=1` 时会把它注册进 vfsconf。
 
-`build-xnu-4k-baseline.sh` 相关行：
+### P2｜8 核 SMP（E4，修法 B 之后）
 
-- `236`: `MOCKFS_MODE=${XNU_SOURCE_MOCKFS:-0}`
-- `241`: `MOCKFS_MODE=1` 要求 `XNU_ARMCPU=1 && XNU_SOURCE_PTHREAD=1`
-- `738-742`: `MOCKFS_MODE=1` 时硬检查 `build/mockfs-fixture/libmockfs_fixture.a` 并 `-Wl,-force_load`
+现在 ADT 只有 `cpu0`。要跑 8 核需要同时满足（参考同 SoC 的 houji 记录
+`archive/docs/cpu-scheduling.md` 与 rmx1971）：
 
-### P2｜把 `bootimg` 补进 CI
+1. ADT 暴露 8 个 `cpu*` 节点，`reg` = 实测 affinity（SM8650：MPIDR `0x81000000 + n*0x100`，
+   即 `0, 0x100, … 0x700`；2×A520 + 5×A720 + 1×X4）
+2. kernel args：`sheng-smp=1 cpus=8 armcpu-self-ipi=1 armcpu-timer-intid=…`
+3. ADT 与驱动接收到的核数必须一致（否则 ArmCpu 会 panic 而不是少核启动）
 
-当前 `kernel.yml` 步骤顺序：
-
-```
-Check out UniXNU → uefi-sheng → device → setup-python → Install host tools → Fetch device modules
-→ Defconfig → Build kernel → Report failure details → Build ShengUfs archive → Build prelink
-→ Probe storage bindings → Build payload → Probe kext symbol table → Upload kernel
-```
-
-**缺 `unixnu bootimg`**，也**缺 `unixnu firmware`**（fd 来源）。目前 fd 是既有产物
-`uefi-sheng/Build/shennongPkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd`。
+**必须先有 B**，否则 Apple 的 CPU 类仍然抢 nub。
 
 ### P3｜UFS 块设备（E2）+ 真根卷
 
-只有 P0–P2 都过不去、或确实需要真根卷时才回到这里。可选路径：
+只有前面都过不去、或确实需要真根卷时才回到这里。可选路径：
 
 - **KDP 通道**：给 shennong 做网卡或 USB device 驱动，建立 lldb/KDP，拿真实地址
   （工作量大，一劳永逸）
@@ -303,17 +461,20 @@ Check out UniXNU → uefi-sheng → device → setup-python → Install host too
 
 ### 产物（在测试设备 shennong 上，不入库，原因见 ARTIFACTS.md）
 
+下表是**上一轮（2026-10-30）的记录**，本轮无设备，**未复核**。
+
 | 文件 | 大小 | sha256 | 说明 |
 |---|---|---|---|
-| `Mu-shennong-smp.img` | 203,726,848 | `6b1be67c…` | **待测**，含 `sheng-smp=1` |
+| `Mu-shennong-smp.img` | 203,726,848 | `6b1be67c…` | 含 `sheng-smp=1`；按 §3.2 预期无效，可作对照 |
 | `Mu-shennong-mockfs-v0.img` | 203,726,848 | `e46ea1f3…` | 已测，panic 于 `AppleARMCPU.cpp:111` |
 | `Mu-shennong-mockfs.img` | 203,730,944 | — | **废弃**，v4 头，UEFI 找不到 ramdisk |
 | `payload-smp.img` | 201,326,592 | — | 已加 `sheng-smp=1` 的 FAT 卷 |
-| `payload-mockfs.img` | 201,326,592 | `a1ef77bf…` | CI 原始产物 |
+| `payload-mockfs.img` | 201,326,592 | `a1ef77bf…` | CI 原始产物（run #87） |
 | `kernel-mockfs.macho` | 51,970,048 | `c527b761…` | prelink 后的内核，含 mockfs |
-| `shennong/Mu-shennong-{0..6}*.img` | 各 203,726,848 | — | 历史镜像，**全部能进内核**，`6-pmgr2` 最新 |
+| `shennong/Mu-shennong-{0..6}*.img` | 各 203,726,848 | — | 历史镜像，`6-pmgr2` 最新（v0 打包模板） |
+| `shennong/SILICIUM_UEFI.fd` | 3,145,728 | — | UEFI 固件卷（`0x300000`） |
 
-### 完整哈希
+### 完整哈希（上一轮记录）
 
 - `kernel.macho`（prelink 后）：`1c5af7fa86820ddc457e7c60532025ee6c9ab7278353bdde28192aa74ffe8b7b`（早期）
   / `c527b761218afecbc7b59d870004058c541adb3473090bd423cdae67a0460e08`（run #87）
@@ -329,39 +490,37 @@ Check out UniXNU → uefi-sheng → device → setup-python → Install host too
 
 **必须有 macOS + Xcode 才能做的**
 
-- XNU 编译（`build-xnu-4k-baseline.sh` 依赖 Apple SDK / Xcode toolchain）
+- XNU 编译（`build-xnu-4k-baseline.sh` 依赖 Apple SDK / Xcode toolchain；
+  上游默认 XNU tag 是 `xnu-10063.141.1`）
 - 官方推荐路径：GitHub Actions 的 `macos` runner（仓库 `kernel.yml` 已就绪）
 
 **Linux / 任意平台都能做的**
 
 - UEFI 固件卷（EDK2 + clang，需 Mu_Basecore 与 uefi-sheng）
 - payload 打包（Python + mtools）
-- boot image 拼装（纯 Python，见 `scripts/repack-v0-bootimg.py`）
-- payload 内文件修改（mtools，见 `scripts/patch-payload-args.py`）
+- boot image 拼装（纯 Python：`scripts/repack-v0-bootimg.py`）
+- payload / kernel 内文件修改（mtools + 本仓库脚本）
+- kernel.macho 的 static 检查与打补丁（`scripts/patch-applearmcpu-ioname.py`）
 - 内核 / payload 的静态检查（`strings`、`llvm-nm`、段表解析）
 
 **前置依赖**
 
-- Python 3.9+
+- Python 3.9+（本仓库脚本只用标准库）
 - `mtools`（`mcopy` / `mtype` / `mdir`）
 - `clang` + `llvm-objcopy` + `llvm-nm`
 - 可选：`aarch64-linux-gnu-gcc`（某些组件）
 
 ---
 
-## 11. 关于本次会话的完成环境（与项目无关，接手者可忽略）
+## 11. 本次会话的环境（与项目无关，接手者可参考）
 
-这一轮的排查、打包、推送是在**一台 Android 手机的 PRoot Ubuntu 容器里**做的，
-环境限制很多：没有 Xcode、`git clone` 因 TLS 问题经常失败、GitHub 的 artifact Blob 域名
-不可达。因此在那个环境里被迫走了几条绕路：
+2026-11-02，本会话在 **WSL2 Ubuntu 24.04** 上，**没有设备、没有 macOS**：
 
-- XNU 编译全部放到 GitHub Actions
-- artifact 先取 302 Location，再用能连通的方式下载
-- 文档/脚本用 GitHub Contents API 逐文件推送
-- boot image 用纯 Python 拼接代替 `mkbootimg`
-
-**这些绕路只是那个环境的产物，不是项目的限制。** 在正常电脑上（macOS 或完整 Linux），
-这些工作都可以直接做，不需要上述变通。
+- 网络：`github.com:443` 与 `raw.githubusercontent.com` **不可达**；
+  `codeload.github.com` 与 `api.github.com` **可达**。取上游源码用
+  `https://codeload.github.com/<repo>/tar.gz/<ref>`，查文件/提交用 GitHub API。
+- 因此本轮**无法 `git push`**（见提交说明），也无法跑 GitHub Actions。
+- 所有结论要么来自仓库内容，要么来自下载的上游源码；真机行为一律未测。
 
 ---
 
@@ -377,6 +536,11 @@ Check out UniXNU → uefi-sheng → device → setup-python → Install host too
 - 8 核：2×A520@2.27GHz + 5×A720 + 1×X4@3.30GHz
 - Adreno 750（rev 2770）
 - 官方 uefi_a 入口 `0xA7000000`，FD_BASE `0xA7100000`，FD_SIZE `0x300000`
+
+> 与 ADT 的对应关系（本轮核对）：`/arm-io` 的 `ranges` 把 GIC 窗口基址定在
+> `0x17000000`，`/arm-io/intc` 的 `reg` 给 dist 偏移 `0x100000`、redist 偏移
+> `0x180000`，于是 dist=`0x17100000`、redist=`0x17180000`，与上表实测值一致；
+> `redistributor-stride = 0x40000`。这三项都在 `scripts/make-shennong-adt.py` 里。
 
 ---
 

@@ -2,8 +2,9 @@
 
 **本项目目标：让 Xiaomi 14 Pro（shennong）运行 iOS 用户态。**
 
-底座固件用的是 UniXNU 官方唯一的 OS profile `ipados-17.7.11-21H461`
-（`unixnu/profiles/os/` 下没有 iOS profile），即 iPad Pro `iPad7,1` 的 IPSW。
+底座固件用的是 UniXNU 官方的 OS profile `ipados-17.7.11-21H461`
+（`unixnu/profiles/os/` 下 2026-11-02 核对是三个 ipados-*，**没有 iOS profile**），
+即 iPad Pro `iPad7,1` 的 IPSW。
 XNU / IOKit / BSD 层同源，iOS 与 iPadOS 只在用户态套件与 UI 层不同，
 所以这不影响「移植 iOS」这个目标；涉及具体文件时才会出现 `ipados-` 字样。
 
@@ -15,7 +16,8 @@ boot image）**刻意不入库**——它们包含原厂 kernelcache 的代码�
 
 ## 一、设备上现在只保留三个文件
 
-2026-10-30 做过一次清理，中间产物全部删除。留下的三个各有不可替代的作用：
+2026-10-30 做过一次清理，中间产物全部删除。留下的三个各有不可替代的作用
+（下表是**上一轮的记录**；2026-11-02 的会话没有设备，未复核文件是否还在这三个位置）：
 
 | 路径 | 大小 | 作用 |
 |---|---|---|
@@ -83,7 +85,11 @@ artifact shennong-kernel-1  21,832,980 bytes
 **不是必需品**——上面第二节的方法不依赖它。
 
 注意：**artifact 里的 `payload.img` 不能直接 `fastboot boot`**，它是 FAT 卷不是 boot image；
-CI 里没有 `bootimg` 步骤。
+CI 里没有、也暂时无法加 `bootimg` 步骤（原因见 4.3，本轮已核实）。
+
+2026-11-02 起，`Build payload` 之后多了一步 `Patch AppleARMCPU IONameMatch (cpu -> xpu)`：
+同一目录会多出 `payload-xpu.img` 与 `payload-xpu.json`，两者都会上传。拿到后照 4.2 打包，
+或者直接对设备上的旧镜像用 4.4 的一步到位命令。
 
 ---
 
@@ -120,32 +126,81 @@ ramdisk_size  = 201,326,592    （必须与 payload 等大，header 才不用改
 ramdisk_addr  = 0x1000000
 ```
 
-### 4.3 为什么不用官方 `unixnu bootimg`
+### 4.3 为什么不用官方 `unixnu bootimg`（2026-11-02 读源码更正）
 
-两个坑：
+**v4 header 不是代码行为，而是设备配置的选择。** `unixnu/scripts/unixnu/bootimg.py`：
 
-1. 它生成 **v4 header**。BootShim 需要 v0 的 `ramdisk_addr`（`0x1000000`），v4 没有这个字段
-   → UEFI 找不到 payload FAT 卷 → `no boot entry found` → `Failed to Find an Operating System`
-2. 它的 `verify()`（`bootimg.py:122-123`）用 v0 布局解析 v4 镜像，必然抛
-   `boot image header does not match the requested parameters`，**但文件已正确写出**
+```python
+DEFAULTS = {'header_version': 0, 'base': 0, 'kernel_offset': 0x8000, 'tags_offset': 0x1e00000, 'pagesize': 4096}
+def settings(ctx, uefi):
+    config = load_toml(uefi / 'Resources/Configs' / f'{fw["config"]}.toml') if fw.get('config') else {}
+    values = dict(DEFAULTS); values.update(config.get('boot_image', {}))
+    values.update(ctx.board.get('bootimg', {}).get('image', {}))
+```
 
-若确实要用，还需满足：
+所以：默认 v0；v4 来自 `Mu-Silicium Resources/Configs/<device>.toml` 的
+`[boot_image] header_version`，或者本仓库 `[bootimg.image]` 的覆盖。BootShim 需要 v0 的
+`ramdisk_addr`（`0x1000000`），v4 没有这个字段 → UEFI 找不到 payload FAT 卷
+→ `no boot entry found` → `Failed to Find an Operating System`。
 
-- `board.toml` 的 `["bootimg"]` 里 `dtb_node` 清空成 `[]`，否则 `fdtput` 报
+`verify()`（`bootimg.py:122-123`）按 v0 布局比较 `kernel_address`（偏移 12）；v4 头里那个位置是
+`os_version`，所以对 v4 必然抛
+`boot image header does not match the requested parameters`——**但文件已正确写出**。
+
+**当前真正的阻塞点（本轮核实）**：`bootimg` 第一步就 `load_toml(uefi/Resources/Configs/shennong.toml)`。
+
+```
+GET /repos/UniXNU/uefi-sheng/contents/Resources/Configs/shennong.toml?ref=sheng -> 404
+Resources/Configs/ 目录（87 个机型）里没有 shennong.toml
+```
+
+也就是说 shennong 的 Mu-Silicium 设备层（该 toml + FD + DTB）既不在本仓库，也不在
+`uefi-sheng@sheng`。**在把这一层固化进仓库之前，CI 里加 `bootimg` 步骤无解**，
+`[bootimg.image]` 写什么都没用。
+
+若本机有能用的 shennong Mu-Silicium checkout，还要满足：
+
+- 在 `board.toml` 加 `["bootimg"."image"] "header_version" = 0`（否则拿到 v4）
+- `["bootimg"]` 的 `dtb_node` 清空成 `[]`，否则 `fdtput` 报
   `Error at 'splash_region': FDT_ERR_EXISTS`
 - `--local <dir>` 下要有 `socs/sm8550/`，否则报 `SoC sm8550 is not cached`
 
-命令形如：
+### 4.4 打修法 B 补丁：AppleARMCPU 不再抢 `/cpus`
+
+为什么需要、依据是什么，见 [BRINGUP-STATUS.md](BRINGUP-STATUS.md) 第 3 节。
+工具：`scripts/patch-applearmcpu-ioname.py`。它把 `kernel.macho` 的 `__PRELINK_INFO` 里
+`com.apple.driver.AppleARMPlatform` → `IOKitPersonalities` → `AppleARMCPU` 的
+`IONameMatch` 从 `cpu` 改成 `xpu`；等长替换，**整个产物相对输入只差 1 个字节**。
 
 ```bash
-./unixnu bootimg -D <device repo> --local <dir with socs/sm8550> \
-  --uefi <uefi-sheng> \
-  --fd   <uefi-sheng>/Build/shennongPkg/DEBUG_CLANGPDB/FV/SILICIUM_UEFI.fd \
-  --dtb  <uefi-sheng>/Resources/DTBs/shennong.dtb \
-  --ramdisk payload.img -o out.img --target DEBUG --skip-preflight
+# 不需要任何产物：离线自检（3 个夹具，含诱饵与幂等检查）
+python3 scripts/patch-applearmcpu-ioname.py --self-test
+
+# 设备上的镜像：先只看不改，再一步生成待测镜像（自动抽 payload、改 kernel、回写、重打包、读回校验）
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img --check
+python3 scripts/patch-applearmcpu-ioname.py --image Mu-shennong-smp.img \
+    --out Mu-shennong-xpu.img --report Mu-shennong-xpu.json
+fastboot boot Mu-shennong-xpu.img          # 只启动，不写分区
 ```
 
-产物仍是 v4 头，**不能直接刷**。
+也可以只处理 payload 或裸内核：
+
+```bash
+python3 scripts/patch-applearmcpu-ioname.py --payload payload.img --out payload-xpu.img
+python3 scripts/patch-applearmcpu-ioname.py --macho kernel.macho --out kernel-xpu.macho
+```
+
+脚本的自我保证（不满足就报错退出）：
+
+- 结构 diff 必须**恰好一处**，路径必须是 `…/IOKitPersonalities/AppleARMCPU/IONameMatch`
+- 值必须是 `cpu` → `xpu`，文件长度不变，变化字节数必须等于 1
+- 别的 kext 里同名的 `"cpu"` 诱饵、`__TEXT` 里的诱饵字节都不动
+- 已经打过补丁时返回 `already-patched` 并且不再改动（幂等）
+- 找不到 AppleARMPlatform / 找不到字符串时**报错**，绝不静默通过
+
+`mcopy` 回写用 `-p -m` 保留原 FAT 时间戳，因此产物可复现（同样的输入 + 同样的脚本
+= 同样的 sha256）。实测记录见
+[VERIFICATION-2026-11-02.md](VERIFICATION-2026-11-02.md) 第 4 节。
 
 ---
 

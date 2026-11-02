@@ -242,6 +242,35 @@ jobs:
             done
             exit 1
           fi
+      - name: Patch AppleARMCPU IONameMatch (cpu -> xpu)
+        if: always()
+        working-directory: unixnu
+        run: |
+          set -u
+          PAY=$(ls -t out/shennong/*/shennong/payload/payload.img out/shennong/payload/payload.img 2>/dev/null | head -1)
+          if [ -z "$PAY" ] || [ ! -f "$PAY" ]; then
+            # Build payload already failed the job; do not report a second root cause.
+            echo "::warning::no payload.img to patch"
+            exit 0
+          fi
+          OUT="${PAY%.img}-xpu.img"
+          echo "payload=$PAY bytes=$(wc -c < "$PAY") sha256=$(python3 -c 'import hashlib,sys;print(hashlib.sha256(open(sys.argv[1],"rb").read()).hexdigest())' "$PAY")"
+          if ! python3 "$GITHUB_WORKSPACE/device/scripts/patch-applearmcpu-ioname.py" \
+                 --payload "$PAY" --out "$OUT" --report "${OUT%.img}.json" > /tmp/ioname.out 2>&1; then
+            tail -25 /tmp/ioname.out | sed 's/^/::error::/'
+            echo "::error::AppleARMCPU IONameMatch patch failed"
+            exit 1
+          fi
+          (grep -E '^(patched|result):' /tmp/ioname.out || tail -6 /tmp/ioname.out) \
+            | sed 's/^/::error::ioname /'
+          if ! python3 "$GITHUB_WORKSPACE/device/scripts/patch-applearmcpu-ioname.py" \
+                 --payload "$OUT" --check > /tmp/ioname2.out 2>&1; then
+            tail -10 /tmp/ioname2.out | sed 's/^/::error::/'
+            echo "::error::patched payload fails the read-only re-check"
+            exit 1
+          fi
+          grep -o '"status": "[a-z-]*"' /tmp/ioname2.out | head -1 | sed 's/^/::error::idempotence /'
+          exit 0
       - name: Probe kext symbol table
         if: always()
         working-directory: unixnu
@@ -273,6 +302,8 @@ jobs:
             unixnu/out/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.img
             unixnu/out/shennong/*/shennong/payload/payload.img
+            unixnu/out/shennong/*/shennong/payload/payload-xpu.img
+            unixnu/out/shennong/*/shennong/payload/payload-xpu.json
             unixnu/out/shennong/*/shennong/payload/payload.json
             unixnu/out/shennong/*/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.json
