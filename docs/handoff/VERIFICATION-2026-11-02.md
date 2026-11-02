@@ -354,8 +354,15 @@ ls: cannot access 'Mu-shennong-smp-xpu.img': No such file or directory
 - 真机上 `AppleARMCPU` 是否因此不再匹配、ArmCpu 是否因此拿到 `cpu0`，
   **尚未实测**；依据是 rmx1971 / sirius 的机型记录。
 - 工具假定 `AppleARMCPU` 的 `IONameMatch` 是字符串或单元素数组；若真实 plist 是
-  别的形状，工具会**报错退出**（`found the AppleARMCPU personality but no
-  IONameMatch "cpu" string`），不会误改。
+  别的形状（例如 `cpu0`），工具会**报错退出**并打印它实际看到的值：
+
+```
+error: found the AppleARMCPU personality but not an IONameMatch "cpu" string;
+nothing was changed. Personalities: [{'personality': 'AppleARMCPU',
+'IOClass': 'AppleARMCPU', 'IONameMatch': 'cpu0'}]
+```
+
+  这种情况需要按真实值决定改写目标（`cpu0` → `xpu0`），不会瞎猜。
 
 ---
 

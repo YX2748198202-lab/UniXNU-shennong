@@ -322,7 +322,8 @@ def patch_kernel_macho(data):
     hits = locate_cpu_match(xml)
     if not hits:
         raise Error('found the %s personality but not an IONameMatch "%s" string; '
-                    'nothing was changed' % (CPU_CLASS, OLD_MATCH))
+                    'nothing was changed. Personalities: %r'
+                    % (CPU_CLASS, OLD_MATCH, personalities))
     if len(hits) != 1:
         raise Error('expected exactly one %s IONameMatch, found %d; refusing to guess'
                     % (CPU_CLASS, len(hits)))
