@@ -24,9 +24,10 @@ static struct {
 	unsigned  stages;
 } gScreen;
 
-// The panic screen patcher resolves this symbol to copy the formatted panic text
-// into it; keep the name and the size.
-char boot_progress_panic_text[2048];
+// No boot_progress_panic_text here on purpose: the panic-screen patcher compiles an
+// extra copy loop into the screen when the symbol exists, which made the screen 7
+// bytes larger than the padding it is placed in (0xa37 into 0xa30). The screen still
+// draws the panic text; it just does not also store it for the live banner.
 
 void boot_progress_init(void);
 void boot_progress_start(void);
