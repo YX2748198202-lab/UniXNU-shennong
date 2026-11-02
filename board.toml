@@ -24,7 +24,6 @@
   "build-libpthread-kernel.py",
   "build-sheng-platform-power.py",
   "build-mockfs-fixture.py",
-  "build-boot-progress.py",
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",

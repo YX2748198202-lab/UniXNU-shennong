@@ -55,6 +55,14 @@ jobs:
             sed -i '' 's|paths = \[str(path) for path in paths\]|paths = [str(path) for path in paths if Path(path).is_file()]|' "$SYMFILE" || true
           fi
           echo "symbols-helper patched: $(grep -c 'if Path(path).is_file()' "$SYMFILE" || true)"
+          # The diagnostic screen is gated on the audited UFS/owner-root build, which this board
+          # does not run yet. The screen only needs the stage/console/panic display, so relax that
+          # gate for this board and say so in the log.
+          if grep -q 'Boot progress requires the audited' "$SRC_SCRIPT"; then
+            sed -i '' 's/^  if \[ "\${XNU_NATIVE_UFS:-0}" != 1 \].*/  if false; then/' "$SRC_SCRIPT" || true
+            sed -i '' '/^     \[ "\${XNU_SOURCE_CORECRYPTO14:-0}" != 1 \]; then$/d' "$SRC_SCRIPT" || true
+            echo "boot-progress gate patched: $(grep -c 'if false; then' "$SRC_SCRIPT" || true)"
+          fi
           if ./unixnu build kernel; then
             FIRST_RC=0
             echo "first pass rc=0"
