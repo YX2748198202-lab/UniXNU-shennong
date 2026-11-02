@@ -1,36 +1,25 @@
 // SPDX-License-Identifier: MIT
-// Minimal board diagnostic screen.
+// Minimal board diagnostic screen, v3: binary counters + named-stage lanes.
 //
 // The full BootProgress.c needs the UFS/virtio/cpufreq/touch subsystems that this
 // board does not build, so its archive cannot link here. What the bring-up needs is
-// a stage marker: every boot_progress_stage() call paints one square straight into
-// the kernel framebuffer mapping, so a photo of the screen counts how far the kernel
-// got.
+// an unambiguous marker: every boot_progress_stage() call paints into the kernel
+// framebuffer mapping, and the screen spells the counts out in binary so a photo
+// answers "how many events happened" exactly, without counting squares.
 //
-// Layout of the diagnostic screen (all sizes in framebuffer pixels):
+// Screen layout (framebuffer pixels, y grows downward; bands at the very top are
+// painted by the earlier boot chains):
 //
-//   top        green/blue/magenta bars painted by the earlier boot chains (not ours)
-//   y = h/4    named-stage lane: one fixed square per named milestone, drawn the
-//              first time its message arrives. Position and colour identify it, so
-//              one photo shows exactly which milestones were passed:
-//                 x=16   orange      arm_vm_init enter
-//                 x=126  violet      arm_vm_init returned
-//                 x=236  yellow      bsd_init enter
-//                 x=346  dark orange original PMGR nub start
-//                 x=456  lime        original PMGR nub returned
-//                 x=566  magenta     vfs_mountroot enter
-//                 x=676  red         vfs_mountroot mounted
-//                 x=786  white       root authentication decision recorded
-//                 x=896  cyan        load_init_program enter
-//                 x=1006 teal        SystemOS mount enter
-//                 x=1116 olive       Data mount enter
-//                 x=1226 pink        temporary watchdog launch policy enter
-//   y = h/2    generic event row: white/green alternating square for every stage
-//              event, 30 per row, wrapping down (so a long run never leaves the
-//              screen). Counting the squares here counts the events.
-//   y = h/2+70 bsd_init print row: blue square for every "bsd_init: " print, which
-//              is how the patched bsd_init_kprintf() reports progress. Separate row
-//              keeps "inside bsd_init" measurable independently of the named lanes.
+//   y = h/3       8 bits: number of boot_progress_stage() events   (bit0 at x=16,
+//                 pitch 80, 60x60 squares; white = 1, dark grey = 0)
+//   y = h/3+100   8 bits: number of "bsd_init: " print events
+//   y = h/3+220   named lane 1: the 12 board milestone markers, fixed colour+slot
+//   y = h/3+320   named lane 2: 12 early-startup milestone markers
+//   y = h/2       event row: one white/green square per event, 30 per row, wrapping
+//
+// A photo therefore gives: exact event count (binary), exact bsd_init print count
+// (binary), which board milestones were passed (coloured lane 1) and which early
+// startup milestones were passed (coloured lane 2).
 //
 // No kernel headers are used: boot_progress_bind() already receives the geometry.
 
@@ -47,13 +36,9 @@ static struct {
 	int       bound;
 	unsigned  stages;
 	unsigned  bsd_prints;
-	uint32_t  named_seen;
+	unsigned  named_seen;
+	unsigned  named_seen2;
 } gScreen;
-
-// No boot_progress_panic_text here on purpose: the panic-screen patcher compiles an
-// extra copy loop into the screen when the symbol exists, which made the screen 7
-// bytes larger than the padding it is placed in (0xa37 into 0xa30). The screen still
-// draws the panic text; it just does not also store it for the live banner.
 
 void boot_progress_init(void);
 void boot_progress_start(void);
@@ -69,32 +54,75 @@ void boot_progress_critical_exit(int, char *, bp_ulong);
 void boot_progress_process_stage(int, const char *, const char *);
 void boot_progress_exit(int, const char *, int, unsigned, uint64_t);
 
-struct bp_named {
-	const char *text;
-	unsigned    x;
-	uint32_t    colour;
+// Lane 1: board milestones added by the boot-progress patch.
+static const char *const bp_lane1[] = {
+	"arm_vm_init enter",
+	"arm_vm_init returned",
+	"bsd_init enter",
+	"original PMGR nub start",
+	"original PMGR nub returned",
+	"vfs_mountroot enter",
+	"vfs_mountroot mounted",
+	"root authentication decision recorded",
+	"load_init_program enter",
+	"SystemOS mount enter",
+	"Data mount enter",
+	"temporary watchdog launch policy enter",
 };
 
-// Order matters only for the on-screen x positions; the bit index is the array index.
-static const struct bp_named bp_named_stages[] = {
-	{ "arm_vm_init enter",                    16,   0xFFFFA500u },
-	{ "arm_vm_init returned",                 126,  0xFF8A2BE2u },
-	{ "bsd_init enter",                       236,  0xFFFFFF00u },
-	{ "original PMGR nub start",              346,  0xFFFF8C00u },
-	{ "original PMGR nub returned",           456,  0xFF32CD32u },
-	{ "vfs_mountroot enter",                  566,  0xFFFF00FFu },
-	{ "vfs_mountroot mounted",                676,  0xFFFF0000u },
-	{ "root authentication decision recorded",786,  0xFFFFFFFFu },
-	{ "load_init_program enter",              896,  0xFF00FFFFu },
-	{ "SystemOS mount enter",                 1006, 0xFF008080u },
-	{ "Data mount enter",                     1116, 0xFF808000u },
-	{ "temporary watchdog launch policy enter",1226,0xFFFFC0CBu },
+// Lane 2: early startup messages from kernel_bootstrap()/kernel_bootstrap_thread().
+static const char *const bp_lane2[] = {
+	"vm_mem_bootstrap",
+	"console_init",
+	"machine_init",
+	"clock_init",
+	"code_signing_init",
+	"thread_init",
+	"workq_init",
+	"exception_init",
+	"kernel_thread_create",
+	"idle_thread_create",
+	"sched_startup",
+	"clock_service_create",
 };
 
-#define BP_NAMED_COUNT (sizeof(bp_named_stages) / sizeof(bp_named_stages[0]))
+static const uint32_t bp_lane1_colour[] = {
+	0xFFFFA500u,	// orange      arm_vm_init enter
+	0xFF8A2BE2u,	// violet      arm_vm_init returned
+	0xFFFFFF00u,	// yellow      bsd_init enter
+	0xFFFF8C00u,	// dark orange PMGR start
+	0xFF32CD32u,	// lime        PMGR returned
+	0xFFFF00FFu,	// magenta     vfs_mountroot enter
+	0xFFFF0000u,	// red         vfs_mountroot mounted
+	0xFFFFFFFFu,	// white       root auth recorded
+	0xFF00FFFFu,	// cyan        load_init_program enter
+	0xFF008080u,	// teal        SystemOS mount enter
+	0xFF808000u,	// olive       Data mount enter
+	0xFFFFC0CBu,	// pink        watchdog policy enter
+};
+
+static const uint32_t bp_lane2_colour[] = {
+	0xFFFFFFFFu,	// white
+	0xFF00FF00u,	// green
+	0xFFFFFF00u,	// yellow
+	0xFFFF8C00u,	// dark orange
+	0xFFFF00FFu,	// magenta
+	0xFF00FFFFu,	// cyan
+	0xFF32CD32u,	// lime
+	0xFF8A2BE2u,	// violet
+	0xFFFF0000u,	// red
+	0xFF008080u,	// teal
+	0xFF808000u,	// olive
+	0xFFFFA500u,	// orange
+};
+
+#define BP_LANE1_COUNT (sizeof(bp_lane1) / sizeof(bp_lane1[0]))
+#define BP_LANE2_COUNT (sizeof(bp_lane2) / sizeof(bp_lane2[0]))
 #define BP_ROW_SLOTS 30u
 #define BP_MARKER 34u
 #define BP_GAP 10u
+#define BP_BITS 8u
+#define BP_DIM 0xFF303030u
 
 static void bp_pixel(unsigned x, unsigned y, uint32_t colour)
 {
@@ -133,47 +161,43 @@ static int bp_prefix(const char *text, const char *prefix)
 	return 1;
 }
 
-static int bp_equal(const char *a, const char *b)
+// Eight squares spell a count in binary: bit0 leftmost, white = 1, dark grey = 0.
+static void bp_bits(unsigned value, unsigned y)
 {
-	if (a == 0 || b == 0) {
-		return 0;
+	unsigned i;
+
+	for (i = 0; i < BP_BITS; ++i) {
+		uint32_t colour = ((value >> i) & 1u) ? 0xFFFFFFFFu : BP_DIM;
+		bp_rect(16 + i * 80, y, 60, 60, colour);
 	}
-	while (*a != '\0' && *a == *b) {
-		++a;
-		++b;
-	}
-	return *a == *b;
 }
 
-// Event square n, wrapped so a long run stays on screen: 30 per row.
-static void bp_marker(unsigned n, unsigned base_y)
+static void bp_marker(unsigned n)
 {
 	unsigned row = n / BP_ROW_SLOTS;
 	unsigned col = n % BP_ROW_SLOTS;
 	unsigned x = 16 + col * (BP_MARKER + BP_GAP);
-	unsigned y = base_y + row * (BP_MARKER + 16);
+	unsigned y = gScreen.height / 2 + row * (BP_MARKER + 16);
 	uint32_t colour = (n & 1u) ? 0xFF00FF00u : 0xFFFFFFFFu;
 
 	bp_rect(x, y, BP_MARKER, BP_MARKER, colour);
 }
 
-// Named-stage lane: one square per milestone, drawn once, position encodes identity.
-static void bp_named(const char *text)
+static void bp_lane(const char *text, const char *const *names, const uint32_t *colours,
+    unsigned count, unsigned *seen, unsigned y)
 {
 	unsigned i;
 
 	if (!gScreen.bound) {
 		return;
 	}
-	for (i = 0; i < BP_NAMED_COUNT; ++i) {
-		if ((gScreen.named_seen & (1u << i)) != 0) {
+	for (i = 0; i < count; ++i) {
+		if ((*seen & (1u << i)) != 0) {
 			continue;
 		}
-		if (bp_equal(text, bp_named_stages[i].text) ||
-		    bp_prefix(text, bp_named_stages[i].text)) {
-			gScreen.named_seen |= 1u << i;
-			bp_rect(bp_named_stages[i].x, gScreen.height / 4, 80, 80,
-			    bp_named_stages[i].colour);
+		if (bp_prefix(text, names[i])) {
+			*seen |= 1u << i;
+			bp_rect(16 + i * 94, y, 56, 56, colours[i]);
 			return;
 		}
 	}
@@ -184,11 +208,12 @@ void boot_progress_init(void)
 	gScreen.stages = 0;
 	gScreen.bsd_prints = 0;
 	gScreen.named_seen = 0;
+	gScreen.named_seen2 = 0;
 }
 
 void boot_progress_start(void)
 {
-	bp_marker(0, gScreen.height / 2);
+	bp_marker(0);
 }
 
 int boot_progress_active(void)
@@ -218,21 +243,28 @@ void boot_progress_putc(char c)
 
 void boot_progress_stage(const char *text)
 {
-	bp_named(text);
+	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
+	    gScreen.height / 3 + 220);
+	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
+	    gScreen.height / 3 + 320);
 	if (bp_prefix(text, "bsd_init: ")) {
-		bp_marker(gScreen.bsd_prints, gScreen.height / 2 + 70);
 		++gScreen.bsd_prints;
+		bp_bits(gScreen.bsd_prints, gScreen.height / 3 + 100);
 	}
-	bp_marker(++gScreen.stages, gScreen.height / 2);
+	bp_marker(++gScreen.stages);
+	bp_bits(gScreen.stages, gScreen.height / 3);
 }
 
 void boot_progress_process_stage(int pid, const char *name, const char *text)
 {
 	(void)pid;
 	(void)name;
-	(void)text;
-	bp_named(text);
-	bp_marker(++gScreen.stages, gScreen.height / 2);
+	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
+	    gScreen.height / 3 + 220);
+	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
+	    gScreen.height / 3 + 320);
+	bp_marker(++gScreen.stages);
+	bp_bits(gScreen.stages, gScreen.height / 3);
 }
 
 void boot_progress_irq(uint64_t a, uint64_t b, uint64_t c)
