@@ -175,6 +175,31 @@ Resources/Scripts/mkbootimg.py -> 200, 38213 bytes
 `uefi-sheng@sheng` 里，也不在本仓库里。这就是 CI 里不能加 `bootimg` 步骤的**实证原因**
 （不是「忘了加一个步骤」）。
 
+### 2.7 IOKit 匹配的排序语义（决定「调高 probe 分数」是否可行）
+
+读 `apple-oss-distributions/xnu@xnu-10063.141.1`（上游 `build-xnu-4k-baseline.sh`
+的默认 tag）：
+
+- `iokit/Kernel/IOService.cpp:4111-4112`：
+  `startList = OSOrderedSet::withCapacity(1, IOServiceOrdering, (void *) gIOProbeScoreKey);`
+- `:4153`：`// start the best (until success) of each category`，
+  然后 `startList->getFirstObject()` 依次 `start()`
+- `:3698` `IOServiceOrdering()` 返回 `IOServiceObjectOrder(obj1) - IOServiceObjectOrder(obj2)`，
+  而 `IOServiceObjectOrder` 返回该实例的 `IOProbeScore`（缺省用 `kIODefaultProbeScore`）
+- `libkern/c++/OSOrderedSet.cpp` 的 `setObject()`：
+
+```cpp
+// queue it behind those with same priority
+for (i = 0; (i < count) && (ORDER(array[i].obj.get(), anObject) >= 0); i++) { }
+```
+
+→ 队列按分数**降序**，同分时新对象排在后面（FIFO），`getFirstObject()` 是最高分。
+
+结论：ArmCpu（`IOProbeScore = 2000`）只有在 `AppleARMCPU` 分数不高于 2000 时才会先
+`start()`。它没赢，说明 Apple 的分更高；而 Apple 的 `start()` 是 panic 而不是
+`return false`，所以「排在第二」不会被兜底尝试。调分数是竞速，不可靠；
+`IONameMatch` 改写（B）是确定性的。
+
 ---
 
 ## 3. 「`sheng-smp=1` 无效」的静态证明（有依据的推断，非真机实测）

@@ -179,6 +179,25 @@ IOService *ArmCpu::probe (IOService *provider, SInt32 *score)
 | **B（已实现，推荐）** | 改 `kernel.macho` 里 `AppleARMPlatform.kext` 的 `AppleARMCPU` personality，`IONameMatch` `cpu` → `xpu`（等长，1 字节差） | rmx1971 实测记录：`docs/devices/rmx1971.md:142`「rewritten cpu -> xpu at payload assembly time so the native ArmCpu owns /cpus」、`:494`「Kernel patches applied at assembly: ... the IONameMatch cpu->xpu rewrite」；sirius/sirius-huajifruit/sirius-dddqmmx/sirius-yooglery 同 |
 | **C（备选，未实现）** | 直接改 AppleARMCPU 代码，绕过 `_validateConfiguration` | mondrian-mzyxsl 记录：`docs/devices/mondrian-mzyxsl.md:149`「the AppleARMCPU multi-CPU validation is bypassed by the kext patch on `_validateConfiguration`」；需要符号地址解析，未做 |
 
+**为什么「把 ArmCpu 的 probe 分数调高」也不是可靠修法**（本轮读 XNU 源码核实，
+tag `xnu-10063.141.1`，即上游 `build-xnu-4k-baseline.sh` 的默认值）：
+
+- `iokit/Kernel/IOService.cpp:4111-4112`：每个 match category 的候选放进取胜队列
+  `OSOrderedSet::withCapacity(1, IOServiceOrdering, gIOProbeScoreKey)`
+- `:4153`：注释 `start the best (until success) of each category`，然后
+  `startList->getFirstObject()` 依次 `start()`
+- `IOServiceOrdering`（`:3698`）返回 `score(obj1) - score(obj2)`；
+  `libkern/c++/OSOrderedSet.cpp` 的 `setObject()` 插入循环是
+  `while (ORDER(array[i], anObject) >= 0) i++;`
+  → **高分在前，同分按插入顺序 FIFO**
+- 分数初值来自 personality 自己的 `IOProbeScore`（ArmCpu 是 `2000`），
+  `IOService::probe` 默认实现不改分数
+
+也就是说 ArmCpu 只有在 `AppleARMCPU` 的 `IOProbeScore <= 2000` 时才会排到前面。
+它实际排在后面，说明 Apple 的分更高；而 sirius 记录「+40000 仍然没赢」，
+说明这条路是分数竞速、结果不可控。更关键的是：**Apple 的 `start()` 直接 panic，
+不是 `return false`**，所以「排第二」也不会被兜底重试——没有第二次机会。
+
 **为什么选 B 而不是「给 ADT 补 `max_cpus`」**：补属性是让 **Apple 的** CPU 管理代码
 跑起来，而 UniXNU 的设计是用原生 ArmCpu 取代它（GIC/定时器/PSCI 全在 ArmCpu
 里）。补齐 Apple 属性只会让它继续往前走，然后在更后期以更难诊断的方式失败。
