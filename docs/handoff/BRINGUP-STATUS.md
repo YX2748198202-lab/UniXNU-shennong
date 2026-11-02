@@ -637,3 +637,39 @@ mockfs 已**确实链接进内核**。两个已知缺口：
 
 **注意**：fastboot boot 后手机停在诊断屏，需长按电源+音量减重启进 fastboot
 才能再次烧录；本次全程未写任何分区。
+
+---
+
+## 16. v5 / v6 诊断屏结果（2026-11-03 凌晨）
+
+第五次构建 `41474782494` 因 GitHub macOS 跑器排队约 15 分钟被系统取消（kernel 任务 
+steps 为空，与代码无关）；重发的 `41477516638`（commit `816641b`）成功，
+产物 `shennong-kernel-1` 41,618,851 字节，经修法 B + `repack-v0-bootimg.py`
+得到 `Mu-shennong-v6.img`（203,726,848 字节，sha256
+`b241ba71ca99b57258ddaad2d4513b5d9d7379241c94c6391539b3d24f97610b`），
+`fastboot boot` 成功（Sending 5.07s / Booting 0.08s）。
+
+**屏幕读数**（照片 + 肉眼双重确认）：
+- 顶部绿、蓝、品红三条带 ✔ 修法 B 继续有效
+- **没有任何命名阶段彩色牌**（12 个阶段一个都没点亮）
+- 白绿事件格子 **2 行**（第一行 30 个满行 + 第二行余数）
+
+**结论（修正）**：事件数 ≥ 30，但 `bsd_init` 一次都没到达
+（`bsd_init enter` 的黄色牌、`bsd_init: ` 打印行都不存在）。
+之前"卡在 `bsd_init` 中后段、`socketinit` 一带"的推断**作废**——那是按
+可见方块数外推的误判。真实卡点仍在 `kernel_bootstrap()` / `startup.c`
+的早期启动序列里：`arm_vm_init` 已通过、帧缓冲已绑定、≥30 个启动事件后停住。
+
+**下一步（已提交，待真机验证）**：commit `3a0d66c`（run `41484351048`）把诊断屏
+升级为 v3：
+- `y = h/3`：8 位二进制方块 = `boot_progress_stage()` 事件总数（白=1、深灰=0）
+- `y = h/3+100`：8 位二进制 = `bsd_init: ` 打印数
+- `y = h/3+220`：12 格命名信道 = 板级里程碑（arm_vm_init → bsd_init → vfs_mountroot）
+- `y = h/3+320`：12 格命名信道 = 早期启动里程碑（console_init → sched_init → PE_init_iokit 等）
+- `y = h/2`：事件格子，换行间距改 50px，不再和别的行重叠
+
+这样一张照片就能精确读出"第几个事件"和"过了哪些命名里程碑"，无需数格子。
+
+**运行环境备注**：2026-11-03 凌晨 github.com 的 443 端口再次不可达，
+`git push` 改为走 api.github.com 的 Git Data API（blob → tree → commit → ref），
+产物下载仍被 Azure 存储段封锁，需用户浏览器手动下载。
