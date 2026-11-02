@@ -612,3 +612,28 @@ mockfs 已**确实链接进内核**。两个已知缺口：
 - 不得提交 Apple IPSW、厂商固件、密钥，或任何含原厂 kernelcache 代码的二进制到公开仓库
 - 不得用 stub / 空心函数 / 全零密钥伪造验证结果
   （`verified_root_key={0}` + `vr_verify_block(){return1}` 曾存在，已按要求删除，不要加回）
+
+---
+
+## 15. 真机 boot-progress 结果（2026-11-02 深夜）
+
+第四次构建 `41464721313`（commit `65450b3`）的产物
+`shennong-kernel-1` 经修法 B（`AppleARMCPU` IONameMatch `cpu`→`xpu`）打补丁、
+用 `repack-v0-bootimg.py` 重打包成 203,726,848 字节的 v0 镜像后，
+`fastboot boot` 到真机（`9f72e95c`，Android 14 出厂、未解锁刷写，仅内存启动）。
+
+**屏幕读数**：
+- 顶部绿、蓝、品红三条彩条（与之前 xpu 测试相同，第三条出现即修法 B 生效）
+- 中部一行白/绿相间小方块，约 30 个，**没有 panic 清屏、没有白字**
+- 由此确认：内核已绑定帧缓冲（`boot_progress_bind` 成功）、跑完
+  `kernel_bootstrap_thread` 的日志序列、进入 `bsd_init()` 并走到中后段；
+  之前"静默挂起"的卡点被推后了，`AppleARMCPU.cpp:111` 与 `initCPU()` 都已通过
+- 按 `startup.c` / `bsd_init.c` 的事件顺序折算，约 30 个事件方块对应
+  `bsd_init` 的 `calling socketinit` / `domaininit` / `skywalk_init`
+  一带（网络栈初始化），**尚未**到 `vfs_mountroot`（到那里需要 33 个以上）
+- 下一版诊断（commit `7bd7470`）：12 个命名阶段改为固定位置+固定颜色的
+  「阶段信道」（`y = h/4`），`bsd_init: ` 打印单独放 `y = h/2 + 70` 的蓝色行，
+  事件行按 30 个一组自动换行；一张照片即可直接读出过了哪些命名阶段。
+
+**注意**：fastboot boot 后手机停在诊断屏，需长按电源+音量减重启进 fastboot
+才能再次烧录；本次全程未写任何分区。
