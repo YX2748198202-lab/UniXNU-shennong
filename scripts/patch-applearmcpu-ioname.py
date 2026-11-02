@@ -437,7 +437,9 @@ def image_payload(image_bytes, header):
     if len(payload) != header['ramdisk_size']:
         raise Error('image is truncated: wanted %d payload bytes at %d, got %d'
                     % (header['ramdisk_size'], offset, len(payload)))
-    if payload[:1] != b'\xeb' or b'FAT' not in payload[:0x40]:
+    # The volume is FAT32 (label at 0x47, type string at 0x52), so probe the
+    # whole boot sector instead of the first 64 bytes where FAT16 keeps it.
+    if payload[:1] != b'\xeb' or b'FAT' not in payload[:512]:
         raise Error('ramdisk does not look like a FAT volume')
     return offset, payload
 
