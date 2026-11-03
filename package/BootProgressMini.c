@@ -27,6 +27,10 @@
 
 typedef unsigned long bp_ulong;
 
+// Kernel printf; while this screen is bound its output is routed to
+// boot_progress_putc, so these lines appear on the diagnostic display.
+void kprintf(const char *fmt, ...);
+
 // 8x8 font, ASCII 32..126. Source: font8x8 by Daniel Hepper (public domain).
 static const unsigned char bp_font[95][8] = {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, /* 32 space */
@@ -427,6 +431,9 @@ void boot_progress_putc(char c)
 
 void boot_progress_stage(const char *text)
 {
+	if (text != 0) {
+		kprintf("[BP] %s\n", text);
+	}
 	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height / 3 + 220);
@@ -444,6 +451,9 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 {
 	(void)pid;
 	(void)name;
+	if (text != 0) {
+		kprintf("[BP] %s\n", text);
+	}
 	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height / 3 + 220);
