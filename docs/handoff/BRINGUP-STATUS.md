@@ -360,11 +360,11 @@ kernel 区，追加新 payload。前提是新 payload 必须**正好 201,326,592
 |---|---|---|
 | A | 构建链（XNU 编译 / 链接） | ✅ 完成，CI 多轮成功（最近 run 40868470568 / #87） |
 | B | UEFI 菜单（Device Tree / ADT 四道校验） | ✅ 完成 |
-| C | XNU 内核启动（AMFI / bsd_init / 内核栈） | ✅ 已达成 |
+| C | XNU 内核启动（AMFI / bsd_init / 内核栈） | 🟡 启动序列进行中：已过 arm_vm_init、kernel_bootstrap、console、sched、clock；卡在 `early_random()`（详见 §16，**此前记的「已达成」不成立**） |
 | D | prelink（合并原厂 IOStorageFamily） | ✅ 完成 |
 | E1 | payload / boot image 打包 | 🟡 payload 完成；CI 现会产出打过 B 的 payload；boot image 仍缺设备层（见 §5） |
 | E2 | UFS 块设备 ABI 绑定（11 个 `IOBlockStorageDevice` 符号） | ❌ 静态路线已证伪 |
-| E2.5 | `/cpus` 归属（修法 B） | 🟡 已实现并离线自检，**等真机** |
+| E2.5 | `/cpus` 归属（修法 B） | ✅ 真机验证生效（panic 消失、彩条 2→3，见 §15/§16） |
 | E3 | mockfs / RAM-only 根卷 | ⬜ 未验证（panic 发生在更早阶段） |
 | E4 | 8 核 SMP | ⬜ 未开始（ADT 现只有 cpu0） |
 | E5 | iOS 用户态（launchd） | ⬜ 未开始 |
