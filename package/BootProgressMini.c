@@ -431,7 +431,7 @@ void boot_progress_putc(char c)
 
 void boot_progress_stage(const char *text)
 {
-	if (text != 0) {
+	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
 	bp_last_stage_text(text);
@@ -451,7 +451,7 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 {
 	(void)pid;
 	(void)name;
-	if (text != 0) {
+	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
 	bp_last_stage_text(text);
