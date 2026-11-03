@@ -42,7 +42,7 @@ index 630a37a..42c62d1 100644
  
  	assert(ml_get_interrupts_enabled() == FALSE);
 diff --git a/osfmk/prng/prng_random.c b/osfmk/prng/prng_random.c
-index c52f0ab..dffaa20 100644
+index c52f0ab..94c7b0c 100644
 --- a/osfmk/prng/prng_random.c
 +++ b/osfmk/prng/prng_random.c
 @@ -26,6 +26,7 @@
@@ -78,4 +78,30 @@ index c52f0ab..dffaa20 100644
 +		boot_progress_stage("ccdrbg_init returned");
  		if (rc != CCDRBG_STATUS_OK) {
  			panic("ccdrbg_init() returned %d", rc);
+ 		}
+@@ -212,6 +220,7 @@ early_random(void)
+ 		cc_clear(sizeof(nonce), &nonce);
+ 
+ 		init = 1;
++		boot_progress_stage("erandom init block done");
+ 	}
+ 
+ 	read_erandom(&result, sizeof(result));
+@@ -225,6 +234,7 @@ read_random_generate(uint8_t *buffer, size_t numbytes);
+ static void
+ read_erandom(void * buf, size_t nbytes)
+ {
++	boot_progress_stage("read_erandom enter");
+ 	uint8_t * buffer_bytes = buf;
+ 	size_t n;
+ 	int rc;
+@@ -244,7 +254,9 @@ read_erandom(void * buf, size_t nbytes)
+ 
+ 		// Since "strict FIPS" is disabled, the DRBG will never
+ 		// request a reseed; therefore, we panic on any error
++		boot_progress_stage("ccdrbg_generate enter");
+ 		rc = ccdrbg_generate(&erandom.drbg_info, (struct ccdrbg_state *)erandom.drbg_state, n, buffer_bytes, 0, NULL);
++		boot_progress_stage("ccdrbg_generate returned");
+ 		if (rc != CCDRBG_STATUS_OK) {
+ 			panic("read_erandom ccdrbg error %d", rc);
  		}
