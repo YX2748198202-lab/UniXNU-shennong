@@ -1,0 +1,43 @@
+diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
+index 630a37a..42c62d1 100644
+--- a/osfmk/kern/startup.c
++++ b/osfmk/kern/startup.c
+@@ -657,13 +657,19 @@ kernel_bootstrap_thread(void)
+ 	/*
+ 	 *	Create the device service.
+ 	 */
++	boot_progress_stage("device_service_create enter");
+ 	device_service_create();
++	boot_progress_stage("device_service_create returned");
+ 
++	boot_progress_stage("phys_carveout_init enter");
+ 	phys_carveout_init();
++	boot_progress_stage("phys_carveout_init returned");
+ 
+ #if MACH_KDP
+ 	kernel_bootstrap_log("kdp_init");
++	boot_progress_stage("kdp_init enter");
+ 	kdp_init();
++	boot_progress_stage("kdp_init returned");
+ #endif
+ 
+ #if ALTERNATE_DEBUGGER
+@@ -689,15 +695,18 @@ kernel_bootstrap_thread(void)
+ 	 * Force the random number to be odd to avoid mapping a non-zero
+ 	 * word-aligned address to zero via addition.
+ 	 */
++	boot_progress_stage("early_random enter");
+ 	vm_kernel_addrperm = (vm_offset_t)(early_random() | 1);
+ 	buf_kernel_addrperm = (vm_offset_t)(early_random() | 1);
+ 	vm_kernel_addrperm_ext = (vm_offset_t)(early_random() | 1);
+ 	vm_kernel_addrhash_salt = early_random();
+ 	vm_kernel_addrhash_salt_ext = early_random();
++	boot_progress_stage("early_random returned");
+ 
+ #ifdef  IOKIT
+ 	kernel_bootstrap_log("PE_init_iokit");
+ 	PE_init_iokit();
++	boot_progress_stage("PE_init_iokit returned");
+ #endif
+ 
+ 	assert(ml_get_interrupts_enabled() == FALSE);
