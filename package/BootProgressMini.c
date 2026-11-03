@@ -316,7 +316,7 @@ static void bp_newline(void)
 	}
 }
 
-static void bp_char(char c)
+static void bp_char_at(char c, unsigned x0, unsigned y0)
 {
 	const unsigned char *glyph;
 	unsigned row, bit;
@@ -325,23 +325,51 @@ static void bp_char(char c)
 		c = '?';
 	}
 	glyph = bp_font[(unsigned)(c - 32)];
-	if (gScreen.tx + 8 >= gScreen.width) {
-		bp_newline();
-	}
 	for (row = 0; row < 8; ++row) {
 		unsigned char bits = glyph[row];
-		unsigned y = gScreen.ty + row;
+		unsigned y = y0 + row;
 
 		if (y >= gScreen.height) {
 			break;
 		}
 		for (bit = 0; bit < 8; ++bit) {
 			if ((bits & (1u << bit)) != 0) {
-				bp_pixel(gScreen.tx + bit, y, 0xFFFFFFFFu);
+				bp_pixel(x0 + bit, y, 0xFFFFFFFFu);
 			}
 		}
 	}
+}
+
+static void bp_char(char c)
+{
+	if (c < 32 || c > 126) {
+		c = '?';
+	}
+	if (gScreen.tx + 8 >= gScreen.width) {
+		bp_newline();
+	}
+	bp_char_at(c, gScreen.tx, gScreen.ty);
 	gScreen.tx += 8;
+}
+
+// Last stage message: the text of the most recent boot_progress_stage() call is
+// painted at the very bottom, so a photo shows the exact milestone that was last
+// reached even when the event counter is polluted by allocation-time calls.
+static void bp_last_stage_text(const char *text)
+{
+	unsigned y;
+	unsigned x = 8;
+
+	if (!gScreen.bound || text == 0) {
+		return;
+	}
+	y = gScreen.height > 80 ? gScreen.height - 70 : 0;
+	bp_rect(0, y, gScreen.width, 70, 0xFF000000u);
+	while (*text != '\0' && x + 8 < gScreen.width) {
+		bp_char_at(*text, x, y + 8);
+		x += 8;
+		++text;
+	}
 }
 
 void boot_progress_init(void)
@@ -399,6 +427,7 @@ void boot_progress_putc(char c)
 
 void boot_progress_stage(const char *text)
 {
+	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height / 3 + 220);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
@@ -415,6 +444,7 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 {
 	(void)pid;
 	(void)name;
+	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height / 3 + 220);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
