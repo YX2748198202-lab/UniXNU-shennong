@@ -27,6 +27,37 @@
 
 typedef unsigned long bp_ulong;
 
+// Every stage message the boot-progress patch emits, in patch order. The screen
+// shows the index of the last one that arrived: monotonically increasing, so a
+// photo reads "how far the kernel got" even if one display row goes stale.
+static const char *const bp_stage_names[] = {
+	"arm_vm_init enter",
+	"arm_vm_init returned",
+	"bsd_init enter",
+	"original PMGR nub start",
+	"original PMGR nub returned",
+	"vfs_mountroot enter",
+	"vfs_mountroot mounted",
+	"root authentication decision recorded",
+	"load_init_program enter",
+	"SystemOS mount enter",
+	"SystemOS mount returned",
+	"Data mount enter",
+	"Data mount returned",
+	"temporary watchdog launch policy enter",
+	"temporary watchdog launch policy ready",
+	"PE_init_iokit returned",
+	"early_random enter",
+	"early_random returned",
+	"device_service_create enter",
+	"device_service_create returned",
+	"phys_carveout_init enter",
+	"phys_carveout_init returned",
+	"kdp_init enter",
+	"kdp_init returned",
+};
+#define BP_STAGE_COUNT (sizeof(bp_stage_names) / sizeof(bp_stage_names[0]))
+
 // Kernel printf; while this screen is bound its output is routed to
 // boot_progress_putc, so these lines appear on the diagnostic display.
 void kprintf(const char *fmt, ...);
@@ -143,6 +174,7 @@ static struct {
 	unsigned  named_seen2;
 	unsigned  tx;
 	unsigned  ty;
+	unsigned  last_stage;
 } gScreen;
 
 void boot_progress_init(void);
@@ -384,6 +416,7 @@ void boot_progress_init(void)
 	gScreen.named_seen2 = 0;
 	gScreen.tx = 16;
 	gScreen.ty = gScreen.height / 2 + 130;
+	gScreen.last_stage = 0;
 }
 
 void boot_progress_start(void)
@@ -429,8 +462,25 @@ void boot_progress_putc(char c)
 	bp_char(c);
 }
 
+static void bp_record_stage(const char *text)
+{
+	unsigned i;
+
+	if (text == 0 || !gScreen.bound) {
+		return;
+	}
+	for (i = 0; i < BP_STAGE_COUNT; ++i) {
+		if (bp_prefix(text, bp_stage_names[i]) && (i + 1) > gScreen.last_stage) {
+			gScreen.last_stage = i + 1;
+			bp_bits(gScreen.last_stage, gScreen.height / 3 + 120);
+			return;
+		}
+	}
+}
+
 void boot_progress_stage(const char *text)
 {
+	bp_record_stage(text);
 	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
@@ -451,6 +501,7 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 {
 	(void)pid;
 	(void)name;
+	bp_record_stage(text);
 	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
