@@ -317,7 +317,7 @@ static void bp_marker(unsigned n)
 	unsigned row = n / BP_ROW_SLOTS;
 	unsigned col = n % BP_ROW_SLOTS;
 	unsigned x = 16 + col * (BP_MARKER + BP_GAP);
-	unsigned y = gScreen.height / 2 + row * (BP_MARKER + 16);
+	unsigned y = gScreen.height * 90u / 100u + row * (BP_MARKER + 16);
 	uint32_t colour = (n & 1u) ? 0xFF00FF00u : 0xFFFFFFFFu;
 
 	bp_rect(x, y, BP_MARKER, BP_MARKER, colour);
@@ -345,8 +345,8 @@ static void bp_lane(const char *text, const char *const *names, const uint32_t *
 
 static void bp_newline(void)
 {
-	unsigned base = gScreen.height / 2 + 130;
-	unsigned limit = gScreen.height > 24 ? gScreen.height - 16 : gScreen.height;
+	unsigned base = gScreen.height / 12;
+	unsigned limit = gScreen.height > 24 ? gScreen.height * 52u / 100u : gScreen.height;
 
 	gScreen.tx = 16;
 	gScreen.ty += 10;
@@ -418,7 +418,7 @@ void boot_progress_init(void)
 	gScreen.named_seen = 0;
 	gScreen.named_seen2 = 0;
 	gScreen.tx = 16;
-	gScreen.ty = gScreen.height / 2 + 130;
+	gScreen.ty = gScreen.height / 12;
 	gScreen.last_stage = 0;
 }
 
@@ -475,7 +475,7 @@ static void bp_record_stage(const char *text)
 	for (i = 0; i < BP_STAGE_COUNT; ++i) {
 		if (bp_prefix(text, bp_stage_names[i])) {
 			gScreen.last_stage = i + 1;
-			bp_bits(gScreen.last_stage, gScreen.height / 3 + 120);
+			bp_bits(gScreen.last_stage, gScreen.height * 68u / 100u);
 			return;
 		}
 	}
@@ -489,15 +489,15 @@ void boot_progress_stage(const char *text)
 	}
 	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
-	    gScreen.height / 3 + 220);
+	    gScreen.height * 76u / 100u);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
-	    gScreen.height / 3 + 320);
+	    gScreen.height * 84u / 100u);
 	if (bp_prefix(text, "bsd_init: ")) {
 		++gScreen.bsd_prints;
-		bp_bits(gScreen.bsd_prints, gScreen.height / 3 + 100);
+		bp_bits(gScreen.bsd_prints, gScreen.height * 68u / 100u);
 	}
 	bp_marker(++gScreen.stages);
-	bp_bits(gScreen.stages, gScreen.height / 3);
+	bp_bits(gScreen.stages, gScreen.height * 60u / 100u);
 }
 
 void boot_progress_process_stage(int pid, const char *name, const char *text)
@@ -510,11 +510,11 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 	}
 	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
-	    gScreen.height / 3 + 220);
+	    gScreen.height * 76u / 100u);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
-	    gScreen.height / 3 + 320);
+	    gScreen.height * 84u / 100u);
 	bp_marker(++gScreen.stages);
-	bp_bits(gScreen.stages, gScreen.height / 3);
+	bp_bits(gScreen.stages, gScreen.height * 60u / 100u);
 }
 
 void boot_progress_irq(uint64_t a, uint64_t b, uint64_t c)
