@@ -250,6 +250,44 @@ jobs:
             done
             exit 1
           fi
+      - name: Replace the schema-2 ADT with the board ADT
+        working-directory: unixnu
+        run: |
+          set -euo pipefail
+          # A format-2 board makes the upstream payload builder derive the ADT from the
+          # IPSW device tree (scripts/unixnu/payload.py: ctx.schema_version == 2 ->
+          # devicetree.generate(compile_hardware(ctx))). That tree is an iPad one:
+          # /cpus carries cpu0..cpu7 and no Apple validation properties, so
+          # AppleARMCPU matches it and panics at AppleARMCPU.cpp:111. A board ADT with a
+          # single cpu0 node is the shape that boots (Mu-shennong-6-pmgr2, 2026-10-28).
+          PAY=$(ls -t out/shennong/*/shennong/payload/payload.img out/shennong/payload/payload.img 2>/dev/null | head -1)
+          if [ -z "$PAY" ] || [ ! -f "$PAY" ]; then
+            echo "::error::no payload.img to carry the board ADT"
+            exit 1
+          fi
+          ADT=/tmp/board-adt.bin
+          python3 "$GITHUB_WORKSPACE/device/scripts/make-shennong-adt.py" \
+            --output "$ADT" --dram-size 0x10000000 --owned-memory-size 0x10000000 \
+            --cpu-regs 0 --psci-method smc
+          mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-before.bin 2>/dev/null || true
+          mcopy -o -i "$PAY" "$ADT" ::/EFI/UniXNU/Payloads/kernel.macho.adt
+          mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-after.bin
+          python3 - "$ADT" /tmp/adt-before.bin /tmp/adt-after.bin "$PAY" <<'PY'
+          import hashlib, sys
+          from pathlib import Path
+          def sha(p):
+              d = Path(p).read_bytes()
+              return hashlib.sha256(d).hexdigest(), len(d)
+          want = sha(sys.argv[1])
+          before = sha(sys.argv[2]) if Path(sys.argv[2]).is_file() else ('absent', 0)
+          after = sha(sys.argv[3])
+          print(f'board adt {want[1]} bytes {want[0]}')
+          print(f'adt before {before[1]} bytes {before[0]}')
+          print(f'adt after  {after[1]} bytes {after[0]}')
+          if after != want:
+              raise SystemExit('the payload ADT does not match the board ADT')
+          print(f'payload   {sha(sys.argv[4])[1]} bytes {sha(sys.argv[4])[0]}')
+          PY
       - name: Patch AppleARMCPU IONameMatch (cpu -> xpu)
         if: always()
         working-directory: unixnu
