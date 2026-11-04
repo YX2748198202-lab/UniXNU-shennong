@@ -1,5 +1,5 @@
 diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
-index 630a37a..42c62d1 100644
+index 630a37a..b230bbe 100644
 --- a/osfmk/kern/startup.c
 +++ b/osfmk/kern/startup.c
 @@ -657,13 +657,19 @@ kernel_bootstrap_thread(void)
@@ -22,7 +22,7 @@ index 630a37a..42c62d1 100644
  #endif
  
  #if ALTERNATE_DEBUGGER
-@@ -689,15 +695,18 @@ kernel_bootstrap_thread(void)
+@@ -689,45 +695,55 @@ kernel_bootstrap_thread(void)
  	 * Force the random number to be odd to avoid mapping a non-zero
  	 * word-aligned address to zero via addition.
  	 */
@@ -40,4 +40,49 @@ index 630a37a..42c62d1 100644
 +	boot_progress_stage("PE_init_iokit returned");
  #endif
  
++	boot_progress_stage("pre-irq-assert");
  	assert(ml_get_interrupts_enabled() == FALSE);
++	boot_progress_stage("irq-assert passed");
+ 
+ 	/*
+ 	 * Past this point, kernel subsystems that expect to operate with
+ 	 * interrupts or preemption enabled may begin enforcement.
+ 	 */
+ 	kernel_startup_initialize_upto(STARTUP_SUB_EARLY_BOOT);
++	boot_progress_stage("earlyboot phase done");
+ 
+ #if SCHED_HYGIENE_DEBUG
+ 	// Reset interrupts masked timeout before we enable interrupts
+ 	ml_spin_debug_clear_self();
+ #endif
+ 	(void) spllo();         /* Allow interruptions */
++	boot_progress_stage("irqs enabled");
+ 
+ 	/*
+ 	 * This will start displaying progress to the user, start as early as possible
+ 	 */
+ 	initialize_screen(NULL, kPEAcquireScreen);
++	boot_progress_stage("screen init done");
+ 
+ 	/*
+ 	 *	Initialize the shared region module.
+ 	 */
+ 	vm_commpage_init();
+ 	vm_commpage_text_init();
++	boot_progress_stage("commpage done");
+ 
+ #if CONFIG_MACF
+ 	kernel_bootstrap_log("mac_policy_initmach");
+ 	mac_policy_initmach();
++	boot_progress_stage("mac_policy_initmach done");
+ #if CONFIG_VNGUARD
+ 	kernel_bootstrap_log("vnguard_policy_init");
+ 	vnguard_policy_init();
+@@ -815,6 +831,7 @@ kernel_bootstrap_thread(void)
+ 	 *	Start the user bootstrap.
+ 	 */
+ #ifdef  MACH_BSD
++	boot_progress_stage("bsd_init call");
+ 	bsd_init();
+ #endif
+ 
