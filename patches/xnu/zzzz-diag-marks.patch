@@ -1,5 +1,4 @@
 diff --git a/osfmk/kern/startup.c b/osfmk/kern/startup.c
-index 630a37a..b230bbe 100644
 --- a/osfmk/kern/startup.c
 +++ b/osfmk/kern/startup.c
 @@ -657,13 +657,19 @@
