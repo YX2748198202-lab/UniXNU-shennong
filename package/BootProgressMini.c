@@ -30,10 +30,22 @@ typedef unsigned long bp_ulong;
 // Every stage message the boot-progress patch emits, in patch order. The screen
 // shows the index of the last one that arrived: monotonically increasing, so a
 // photo reads "how far the kernel got" even if one display row goes stale.
+// Order is the boot order, so the displayed number grows monotonically with time.
 static const char *const bp_stage_names[] = {
 	"arm_vm_init enter",
 	"arm_vm_init returned",
+	"early_random enter",
+	"early_random returned",
+	"device_service_create enter",
+	"device_service_create returned",
+	"phys_carveout_init enter",
+	"phys_carveout_init returned",
+	"kdp_init enter",
+	"kdp_init returned",
+	"PE_init_iokit returned",
 	"bsd_init enter",
+	"bsd_init: calling bsd_autoconf",
+	"bsd_init: calling loopattach",
 	"original PMGR nub start",
 	"original PMGR nub returned",
 	"vfs_mountroot enter",
@@ -46,15 +58,6 @@ static const char *const bp_stage_names[] = {
 	"Data mount returned",
 	"temporary watchdog launch policy enter",
 	"temporary watchdog launch policy ready",
-	"PE_init_iokit returned",
-	"early_random enter",
-	"early_random returned",
-	"device_service_create enter",
-	"device_service_create returned",
-	"phys_carveout_init enter",
-	"phys_carveout_init returned",
-	"kdp_init enter",
-	"kdp_init returned",
 };
 #define BP_STAGE_COUNT (sizeof(bp_stage_names) / sizeof(bp_stage_names[0]))
 
@@ -470,7 +473,7 @@ static void bp_record_stage(const char *text)
 		return;
 	}
 	for (i = 0; i < BP_STAGE_COUNT; ++i) {
-		if (bp_prefix(text, bp_stage_names[i]) && (i + 1) > gScreen.last_stage) {
+		if (bp_prefix(text, bp_stage_names[i])) {
 			gScreen.last_stage = i + 1;
 			bp_bits(gScreen.last_stage, gScreen.height / 3 + 120);
 			return;
