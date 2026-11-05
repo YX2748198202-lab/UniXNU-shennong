@@ -1,0 +1,28 @@
+build-verified-root: verified-root-policies.cpp did not compile:
+In file included from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/verified-root-policies.cpp:7:
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/drivers/VirtioMmioBlock/VerifiedBlockPolicy.h:9:15: error: expected parameter declarator
+    9 | static_assert(sizeof(NativeVerifiedBlockPolicy) == 16 && alignof(NativeVerifiedBlockPolicy) == 8);
+      |               ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/drivers/VirtioMmioBlock/VerifiedBlockPolicy.h:9:15: error: expected ')'
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/drivers/VirtioMmioBlock/VerifiedBlockPolicy.h:9:14: note: to match this '('
+    9 | static_assert(sizeof(NativeVerifiedBlockPolicy) == 16 && alignof(NativeVerifiedBlockPolicy) == 8);
+      |              ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/drivers/VirtioMmioBlock/VerifiedBlockPolicy.h:9:1: error: type specifier missing, defaults to 'int'; ISO C99 and later do not support implicit int [-Wimplicit-int]
+    9 | static_assert(sizeof(NativeVerifiedBlockPolicy) == 16 && alignof(NativeVerifiedBlockPolicy) == 8);
+      | ^
+      | int
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/drivers/VirtioMmioBlock/VerifiedBlockPolicy.h:10:8: error: expected identifier or '('
+   10 | extern "C" {
+      |        ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/verified-root-policies.cpp:11:22: warning: 'extern' variable has an initializer [-Wextern-initializer]
+   11 | extern const uint8_t verified_root_key[VR_KEY_BYTES] = {0};
+      |                      ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/verified-root-policies.cpp:13:7: error: must use 'struct' tag to refer to type 'NativeVerifiedBlockPolicy'
+   13 | const NativeVerifiedBlockPolicy verified_root_policies[1] = {
+      |       ^
+      |       struct 
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/verified-root-policies.cpp:14:6: error: use of undeclared identifier 'nullptr'
+   14 |     {nullptr, 0},
+      |      ^~~~~~~
+1 warning and 6 errors generated.
+
