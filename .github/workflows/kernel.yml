@@ -117,12 +117,18 @@ jobs:
             echo "boot progress STAGE hits: $(grep -c 'STAGE ' "$BP_SRC" || true)"
             echo "boot progress line count: $(wc -l < "$BP_SRC")"
           fi
-          echo "cached archive: $(ls -l "$TREE/build/boot-progress/" 2>/dev/null | tr '\n' ' ')"
+          echo "cached archive before: $(ls -l "$TREE/build/boot-progress/" 2>/dev/null | tr '\n' ' ')"
+          # The second pass linked a stale libBootProgress.a: the kernel carried the old
+          # BootProgressMini ([BP]/lane strings) and none of the new STAGE line even though
+          # build-boot-progress.py had recompiled the source into BootProgressMini.o. Drop the
+          # archive and the object so the second pass rebuilds both from kits/shennong.
+          rm -f "$TREE/build/boot-progress/libBootProgress.a" "$TREE/build/boot-progress/BootProgressMini.o"
+          echo "cached archive cleared: $(ls -l "$TREE/build/boot-progress/" 2>/dev/null | tr '\n' ' ')"
           echo "XNU_BOOT_PROGRESS env: ${XNU_BOOT_PROGRESS:-unset}"
           if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ]; then
             ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ) \
               || echo "::warning::UFS publication wait patch did not apply"
-            grep -c "gRootPublicationDone" "$TREE/drivers/ShengUfs/NativeUfs.cpp" | sed 's/^/ufs publication wait hits: /'
+            grep -c "gRootPublicationResult" "$TREE/drivers/ShengUfs/NativeUfs.cpp" | sed 's/^/ufs publication result hits: /'
           fi
           # The driver publishes a root window only against an owner-signed policy, and this
           # board now has one: policies/ carries its own 544-byte headers and the public key,
