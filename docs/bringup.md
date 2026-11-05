@@ -41,7 +41,25 @@
 - 采用 NativeUfs（UniXNU/ShengUfs，SM8550 起源）
 - 寄存器核对：SM8650 与 SM8550 的 UFS GCC 偏移完全一致（GDSCR 0x77004 / MEM_PHY 0x9e000 / AXI 0x77018 / AHB 0x77024 / ICE 0x77074 / AGGRE 0x770e4 / UNIPRO 0x77068）
 - SMMU：UFS stream ID 0x60（与 houji 实测一致）
-- 根卷：`unixnu userdata` 从 iPadOS 17.7.11（21H461）IPSW 提取 OS + Cryptex1,SystemOS，生成 8.74 GiB 的 `SHNGROOT` 卷（本地生成，未写设备）
+- 根卷：`unixnu userdata` 从 iPadOS 17.7.11（21H461）IPSW 提取 OS + Cryptex1,SystemOS，
+  生成 `SHNGROOT` 卷，2026-11-05 经授权写入 `userdata`（写入后 Android 数据不再存在，
+  见 [recovery.md](recovery.md)）
+
+### E3：真机逐轮记录（2026-11-05）
+
+| 轮 | 现象 | 根因 | 修复 |
+|---|---|---|---|
+| 1 | `smmu: conflicting UFS stream mapping slot=2 smr=80000060 s2cr=2` | 固件给 UFS stream 留了独占 SMR，且 translation 开着，规划器只接受空闲或 bypass bank | `patches/ufs-smmu-takeover.patch` 接管该 bank |
+| 2 | `magic=474e4853 544f4f52`、`manifest status=0 windows=2` | — | SMMU 通后 UFS 与根卷全部可读 |
+| 3 | `Undefined kernel instruction: pc=0xfffffff00596ed98 instr=0` | 绑定表取自原厂 kernelcache，而 prelink 把每个组件平移了 `[kernel.prelink] slide` | `scripts/apply-prelink-slide.py` 平移后**提交** pin |
+| 4 | `Failed to mount root device @IOKitBSDInit.cpp:984` | 绑定修好，驱动跑起来但没有根设备 | 进入策略问题 |
+| 5 | `stage=policy count invalid`、`policies=0` | 驱动要求 owner 签名根策略 | 生成本板策略（见下）|
+| 6 | `stage=signed window identities`、`prepared=2` | 无签名构建里 `validate()` 恒 false | 放弃绕过，走真策略 |
+| 7 | 策略版内核已启动，等待屏幕确认 | — | — |
+
+策略包：`scripts/make-root-policy.py` 从根卷解析 APFS 卷 UUID、逐 4096 块算 SHA-256、
+签 160B 头；544B 头与 395B 公钥存 `policies/`，哈希表作为根卷对象 `OS.vroot` /
+`SystemOS.vroot` 存在。完整说明见 [handoff/UFS-E3-2026-11-05.md](handoff/UFS-E3-2026-11-05.md)。
 
 ## 构建环境
 

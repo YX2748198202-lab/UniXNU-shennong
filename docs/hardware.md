@@ -32,7 +32,7 @@
 | 控制器 | `ufshc@1d84000`（reg 0x1d84000 / 0x3000）|
 | MCQ SQD | 0x1da5000 / 0x2000 |
 | VS | 0x1da4000 / 0x10 |
-| SMMU stream ID | 0x60 |
+| SMMU stream ID | 0x60（真机实测固件留了独占 SMR：`smr=80000060 s2cr=2`，translation 开着，驱动需接管该 bank）|
 | 逻辑块 | 4096 B（GPT 头在 4K-LBA1）|
 | userdata 窗口 | LBA 2260480 – 64049146（253.2 GiB）|
 
@@ -66,3 +66,17 @@ Synaptics TCM over SPI。
 
 6 个物理 LUN（sda–sdf），GPT 双备份。关键分区：boot_a/b、init_boot_a/b、vendor_boot_a/b、
 dtbo_a/b、recovery_a/b、vbmeta*、persist、uefi_a/b、xbl*/abl*/tz*/hyp* 等（完整备份见 recovery.md）。
+
+## UFS / SMMU 真机实测值（2026-11-05）
+
+| 项 | 值 |
+|---|---|
+| 控制器能力 | `HC cap=f5c7031f ver=00000400 hcs=0000010f hce=00000001` |
+| 命令通道 | `CMD n=7 type=01 op=28 lun=00 ocs=00 rsp=21000000 scsi=0000` |
+| DMA | `DMA=bc5a9000 UTRL=0` |
+| SMMU 规划 | `slot=2`，`smr=80000060`、`s2cr=2`（接管后 `cbar=00010000`、`sctlr=00000000`）|
+| SMMU ID | `id1=60000047`、`id2=5111`、`cba2r=1` |
+| 分区位置 | `userdata` LBA `227e00..3d14ffa`，GPT 解析自根卷首 1 MiB |
+| 卷魔数 | `474e4853 544f4f52`（小端 "SHNGROOT"），manifest 版本 1/2 |
+
+这些值来自启动时的诊断屏输出，可直接与其它 SM8650 板对照。
