@@ -225,6 +225,11 @@ jobs:
           fi
           ls -l "$IP"
           python3 -m pip install --quiet pyliblzfse || echo "::warning::pyliblzfse install failed"
+          # The scan compiles Apple's published IOBlockStorageDevice.cpp with the flags
+          # the kernel build recorded, so the reference sources must be in the tree.
+          ./unixnu fetch IOStorageFamily > /tmp/refetch.out 2>&1 || echo "::warning::IOStorageFamily fetch failed"
+          ./unixnu tree -D "$UNIXNU_DEVICE" > /tmp/retree.out 2>&1 || echo "::warning::tree reassembly failed"
+          ls "$TREE/refer/IOStorageFamily" 2>/dev/null | head -3 | sed 's/^/::warning::refer: /'
           # The runner shell is bash -e, so a failing scan would abort before its own
           # diagnostics are printed. Swallow the failure and always dump the output.
           python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
