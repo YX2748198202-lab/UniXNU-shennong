@@ -1,0 +1,47 @@
+--- a/drivers/ShengUfs/NativeUfs.cpp
++++ b/drivers/ShengUfs/NativeUfs.cpp
+@@ -1950,6 +1950,9 @@
+ static char gPendingUuid[4][37];
+ static UfsRootPlan gPublicationPlan;
+ static NativeUfs *gPendingProvider;
++// Set by the publisher thread when it finishes, so startRoot can hand a boot a root
++// whose windows are already published instead of racing the mount that follows it.
++static volatile int gRootPublicationDone;
+ 
+ static bool mediaWithUuidExists (const char *uuid, NativeUfsBlock *window)
+ {
+@@ -2056,6 +2059,7 @@
+     // dereference it here. The media-failure object is deliberately retained.
+     rootDiagnosticFailure (reason);
+   }
++  gRootPublicationDone = 1;
+   gPendingProvider->release ();  // Balanced with successful thread dispatch.
+ }
+ 
+@@ -2300,6 +2304,7 @@
+   // Prepare all windows or publish none. Diagnostics never decide policy.
+   gPending = 0;
+   gPendingProvider = this;
++  gRootPublicationDone = 0;
+   struct Operations {
+     NativeUfs *owner;
+     RootLayout *layout;
+@@ -2347,6 +2352,18 @@
+         return false;
+       }
+       thread_deallocate (thread);
++      // Publication used to be fire-and-forget, and a boot could reach IOFindBSDRoot before
++      // the windows existed: the same image then mounted on one run and panicked with
++      // "Failed to mount root device" on the next. Wait here, bounded, so the media are in
++      // place before the platform expert hands the boot on. The wait never decides policy:
++      // a timeout only means the publisher reports its own failure.
++      unsigned waited = 0;
++      while (!gRootPublicationDone && waited < 300) {
++        IOSleep (100);
++        ++waited;
++      }
++      IOLog ("NativeUfs: root publisher %s after %u00 ms; published=%u\n",
++             gRootPublicationDone ? "finished" : "still running", waited, native_ufs_blocks_published);
+       return true;
+     }
+     void discard (unsigned index) { discardPendingWindow (index); }

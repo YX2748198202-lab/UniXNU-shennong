@@ -105,6 +105,14 @@ jobs:
               || echo "::warning::UFS SMMU takeover patch did not apply"
             grep -c "takeover" "$TREE/drivers/ShengUfs/SmmuTakeover.h" | sed 's/^/ufs takeover hits: /'
           fi
+          # Root publication used to be fire-and-forget; on this board the mount that follows
+          # sometimes beat it and the same image panicked with "Failed to mount root device".
+          # The patch makes startRoot wait, bounded, for the publisher thread.
+          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ]; then
+            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ) \
+              || echo "::warning::UFS publication wait patch did not apply"
+            grep -c "gRootPublicationDone" "$TREE/drivers/ShengUfs/NativeUfs.cpp" | sed 's/^/ufs publication wait hits: /'
+          fi
           # The driver publishes a root window only against an owner-signed policy, and this
           # board now has one: policies/ carries its own 544-byte headers and the public key,
           # so the verified path runs instead of being bypassed. Copy the bundle where
