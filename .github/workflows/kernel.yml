@@ -352,23 +352,59 @@ jobs:
           git commit -q -m "probe run $GITHUB_RUN_ID" 2>/dev/null || echo nothing-to-commit
           git push --force origin "HEAD:refs/heads/ci-probe-$GITHUB_RUN_ID" 2>/dev/null || echo push-failed
           exit 0
-      - name: Fetch the trust cache
+      - name: Build the trust bundle
         working-directory: unixnu
         run: |
-          # payload.py packs Payloads/kernel.macho.trustcache and the ADT gains its
-          # TrustCache memory-map entry; without the cache AMFI kills launchd at exec.
-          if ! ./unixnu ipsw fetch StaticTrustCache > /tmp/ipsw-tc.out 2>&1; then
-            tail -25 /tmp/ipsw-tc.out | sed 's/^/::error::/'
+          # The loader accepts the trust-cache bundle format (a count/offset header followed
+          # by the raw modules), not an IPSW IM4P: packing the IM4P makes the firmware refuse
+          # the payload with "Compromised Data". scripts/build-original-system-trust.py
+          # verifies both modules against their pinned digests and writes the bundle.
+          IP=$(ls -t out/ipsw/*.ipsw 2>/dev/null | head -1)
+          if [ -z "$IP" ]; then echo "::error::no IPSW for the trust bundle"; exit 1; fi
+          mkdir -p refer .cache/firmware/target-volumes
+          ln -f "$(cd "$(dirname "$IP")" && pwd)/$(basename "$IP")" \
+                refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw 2>/dev/null \
+            || cp "$IP" refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+          python3 - <<'PY'
+          import plistlib, zipfile
+          from pathlib import Path
+
+          def der(data, at):
+              tag, size = data[at:at + 2]
+              at += 2
+              if size & 128:
+                  count = size & 127
+                  size = int.from_bytes(data[at:at + count], 'big')
+                  at += count
+              return tag, data[at:at + size], at + size
+
+          with zipfile.ZipFile('refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw') as archive:
+              manifest = plistlib.loads(archive.read('BuildManifest.plist'))
+              identity = [i for i in manifest['BuildIdentities']
+                          if i['Info']['DeviceClass'] == 'j120ap'][0]
+              raw = archive.read(identity['Manifest']['StaticTrustCache']['Info']['Path'])
+          tag, sequence, end = der(raw, 0)
+          fields, cursor = [], 0
+          while cursor < len(sequence):
+              kind, data, cursor = der(sequence, cursor)
+              fields.append((kind, data))
+          if fields[0][1] != b'IM4P':
+              raise SystemExit('static trust cache is not an IM4P')
+          Path('.cache/firmware/target-volumes/static-trustcache.bin').write_bytes(fields[3][1])
+          print('static module:', len(fields[3][1]), 'bytes')
+          PY
+          if ! python3 scripts/build-original-system-trust.py > /tmp/trust-bundle.out 2>&1; then
+            tail -20 /tmp/trust-bundle.out | sed 's/^/::error::/'
             exit 1
           fi
-          tail -4 /tmp/ipsw-tc.out
-          ls -l out/ipsw/*/*.trustcache 2>/dev/null | sed 's/^/trust cache: /'
+          tail -2 /tmp/trust-bundle.out
+          ls -l build/original-static-system-trust/*.bundle | sed 's/^/trust bundle: /'
       - name: Build payload
         working-directory: unixnu
         run: |
           # The static trust cache of this IPSW is what lets AMFI accept launchd; the
           # payload step packs it and the ADT gains its TrustCache memory-map entry.
-          TC=$(ls -t out/ipsw/*/*.trustcache out/shennong/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          TC=$(ls -t build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
           echo "trust cache: ${TC:-none}"
           TC_ARG=""; [ -n "$TC" ] && TC_ARG="--trust-cache $(cd "$(dirname "$TC")" && pwd)/$(basename "$TC")"
           if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" $TC_ARG > /tmp/payload.out 2>&1; then
@@ -404,7 +440,7 @@ jobs:
           ADT=/tmp/board-adt.bin
           ROOT_UUID=$(python3 -c "import tomllib;print(tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['payload']['adt'].get('root_match_volume_uuid',''))")
           echo "adt root-match volume uuid: ${ROOT_UUID:-none}"
-          TC=$(ls -t out/ipsw/*/*.trustcache out/shennong/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          TC=$(ls -t build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
           echo "adt trust cache: ${TC:-none}"
           python3 "$GITHUB_WORKSPACE/device/scripts/make-shennong-adt.py" \
             --output "$ADT" --dram-size 0x10000000 --owned-memory-size 0x10000000 \
