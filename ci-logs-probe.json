@@ -1,0 +1,84 @@
+{
+  "macho": "out/shennong/ipados-17.7.11-21H461/shennong/kernel/kernel.macho",
+  "macho_size": 52068352,
+  "macho_sha256": "feb79bd63779559844217fee640c02ba8b042a716f70029e4f9749b29b4c719a",
+  "plan_candidate_sha256": "feb79bd63779559844217fee640c02ba8b042a716f70029e4f9749b29b4c719a",
+  "plan_original_sha256": "f18b4df865405f2a287b84977d7aca745e056d656d9fc9df1662970ce2969de7",
+  "exports_total": 22692,
+  "storage_extents": [
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__TEXT",
+      "va": 18446744005059818880,
+      "size": 8144
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__TEXT_EXEC",
+      "va": 18446744005067063296,
+      "size": 82776
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__DATA_CONST",
+      "va": 18446744005087277568,
+      "size": 23568
+    },
+    {
+      "module": "com.apple.iokit.IOStorageFamily",
+      "segment": "__DATA",
+      "va": 18446744005102129152,
+      "size": 945
+    }
+  ],
+  "undefined": [
+    {
+      "name": "__ZN20IOBlockStorageDevice10gMetaClassE",
+      "resolved": "0xfffffff007add1d0"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice11requestIdleEv",
+      "resolved": "0xfffffff00596f050"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice13doSetPriorityEP26IOBlockStorageDeviceExtentjh",
+      "resolved": "0xfffffff00596f068"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice13setPropertiesEP8OSObject",
+      "resolved": "0xfffffff00596ef38"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP34IOBlockStorageProvisionDeviceExtenty",
+      "resolved": null
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice4initEP12OSDictionary",
+      "resolved": "0xfffffff00596ee30"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDevice7doUnmapEP26IOBlockStorageDeviceExtentjj",
+      "resolved": "0xfffffff00596f05c"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDeviceC2EPK11OSMetaClass",
+      "resolved": "0xfffffff00596ed98"
+    },
+    {
+      "name": "__ZN20IOBlockStorageDeviceD2Ev",
+      "resolved": "0xfffffff00596edb8"
+    },
+    {
+      "name": "__ZNK20IOBlockStorageDevice11getPropertyEPK8OSSymbol",
+      "resolved": "0xfffffff00596ee88"
+    },
+    {
+      "name": "__ZTV20IOBlockStorageDevice",
+      "resolved": "0xfffffff006cb44c0"
+    }
+  ],
+  "missing": [
+    "__ZN20IOBlockStorageDevice20doGetProvisionStatusEyyPjP34IOBlockStorageProvisionDeviceExtenty"
+  ],
+  "resolved_count": 10
+}
