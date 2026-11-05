@@ -1,0 +1,22 @@
+{
+  "note": "Owner-signed VerifiedRoot policies for the shennong root windows. The private key is NOT in this repository (it stays in the local build workspace); these files are public integrity data only.",
+  "key_sha256": "432feb26441ff873ce4a4251ff151e31f47c561fe0107f80692860b7b5542d33",
+  "windows": [
+    {
+      "name": "OS",
+      "offset": 1048576,
+      "size": 6077580800,
+      "block_count": 1483785,
+      "uuid": "04769d262ca04825b443e2e5f88300f2",
+      "image_sha256": "e5634d04a8ac35f024845f583394e0a35deb26a04cb0c00286a8674e25a9a4f2"
+    },
+    {
+      "name": "SystemOS",
+      "offset": 6079643648,
+      "size": 3303014400,
+      "block_count": 806400,
+      "uuid": "8846fe7829104297af97d59bb6f8fc16",
+      "image_sha256": "b4908cde41d23e6bc05e6af51a2c9eeb00cf0f863a6a18b1600c96a3fd70414f"
+    }
+  ]
+}

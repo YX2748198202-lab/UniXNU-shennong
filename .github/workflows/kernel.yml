@@ -105,48 +105,18 @@ jobs:
               || echo "::warning::UFS SMMU takeover patch did not apply"
             grep -c "takeover" "$TREE/drivers/ShengUfs/SmmuTakeover.h" | sed 's/^/ufs takeover hits: /'
           fi
-          # ShengUfs is built with NATIVE_VERIFIED_BLOCK=1, which makes a root window
-          # publishable only with an owner-signed policy bundle; this board has none, so
-          # startRoot stops at "policy count invalid" and publishes nothing. The define
-          # appears twice in build-arm-driver.py (the plain driver list and the
-          # --verified-root list) and once in build-sheng-source-storage.py, so strip all
-          # of them: the driver then takes its documented unverified path.
-          python3 - "$TREE" <<'PY'
-          import sys
-          from pathlib import Path
-          tree = Path(sys.argv[1])
-          targets = (tree / 'scripts/build-arm-driver.py', tree / 'scripts/build-sheng-source-storage.py')
-          marker = "'-DNATIVE_VERIFIED_BLOCK=1'"
-          for script in targets:
-              if not script.is_file():
-                  print(f'unverified UFS build: {script.name} absent')
-                  continue
-              text = script.read_text()
-              count = text.count(marker)
-              # `#if defined(NATIVE_VERIFIED_BLOCK) && NATIVE_VERIFIED_BLOCK` is false at 0,
-              # which selects the driver's unverified window path without touching sources.
-              script.write_text(text.replace(marker, "'-DNATIVE_VERIFIED_BLOCK=0'"))
-              print(f'unverified UFS build: {script.name} defines zeroed={count}')
-          PY
-          # Belt and braces for the same gate: the compile-flag change above does not
-          # always invalidate the archive, so also change the driver source itself. With no
-          # policy bundle the window is published unverified instead of refusing to boot.
-          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-unverified-root.patch" ]; then
-            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-unverified-root.patch" ) \
-              || echo "::warning::UFS unverified-root patch did not apply"
-            grep -c "unverified root (no policy bundle)" "$TREE/drivers/ShengUfs/NativeUfs.cpp" \
-              | sed 's/^/ufs unverified patch hits: /'
-          fi
-          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-unverified-identity.patch" ]; then
-            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-unverified-identity.patch" ) \
-              || echo "::warning::UFS unverified-identity patch did not apply"
-            grep -c "placeholder identity" "$TREE/drivers/ShengUfs/NativeUfs.cpp" \
-              | sed 's/^/ufs identity patch hits: /'
-          fi
-          # The archives are rebuilt from source timestamps, and this change is in the
-          # compile flags, so drop the old archive to force a clean rebuild.
-          rm -rf "$TREE/build/sheng-ufs"
-          echo "sheng-ufs archive dir cleared"
+          # The driver publishes a root window only against an owner-signed policy, and this
+          # board now has one: policies/ carries its own 544-byte headers and the public key,
+          # so the verified path runs instead of being bypassed. Copy the bundle where
+          # build-verified-root.py looks for it and drop its generated source so the archive
+          # is rebuilt against it.
+          mkdir -p "$TREE/build/verified-root/policies"
+          cp "$GITHUB_WORKSPACE/device/policies/verified-root-key.bin" \
+             "$GITHUB_WORKSPACE/device/policies/OS.policy" \
+             "$GITHUB_WORKSPACE/device/policies/SystemOS.policy" \
+             "$TREE/build/verified-root/policies/"
+          rm -f "$TREE/build/verified-root/verified-root-policies.cpp"
+          echo "verified-root bundle: $(ls "$TREE/build/verified-root/policies" | tr '\n' ' ')"
           mkdir -p "$TREE/drivers"
           if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
             rm -rf "$TREE/drivers/ShengUfs"

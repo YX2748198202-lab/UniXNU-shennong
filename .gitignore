@@ -17,3 +17,6 @@ Build/
 # Local backups (device-unique)
 backups/
 *.tar.gz
+
+# The root signing private key never enters the repository.
+*.rsa
