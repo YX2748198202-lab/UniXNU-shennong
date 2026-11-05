@@ -123,6 +123,10 @@ jobs:
           else:
               print('::warning::unverified UFS build: NativeUfs define list not found')
           PY
+          # The archives are rebuilt only when their sources look newer, and this change is
+          # in the compile flags, so drop the old archive to force a clean rebuild.
+          rm -rf "$TREE/build/sheng-ufs"
+          echo "sheng-ufs archive dir cleared: $(ls -d "$TREE/build/sheng-ufs" 2>/dev/null || echo gone)"
           mkdir -p "$TREE/drivers"
           if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
             rm -rf "$TREE/drivers/ShengUfs"
