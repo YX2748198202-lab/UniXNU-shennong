@@ -105,6 +105,24 @@ jobs:
               || echo "::warning::UFS SMMU takeover patch did not apply"
             grep -c "takeover" "$TREE/drivers/ShengUfs/SmmuTakeover.h" | sed 's/^/ufs takeover hits: /'
           fi
+          # ShengUfs is built with NATIVE_VERIFIED_BLOCK=1 unconditionally, which makes a
+          # root window publishable only with an owner-signed policy bundle; this board has
+          # none, so startRoot stops at "policy count invalid" and publishes nothing. Drop
+          # the define for this board: the driver then takes its documented unverified path
+          # (window prepare returns true) and publishes the two SHNGROOT windows.
+          python3 - "$TREE/scripts/build-arm-driver.py" <<'PY'
+          import sys
+          from pathlib import Path
+          script = Path(sys.argv[1])
+          text = script.read_text()
+          marker = "'-DNATIVE_VERIFIED_BLOCK=1', '-DNATIVE_VERIFIED_BLOCK_MULTI_POLICY=1', '-mgeneral-regs-only'"
+          if marker in text:
+              replacement = "'-DNATIVE_VERIFIED_BLOCK_MULTI_POLICY=1', '-mgeneral-regs-only'"
+              script.write_text(text.replace(marker, replacement, 1))
+              print('unverified UFS build: NATIVE_VERIFIED_BLOCK dropped from NativeUfs')
+          else:
+              print('::warning::unverified UFS build: NativeUfs define list not found')
+          PY
           mkdir -p "$TREE/drivers"
           if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
             rm -rf "$TREE/drivers/ShengUfs"
