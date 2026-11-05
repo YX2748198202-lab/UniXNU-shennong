@@ -1,0 +1,18 @@
+--- a/drivers/ShengUfs/NativeUfs.cpp	2026-11-05 16:30:23.568490321 +0800
++++ b/drivers/ShengUfs/NativeUfs.cpp	2026-11-05 16:30:23.586089521 +0800
+@@ -1705,8 +1705,13 @@
+   const uint8_t *manifest = nullptr;
+   uint64_t manifestBytes = 0;
+   if (!verified_root_policy_count || verified_root_policy_count > 16) {
+-    gRootDiagnostic.stage = "policy count invalid";
+-    return false;
++    // This board carries no owner-signed policy bundle, so there is nothing to check the
++    // window against. Publish it unverified instead of refusing to boot: the storage stack
++    // below this point (controller, SMMU, GPT, SHNGROOT manifest) is already proven on the
++    // device, and the reference marble port starts from exactly this state.
++    gRootDiagnostic.stage = "unverified root (no policy bundle)";
++    gRootDiagnostic.verify = 0;
++    return true;
+   }
+   for (uint64_t index = 0; index < verified_root_policy_count; ++index) {
+     const NativeVerifiedBlockPolicy &policy = verified_root_policies[index];

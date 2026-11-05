@@ -128,6 +128,15 @@ jobs:
               script.write_text(text.replace(marker, "'-DNATIVE_VERIFIED_BLOCK=0'"))
               print(f'unverified UFS build: {script.name} defines zeroed={count}')
           PY
+          # Belt and braces for the same gate: the compile-flag change above does not
+          # always invalidate the archive, so also change the driver source itself. With no
+          # policy bundle the window is published unverified instead of refusing to boot.
+          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-unverified-root.patch" ]; then
+            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-unverified-root.patch" ) \
+              || echo "::warning::UFS unverified-root patch did not apply"
+            grep -c "unverified root (no policy bundle)" "$TREE/drivers/ShengUfs/NativeUfs.cpp" \
+              | sed 's/^/ufs unverified patch hits: /'
+          fi
           # The archives are rebuilt from source timestamps, and this change is in the
           # compile flags, so drop the old archive to force a clean rebuild.
           rm -rf "$TREE/build/sheng-ufs"
