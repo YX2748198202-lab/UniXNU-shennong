@@ -108,6 +108,17 @@ jobs:
           # Root publication used to be fire-and-forget; on this board the mount that follows
           # sometimes beat it and the same image panicked with "Failed to mount root device".
           # The patch makes startRoot wait, bounded, for the publisher thread.
+          # Which source does the boot-progress archive compile from, and does it carry
+          # the STAGE line? The last round proved the pushed package/ copy has it while the
+          # kernel did not, so record the resolved path and content before the second pass.
+          BP_SRC="$TREE/kits/shennong/BootProgressMini.c"
+          echo "boot progress source: $BP_SRC -> $(readlink -f "$BP_SRC" 2>/dev/null || echo missing)"
+          if [ -f "$BP_SRC" ]; then
+            echo "boot progress STAGE hits: $(grep -c 'STAGE ' "$BP_SRC" || true)"
+            echo "boot progress line count: $(wc -l < "$BP_SRC")"
+          fi
+          echo "cached archive: $(ls -l "$TREE/build/boot-progress/" 2>/dev/null | tr '\n' ' ')"
+          echo "XNU_BOOT_PROGRESS env: ${XNU_BOOT_PROGRESS:-unset}"
           if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ]; then
             ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-sync-publication.patch" ) \
               || echo "::warning::UFS publication wait patch did not apply"
