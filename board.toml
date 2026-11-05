@@ -27,6 +27,8 @@
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",
+  "build-verified-root.py",
+  "build-storage-bindings.py",
   "component:VirtioMmioBlock",
   "component:RamBlock",
 ]
