@@ -13,19 +13,24 @@ Xiaomi 14 Pro（`shennong` / 23116PN5BC / SM8650 "pineapple"）的 UniXNU 移植
 | B | UEFI 实机（UniXNU 菜单稳定显示）| ✅ 完成（v6）|
 | C | XNU 早期启动（AMFI / bsd_init / 内核栈）| ✅ **完成**：停在 `vfs_mountroot`（`IOKitBSDInit.cpp:984`）|
 | D | 中断 / CPU / 内存 | ✅ 完成：ADT 换成板级树后 `/cpus` 正常认领，`AppleARMCPU` 不再 panic |
-| E | UFS 驱动 + iOS 根卷 | 🟡 **存储栈已打通**，剩根窗口发布（见下）|
+| E | UFS 驱动 + iOS 根卷 | 🟢 **根窗口已发布**（`published=2`，两个 IOMedia + APFS 分区表可读），进入挂载 |
 | F | 用户态（launchd / SpringBoard）| ⬜ 待开始 |
 | G | 硬件功能（显示 / 触控 / GPU / Wi-Fi / 音频）| ⬜ 待开始 |
 
 ### 阶段 E 目前的位置
 
-真机上已验证：UFS 控制器 / GCC / PHY 起来、SMMU 独占 bank 被接管、GPT 解析正确、
+真机已验证：UFS 控制器 / GCC / PHY 起来、SMMU 独占 bank 被接管、GPT 解析正确、
 写进 `userdata` 的 SHNGROOT 卷读回（`magic=474e4853 544f4f52`、`manifest=0`、`windows=2`）、
-两个根窗口 `prepared=2`。
+两个根窗口通过 owner 签名策略校验并发布为 IOMedia：
 
-唯一剩余门：驱动的 `configureVerification` / `validate` 要求 **owner 签名的根策略**才发布窗口。
-已用本板自己的 RSA-3072 密钥生成策略（`policies/`），根卷内含匹配的哈希表对象；策略版内核
-`Mu-policy12.img` 已启动，等待屏幕确认是否 `published=2`。
+```
+NATIVE_UFS media report: published=2 reads=142 failures=0 media=7
+disk1s1 uuid=8846FE78-2910-42…   ← 与 SystemOS 策略 UUID 一致
+disk3s1 uuid=04769D26-2CA0-4…    ← 与 OS 策略 UUID 一致
+disk2  GUID_partition_scheme / disk2s1 7C3457EF-… (APFS)
+```
+
+下一步：`native-ufs-root=1` 让 XNU 真正挂载根卷。
 
 **完整过程、判读表与产物哈希见 [docs/handoff/UFS-E3-2026-11-05.md](docs/handoff/UFS-E3-2026-11-05.md)。**
 

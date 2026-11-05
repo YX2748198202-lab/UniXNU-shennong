@@ -78,13 +78,13 @@ paths = ["drivers/ShengUfs/**", "patches/ufs-smmu-takeover.patch", "policies/**"
 inputs = ["UFS 控制器 ufshc@1d84000，逻辑块 4096 B，GCC 偏移与 SM8550 完全一致", "根卷：从 iPadOS 17.7.11 (21H461) IPSW 提取 OS 与 Cryptex1,SystemOS，生成 SHNGROOT 卷写入 userdata", "IOStorageFamily 的 190 个 vtable 槽位与 6 个 VerifiedRoot 符号以绝对符号方式绑定"]
 configuration = ["board.toml：[userdata] first_lba=2260480 last_lba=64049146 lba_bytes=4096；[kernel].archives 含 component:ShengUfs 与 VerifiedRoot 归档", "payload args：native-ufs-probe=12 / native-ufs-root=1 用于分阶段验证；sheng-pmgr=2 常驻", "根策略：policies/ 存放本板 544 字节签名头与 395 字节公钥，哈希表作为根卷对象 OS.vroot / SystemOS.vroot"]
 procedure = ["量绑定并按 slide 平移后提交，再构建（否则构造函数落在零字节）", "写卷：fastboot flash userdata userdata-root.img（sparse，实测 34/34 块）", "验证：fastboot boot 带 native-ufs-probe=10 时读 GPT 与卷首块；native-ufs-probe=12 时发布并列出介质"]
-findings = ["固件留下的 UFS SMMU 独占映射需接管（smr=80000060 s2cr=2 → cbar=00010000 sctlr=00000000），补丁在 patches/ufs-smmu-takeover.patch", "驱动要求 owner 签名策略才发布根窗口：configureVerification 需要 1..16 条策略，本板策略由 scripts/make-root-policy.py 用自建 RSA-3072 密钥生成", "无验证构建里 validate() 恒返回 false，绕过只会停在 signed window identities；正解是提供真策略", "编译宏改动的 round 若不清空 build/sheng-ufs，链接的仍是旧归档"]
+findings = ["固件留下的 UFS SMMU 独占映射需接管（smr=80000060 s2cr=2 → cbar=00010000 sctlr=00000000），补丁在 patches/ufs-smmu-takeover.patch", "驱动要求 owner 签名策略才发布根窗口：configureVerification 需要 1..16 条策略，本板策略由 scripts/make-root-policy.py 用自建 RSA-3072 密钥生成", "无验证构建里 validate() 恒返回 false，绕过只会停在 signed window identities；正解是提供真策略", "策略对象必须按清单偏移落在 4 KiB 对齐处且 image_bytes 为 4096 倍数，否则驱动分别报 VR_HASH_TABLE 与 manifest=4；追加工具一度用 append 模式打开镜像，seek 被忽略导致第二个对象漂移 753,376 字节"]
 completion = ["Host：寄存器/时钟/链路/SMMU 与板级清单一致。Reads：SCSI 容量、GPT、已知块正确，OS/SystemOS 窗口落在 userdata 内。Root：配置的卷挂载且 launchd 启动；写入在重启后仍在"]
-limits = ["根窗口发布尚未在真机确认（策略版镜已启动，等屏幕读数）", "尚无 Data 卷（/private/var）、无 dyld 缓存、未进入用户态"]
-next_action = ["读 Mu-policy12.img 的屏幕：published=2 后改用 native-ufs-root=1 攻挂载"]
+limits = ["根窗口已发布为 IOMedia（published=2、142 次读取零失败），但 XNU 尚未挂载根卷", "尚无 Data 卷（/private/var）、无 dyld 缓存、未进入用户态"]
+next_action = ["用 native-ufs-root=1 让 XNU 挂载已发布的根窗口"]
 evidence = [
   { kind = "device", reference = "docs/handoff/UFS-E3-2026-11-05.md", result = "根卷可读：magic=474e4853 544f4f52、manifest status=0 windows=2", command = "fastboot boot Mu-ufsr12b.img", revision = "14eaf555283f05334555ca596c56d32069156f3e" },
-  { kind = "device", reference = "docs/handoff/UFS-E3-2026-11-05.md", result = "两个根窗口配置并 attach：prepared=2；卡在 validate 的身份门", command = "fastboot boot Mu-ufsr12f.img", revision = "14eaf555283f05334555ca596c56d32069156f3e" },
+  { kind = "device", reference = "docs/handoff/UFS-E3-2026-11-05.md", result = "两个根窗口发布为 IOMedia：published=2 reads=142 failures=0 media=7，UUID 与策略一致", command = "fastboot boot Mu-policy12.img", revision = "14eaf555283f05334555ca596c56d32069156f3e" },
 ]
 
 [[area]]
