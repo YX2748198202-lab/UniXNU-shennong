@@ -276,8 +276,21 @@ jobs:
           ls -l "$REF/IOBlockStorageDevice.cpp" 2>&1 | sed 's/^/::warning::refer file: /'
           # The runner shell is bash -e, so a failing scan would abort before its own
           # diagnostics are printed. Swallow the failure and always dump the output.
+          # Measure against the kernel this build produced, not the original
+          # kernelcache: the prelink places the kexts at its own addresses, so the
+          # kernelcache VAs do not exist in the built image (a bound constructor there
+          # reads zero and the CPU takes an undefined-instruction panic).
+          M=$(ls -t out/shennong/*/shennong/kernel/kernel.macho 2>/dev/null | head -1)
+          if [ -n "$M" ]; then
+            M=$(cd "$(dirname "$M")" && pwd)/$(basename "$M")
+            echo "binding source: built kernel $M"
+            SRC_ARGS=(--kernelcache "$M")
+          else
+            echo "binding source: original IPSW kernelcache"
+            SRC_ARGS=(--ipsw "$IP")
+          fi
           python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
-            --ipsw "$IP" --device-class j120ap --tree "$TREE" \
+            "${SRC_ARGS[@]}" --device-class j120ap --tree "$TREE" \
             --output "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" \
             > /tmp/sstorage.out 2>&1 || echo "scan failed rc=$?"
           tail -30 /tmp/sstorage.out | sed 's/^/::error::storage scan: /'
