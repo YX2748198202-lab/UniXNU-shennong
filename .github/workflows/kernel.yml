@@ -386,9 +386,12 @@ jobs:
             exit 1
           fi
           ADT=/tmp/board-adt.bin
+          ROOT_UUID=$(python3 -c "import tomllib;print(tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['payload']['adt'].get('root_match_volume_uuid',''))")
+          echo "adt root-match volume uuid: ${ROOT_UUID:-none}"
           python3 "$GITHUB_WORKSPACE/device/scripts/make-shennong-adt.py" \
             --output "$ADT" --dram-size 0x10000000 --owned-memory-size 0x10000000 \
-            --cpu-regs 0 --psci-method smc
+            --cpu-regs 0 --psci-method smc \
+            ${ROOT_UUID:+--root-match-volume-uuid "$ROOT_UUID"}
           rm -f /tmp/adt-before.bin /tmp/adt-after.bin
           mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-before.bin || true
           mcopy -o -i "$PAY" "$ADT" ::/EFI/UniXNU/Payloads/kernel.macho.adt

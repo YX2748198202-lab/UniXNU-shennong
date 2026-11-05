@@ -75,6 +75,10 @@
 "owned_memory_size" = "0x10000000"
 "cpu_regs" = "0"
 "psci_method" = "smc"
+# OS volume UUID of this OS profile (iPadOS 17.7.11 21H461). IOFindBSDRoot matches the
+# published IOMedia against this through the ADT's root-matching property; without it the
+# UFS windows are published but vfs_mountroot never selects one.
+"root_match_volume_uuid" = "04769D26-2CA0-4825-B443-E2E5F88300F2"
 ["bootimg"]
 "dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xFC400000", "0x0", "0x2B00000"] }] }]
 ["device_tree"]
