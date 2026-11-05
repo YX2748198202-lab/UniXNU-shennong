@@ -224,12 +224,13 @@ jobs:
               || { echo "::error::IPSW download failed"; exit 0; }
           fi
           ls -l "$IP"
+          # The runner shell is bash -e, so a failing scan would abort before its own
+          # diagnostics are printed. Swallow the failure and always dump the output.
           python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
             --ipsw "$IP" --device-class j120ap --tree "$TREE" \
             --output "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" \
-            > /tmp/sstorage.out 2>&1
-          RC=$?
-          echo "scan rc=$RC"
+            > /tmp/sstorage.out 2>&1 || echo "scan failed rc=$?"
+          tail -30 /tmp/sstorage.out | sed 's/^/::error::storage scan: /'
           tail -20 /tmp/sstorage.out | sed 's/^/::error::storage scan: /'
           if [ -f "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" ]; then
             python3 - "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" <<'PY'
