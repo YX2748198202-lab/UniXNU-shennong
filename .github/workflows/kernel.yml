@@ -63,6 +63,29 @@ jobs:
             sed -i '' '/^     \[ "\${XNU_SOURCE_CORECRYPTO14:-0}" != 1 \]; then$/d' "$SRC_SCRIPT" || true
             echo "boot-progress gate patched: $(grep -c 'if false; then' "$SRC_SCRIPT" || true)"
           fi
+          # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
+          # crypto come from two archives the upstream build script never adds to the
+          # kernel link: it only knows the archives behind its own switches. Force-load
+          # them when they are there, before the first pass.
+          python3 - "$SRC_SCRIPT" <<'PY'
+          import sys
+          from pathlib import Path
+          script = Path(sys.argv[1])
+          text = script.read_text()
+          if 'libStorageBindings.a' in text:
+              print('storage archive link patch: already present')
+          else:
+              anchor = '  KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES ${XNU_EXTRA_LD_ARCHIVES:-}"'
+              if anchor not in text:
+                  print('::error::storage archive link patch: anchor not found')
+              else:
+                  inject = ('  for _extra in "$ROOT/build/verified-root/libVerifiedRoot.a" '
+                            '"$ROOT/build/io-storage-family/libStorageBindings.a"; do\n'
+                            '    [ -f "$_extra" ] && KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES -Wl,-force_load,$_extra"\n'
+                            '  done\n')
+                  script.write_text(text.replace(anchor, inject + anchor, 1))
+                  print('storage archive link patch: applied')
+          PY
           if ./unixnu build kernel; then
             FIRST_RC=0
             echo "first pass rc=0"
