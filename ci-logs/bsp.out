@@ -1,0 +1,4 @@
+No reference candidate available
+audit skipped: Command '['python3', '/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/scripts/audit-amfi-pmgr-contract.py']' returned non-zero exit status 1.
+ABI reference validation skipped: no prelink candidate during kernel step
+PASS: ordinary ARM64/iOS17 build; exact native and original bindings; unimplemented power slots stop
