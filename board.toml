@@ -62,6 +62,9 @@
 "FD_SIZE" = "0x300000"
 "FD_BLOCKS" = "0x300"
 ["payload"]
+# The iOS profile ships a trust-cache allow-list; this board pins the static cache of its
+# own IPSW (iPadOS 17.7.11 21H461) so the payload step accepts it.
+"trust_cache_sha256" = ["4563bdbf6ed8f72237d45dbba3ccde432634338f95c10d79d5d4631678a97c7c"]
 "volume" = "SHENNONGESP"
 "size_mib" = 192
 "loader" = "firmware"

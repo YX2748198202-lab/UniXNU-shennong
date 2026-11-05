@@ -355,7 +355,12 @@ jobs:
       - name: Build payload
         working-directory: unixnu
         run: |
-          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" > /tmp/payload.out 2>&1; then
+          # The static trust cache of this IPSW is what lets AMFI accept launchd; the
+          # payload step packs it and the ADT gains its TrustCache memory-map entry.
+          TC=$(ls -t out/ipsw/*/*.trustcache out/shennong/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          echo "trust cache: ${TC:-none}"
+          TC_ARG=""; [ -n "$TC" ] && TC_ARG="--trust-cache $(cd "$(dirname "$TC")" && pwd)/$(basename "$TC")"
+          if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" $TC_ARG > /tmp/payload.out 2>&1; then
             tail -40 /tmp/payload.out | sed 's/^/::error::/'
             echo "::error::build payload failed"
             for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
@@ -388,10 +393,13 @@ jobs:
           ADT=/tmp/board-adt.bin
           ROOT_UUID=$(python3 -c "import tomllib;print(tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['payload']['adt'].get('root_match_volume_uuid',''))")
           echo "adt root-match volume uuid: ${ROOT_UUID:-none}"
+          TC=$(ls -t out/ipsw/*/*.trustcache out/shennong/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          echo "adt trust cache: ${TC:-none}"
           python3 "$GITHUB_WORKSPACE/device/scripts/make-shennong-adt.py" \
             --output "$ADT" --dram-size 0x10000000 --owned-memory-size 0x10000000 \
             --cpu-regs 0 --psci-method smc \
-            ${ROOT_UUID:+--root-match-volume-uuid "$ROOT_UUID"}
+            ${ROOT_UUID:+--root-match-volume-uuid "$ROOT_UUID"} \
+            ${TC:+--trust-cache}
           rm -f /tmp/adt-before.bin /tmp/adt-after.bin
           mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-before.bin || true
           mcopy -o -i "$PAY" "$ADT" ::/EFI/UniXNU/Payloads/kernel.macho.adt
