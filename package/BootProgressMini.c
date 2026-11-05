@@ -399,24 +399,48 @@ static void bp_char(char c)
 	gScreen.tx += 8;
 }
 
-// Last stage message: the text of the most recent boot_progress_stage() call is
-// painted at the very bottom, so a photo shows the exact milestone that was last
-// reached even when the event counter is polluted by allocation-time calls.
-static void bp_last_stage_text(const char *text)
+// Plain text at an explicit position; returns the x just past the last glyph.
+static unsigned bp_text_at(unsigned x, unsigned y, const char *text)
 {
-	unsigned y;
-	unsigned x = 8;
+	while (*text != '\0' && x + 8 < gScreen.width) {
+		bp_char_at(*text, x, y);
+		x += 8;
+		++text;
+	}
+	return x;
+}
+
+// The one line a photo has to read: the last stage that arrived, spelled out below
+// the console ring buffer. The ring runs from h/12 to 52% and wraps, so neither its
+// last visible line nor the old bottom-of-screen copy said where the boot stopped;
+// this band is opaque, fixed and carries the stage index as well as its name.
+// Index 0 means the message is not in bp_stage_names, and the raw text is shown.
+static void bp_stage_line(unsigned index, const char *text)
+{
+	char digits[10];
+	unsigned y, n = 0, x;
+	unsigned value = index;
 
 	if (!gScreen.bound || text == 0) {
 		return;
 	}
-	y = gScreen.height > 80 ? gScreen.height - 70 : 0;
-	bp_rect(0, y, gScreen.width, 70, 0xFF000000u);
-	while (*text != '\0' && x + 8 < gScreen.width) {
-		bp_char_at(*text, x, y + 8);
-		x += 8;
-		++text;
+	y = gScreen.height * 54u / 100u;
+	bp_rect(0, y - 4, gScreen.width, 20, 0xFF000000u);
+	x = bp_text_at(8, y, "STAGE ");
+	if (index != 0) {
+		do {
+			digits[n++] = (char)('0' + (value % 10u));
+			value /= 10u;
+		} while (value != 0 && n < sizeof(digits));
+		while (n > 0) {
+			bp_char_at(digits[--n], x, y);
+			x += 8;
+		}
+	} else {
+		x = bp_text_at(x, y, "?");
 	}
+	x = bp_text_at(x, y, " ");
+	bp_text_at(x, y, text);
 }
 
 void boot_progress_init(void)
@@ -477,16 +501,20 @@ static void bp_record_stage(const char *text)
 {
 	unsigned i;
 
-	if (text == 0 || !gScreen.bound) {
+	if (text == 0) {
 		return;
 	}
 	for (i = 0; i < BP_STAGE_COUNT; ++i) {
 		if (bp_prefix(text, bp_stage_names[i])) {
 			gScreen.last_stage = i + 1;
 			bp_bits(gScreen.last_stage, gScreen.height * 68u / 100u);
+			// The name from the table, not the caller's text: the table is ordered and
+			// bounded, so the printed line cannot be a truncated compound message.
+			bp_stage_line(gScreen.last_stage, bp_stage_names[i]);
 			return;
 		}
 	}
+	bp_stage_line(0, text);
 }
 
 void boot_progress_stage(const char *text)
@@ -495,7 +523,6 @@ void boot_progress_stage(const char *text)
 	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
-	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height * 76u / 100u);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
@@ -516,7 +543,6 @@ void boot_progress_process_stage(int pid, const char *name, const char *text)
 	if (text != 0 && gScreen.bound) {
 		kprintf("[BP] %s\n", text);
 	}
-	bp_last_stage_text(text);
 	bp_lane(text, bp_lane1, bp_lane1_colour, BP_LANE1_COUNT, &gScreen.named_seen,
 	    gScreen.height * 76u / 100u);
 	bp_lane(text, bp_lane2, bp_lane2_colour, BP_LANE2_COUNT, &gScreen.named_seen2,
