@@ -399,12 +399,38 @@ static void bp_char(char c)
 	gScreen.tx += 8;
 }
 
-// Plain text at an explicit position; returns the x just past the last glyph.
-static unsigned bp_text_at(unsigned x, unsigned y, const char *text)
+// Scaled glyph: every font pixel becomes scale x scale, so the line is legible in a
+// photo of the whole panel. The 8x8 font alone is a few pixels tall on this screen.
+static void bp_char_scaled(char c, unsigned x0, unsigned y0, unsigned scale)
 {
-	while (*text != '\0' && x + 8 < gScreen.width) {
-		bp_char_at(*text, x, y);
-		x += 8;
+	const unsigned char *glyph;
+	unsigned row, bit, dy, dx;
+
+	if (c < 32 || c > 126) {
+		c = '?';
+	}
+	glyph = bp_font[(unsigned)(c - 32)];
+	for (row = 0; row < 8; ++row) {
+		unsigned char bits = glyph[row];
+
+		for (bit = 0; bit < 8; ++bit) {
+			if ((bits & (1u << bit)) == 0) {
+				continue;
+			}
+			for (dy = 0; dy < scale; ++dy) {
+				for (dx = 0; dx < scale; ++dx) {
+					bp_pixel(x0 + bit * scale + dx, y0 + row * scale + dy, 0xFFFFFFFFu);
+				}
+			}
+		}
+	}
+}
+
+static unsigned bp_text_scaled(unsigned x, unsigned y, const char *text, unsigned scale)
+{
+	while (*text != '\0' && x + 8 * scale < gScreen.width) {
+		bp_char_scaled(*text, x, y, scale);
+		x += 8 * scale;
 		++text;
 	}
 	return x;
@@ -424,23 +450,24 @@ static void bp_stage_line(unsigned index, const char *text)
 	if (!gScreen.bound || text == 0) {
 		return;
 	}
+	// 4x scale: 32 pixels per glyph cell, legible on a 1260-wide panel in one photo.
 	y = gScreen.height * 54u / 100u;
-	bp_rect(0, y - 4, gScreen.width, 20, 0xFF000000u);
-	x = bp_text_at(8, y, "STAGE ");
+	bp_rect(0, y - 8, gScreen.width, 8 * 4 + 16, 0xFF000000u);
+	x = bp_text_scaled(8, y, "STAGE ", 4);
 	if (index != 0) {
 		do {
 			digits[n++] = (char)('0' + (value % 10u));
 			value /= 10u;
 		} while (value != 0 && n < sizeof(digits));
 		while (n > 0) {
-			bp_char_at(digits[--n], x, y);
-			x += 8;
+			bp_char_scaled(digits[--n], x, y, 4);
+			x += 8 * 4;
 		}
 	} else {
-		x = bp_text_at(x, y, "?");
+		x = bp_text_scaled(x, y, "?", 4);
 	}
-	x = bp_text_at(x, y, " ");
-	bp_text_at(x, y, text);
+	x = bp_text_scaled(x, y, " ", 4);
+	bp_text_scaled(x, y, text, 4);
 }
 
 void boot_progress_init(void)
