@@ -214,8 +214,11 @@ jobs:
           # (scripts/scan-prelink-storage.py), not linked. That measurement needs the
           # compile record the kernel build just wrote, so it belongs here rather than in
           # the device repository.
-          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
-          [ -n "$TREE" ] || { echo "::error::no tree for the binding scan"; exit 0; }
+          TREE_REL=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          [ -n "$TREE_REL" ] || { echo "::error::no tree for the binding scan"; exit 0; }
+          # The scan feeds this path to clang, which does not run in this directory,
+          # so it has to be absolute.
+          TREE=$(cd "$TREE_REL" && pwd)
           IP=out/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
           mkdir -p out/ipsw
           if [ ! -f "$IP" ]; then
@@ -238,6 +241,7 @@ jobs:
               || echo "::warning::IOStorageFamily clone failed"
           fi
           ls "$REF" 2>/dev/null | head -3 | sed 's/^/::warning::refer: /'
+          ls -l "$REF/IOBlockStorageDevice.cpp" 2>&1 | sed 's/^/::warning::refer file: /'
           # The runner shell is bash -e, so a failing scan would abort before its own
           # diagnostics are printed. Swallow the failure and always dump the output.
           python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
