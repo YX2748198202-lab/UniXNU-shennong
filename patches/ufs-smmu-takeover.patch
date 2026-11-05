@@ -1,0 +1,68 @@
+--- a/drivers/ShengUfs/SmmuTakeover.h	2026-11-05 12:02:59.310815476 +0800
++++ b/drivers/ShengUfs/SmmuTakeover.h	2026-11-05 12:02:59.351586417 +0800
+@@ -4,6 +4,10 @@
+   unsigned slot = 0xffffffffU, bank = 0, pages = 0;
+   uint32_t smr = 0, s2cr = 0;
+   bool reuse = false;
++  // The firmware left our stream mapped to a context bank with translation on. The
++  // bank is exclusive to this stream, so it can be reprogrammed as the bypass context
++  // instead of refusing to boot (the approach the reference marble port uses).
++  bool takeover = false;
+   const char *error = nullptr;
+ };
+ // ARM IHI 0062D.c sections 1.6 and 3.7: VA64=0 still rejects inputs above
+@@ -56,10 +60,20 @@
+     bool ourBank = ((s2cr >> 16) & 3) == 0 && (s2cr & 255) == p.bank;
+     if (match) {
+       ++matches;
+-      if (matches > 1 || mask || !ourBank) {
++      if (matches > 1 || mask) {
+         p.slot = i; p.smr = smr; p.s2cr = s2cr;
+         p.error = "conflicting UFS stream mapping"; return p;
+       }
++      if (!ourBank) {
++        // Exclusive match on a bank this planner did not pick: take that bank over.
++        unsigned held = s2cr & 255;
++        if (held >= banks) {
++          p.slot = i; p.smr = smr; p.s2cr = s2cr;
++          p.error = "conflicting UFS stream mapping"; return p;
++        }
++        p.bank = held; p.reuse = true; p.takeover = true; p.slot = i;
++        continue;
++      }
+       p.reuse = true; p.slot = i;
+     } else if (ourBank) {
+       p.slot = i; p.smr = smr; p.s2cr = s2cr;
+@@ -67,6 +81,7 @@
+     }
+   }
+   uint32_t sctlr = read((p.pages + p.bank) * 4096);
++  if (p.takeover) return p;  /* programmed as bypass by configureUfsSmmu */
+   if ((sctlr & 1) || (p.reuse && (sctlr || read(0x1000 + 4 * p.bank) != 0x10000 ||
+                                 (read(0x1800 + 4 * p.bank) & ~1U)))) {
+     p.error = "reserved context bank not bypass"; return p;
+@@ -107,15 +122,22 @@
+ {
+   if (p.error) return p.error;
+   unsigned cb = (p.pages + p.bank) * 4096;
++  if (p.takeover) {
++    // Stale firmware translation on an exclusive bank: disable it, then program the
++    // same bank as the VA64 bypass context the driver's DMA assumes.
++    write(cb, 0);
++    write(0x1800 + 4 * p.bank, 1);
++    write(0x1000 + 4 * p.bank, 0x10000);
++  }
+   if (!p.reuse) write(cb, 0);
+   if (read(cb) != 0) return "SMMU bypass disable readback";
+   // Set VA64 before exposing a newly allocated stream. Repair an exclusive
+   // existing 32-bit bypass too; do not silently reuse the faulty state.
+   if (read(0x1800 + 4 * p.bank) != 1) write(0x1800 + 4 * p.bank, 1);
+-  if (!p.reuse) write(0x1000 + 4 * p.bank, 0x10000);
++  if (!p.reuse || p.takeover) write(0x1000 + 4 * p.bank, 0x10000);
+   if (read(0x1800 + 4 * p.bank) != 1 || read(0x1000 + 4 * p.bank) != 0x10000 || read(cb) != 0)
+     return "SMMU VA64 bypass readback";
+-  if (!p.reuse) {
++  if (!p.reuse || p.takeover) {
+     write(0xc00 + 4 * p.slot, p.bank);
+     if (read(0xc00 + 4 * p.slot) != p.bank) return "SMMU stream context readback";
+     write(0x800 + 4 * p.slot, 0x80000000U | stream);

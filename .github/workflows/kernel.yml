@@ -96,6 +96,15 @@ jobs:
           TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
           echo "tree=$TREE"
           test -d "$TREE" || exit 1
+          # The pinned ShengUfs refuses to boot when the firmware left its own stream
+          # mapped to a context bank with translation on; the reference marble port
+          # takes that exclusive bank over instead. Apply the board patch to the tree
+          # before the second pass rebuilds the driver archive.
+          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-smmu-takeover.patch" ]; then
+            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-smmu-takeover.patch" ) \
+              || echo "::warning::UFS SMMU takeover patch did not apply"
+            grep -c "takeover" "$TREE/drivers/ShengUfs/SmmuTakeover.h" | sed 's/^/ufs takeover hits: /'
+          fi
           mkdir -p "$TREE/drivers"
           if [ ! -f "$TREE/drivers/ShengUfs/NativeUfs.cpp" ]; then
             rm -rf "$TREE/drivers/ShengUfs"
