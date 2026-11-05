@@ -175,8 +175,11 @@ def main() -> int:
     boot = OUT / 'boot-progress-stub.c'
     boot.write_text(BOOT_PROGRESS_SOURCE)
 
+    # boot-progress-stub.c is not compiled: this board links the real
+    # libBootProgress.a, which already defines boot_progress_poll, and ld treats the
+    # pair as a duplicate symbol.
     objects = []
-    for source in (kit / 'src/verified_root.c', kit / 'adapters/xnu_crypto.c', generated, boot):
+    for source in (kit / 'src/verified_root.c', kit / 'adapters/xnu_crypto.c', generated):
         if not source.is_file():
             fail(f'missing {source}')
         destination = OUT / (source.stem + '.o')
@@ -204,19 +207,17 @@ def main() -> int:
     defined = {parts[2] for line in (listing.stdout or '').splitlines()
                if len(parts := line.split()) == 3 and parts[1] != 'U'}
     needed = {'_vr_open', '_vr_verify_block', '_vr_xnu_crypto',
-              '_verified_root_key', '_verified_root_policies', '_verified_root_policy_count',
-              '_boot_progress_poll'}
+              '_verified_root_key', '_verified_root_policies', '_verified_root_policy_count'}
     missing = sorted(needed - defined)
     if missing:
         fail('these symbols are still missing from the archive: ' + ', '.join(missing))
 
     (OUT / 'report.json').write_text(json.dumps({
         'sources': ['kits/VerifiedRoot/src/verified_root.c', 'kits/VerifiedRoot/adapters/xnu_crypto.c',
-                    'generated verified-root-policies.cpp', 'generated boot-progress-stub.c'],
+                    'generated verified-root-policies.cpp'],
         'verified_root_policy_count': 0,
         'root_verification': 'disabled: this board has no signed policy bundle',
-        'boot_progress_poll': 'no-op observer',
-        'archive': str(args.archive),
+                'archive': str(args.archive),
         'original_code_modified': False,
     }, indent=2) + '\n')
     print('PASS: real VerifiedRoot crypto + empty policy table -> ' + args.archive.name)
