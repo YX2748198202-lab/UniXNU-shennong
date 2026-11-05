@@ -203,6 +203,52 @@ jobs:
           ls -la out/shennong/*/shennong/kernel/ 2>&1 | head -8 | sed 's/^/::error::/'
           ls -la "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf 2>&1 | sed 's/^/::error::/'
           exit 0
+      - name: Measure the storage bindings
+        if: always()
+        working-directory: unixnu
+        run: |
+          set -u
+          # ShengUfs subclasses IOBlockStorageDevice, which ships inside the prelinked
+          # IOStorageFamily kext rather than in XNU. The driver's inherited slots are
+          # therefore bound as absolute symbols measured out of the original kernelcache
+          # (scripts/scan-prelink-storage.py), not linked. That measurement needs the
+          # compile record the kernel build just wrote, so it belongs here rather than in
+          # the device repository.
+          TREE=$(ls -d out/shennong/*/shennong/tree 2>/dev/null | head -1)
+          [ -n "$TREE" ] || { echo "::error::no tree for the binding scan"; exit 0; }
+          IP=out/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+          mkdir -p out/ipsw
+          if [ ! -f "$IP" ]; then
+            curl -sL --max-time 1800 -o "$IP" \
+              "https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw" \
+              || { echo "::error::IPSW download failed"; exit 0; }
+          fi
+          ls -l "$IP"
+          python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
+            --ipsw "$IP" --device-class j120ap --tree "$TREE" \
+            --output "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" \
+            > /tmp/sstorage.out 2>&1
+          RC=$?
+          echo "scan rc=$RC"
+          tail -20 /tmp/sstorage.out | sed 's/^/::error::storage scan: /'
+          if [ -f "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" ]; then
+            python3 - "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" <<'PY'
+          import hashlib, json, sys
+          from pathlib import Path
+          data = Path(sys.argv[1]).read_bytes()
+          print('bindings', len(data), 'bytes', hashlib.sha256(data).hexdigest())
+          doc = json.loads(data)
+          print('keys', sorted(doc)[:8])
+          PY
+          fi
+          exit 0
+      - name: Upload the storage bindings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storage-bindings
+          if-no-files-found: warn
+          path: device/scripts/prelink-storage-bindings.json
       - name: Probe storage bindings
         if: always()
         working-directory: unixnu
