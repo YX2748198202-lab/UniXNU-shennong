@@ -1,0 +1,2 @@
+PASS: real VerifiedRoot crypto + empty policy table -> libVerifiedRoot.a
+      root verification is disabled: no signed policy bundle exists for this board
