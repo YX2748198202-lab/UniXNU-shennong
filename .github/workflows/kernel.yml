@@ -224,6 +224,7 @@ jobs:
               || { echo "::error::IPSW download failed"; exit 0; }
           fi
           ls -l "$IP"
+          python3 -m pip install --quiet pyliblzfse || echo "::warning::pyliblzfse install failed"
           # The runner shell is bash -e, so a failing scan would abort before its own
           # diagnostics are printed. Swallow the failure and always dump the output.
           python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
