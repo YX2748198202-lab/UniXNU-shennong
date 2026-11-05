@@ -352,6 +352,17 @@ jobs:
           git commit -q -m "probe run $GITHUB_RUN_ID" 2>/dev/null || echo nothing-to-commit
           git push --force origin "HEAD:refs/heads/ci-probe-$GITHUB_RUN_ID" 2>/dev/null || echo push-failed
           exit 0
+      - name: Fetch the trust cache
+        working-directory: unixnu
+        run: |
+          # payload.py packs Payloads/kernel.macho.trustcache and the ADT gains its
+          # TrustCache memory-map entry; without the cache AMFI kills launchd at exec.
+          if ! ./unixnu ipsw fetch StaticTrustCache > /tmp/ipsw-tc.out 2>&1; then
+            tail -25 /tmp/ipsw-tc.out | sed 's/^/::error::/'
+            exit 1
+          fi
+          tail -4 /tmp/ipsw-tc.out
+          ls -l out/ipsw/*/*.trustcache 2>/dev/null | sed 's/^/trust cache: /'
       - name: Build payload
         working-directory: unixnu
         run: |
