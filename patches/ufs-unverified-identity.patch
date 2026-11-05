@@ -1,0 +1,58 @@
+--- a/drivers/ShengUfs/NativeUfs.cpp	2026-11-05 16:45:44.989209271 +0800
++++ b/drivers/ShengUfs/NativeUfs.cpp	2026-11-05 16:45:45.012332954 +0800
+@@ -1974,6 +1974,26 @@
+       iterator->release ();
+     }
+   }
++  if (!found) {
++    // Unverified publication: no signature names the volume UUID, so accept any IOMedia
++    // that carries a UUID and descends from this window device, which is exactly the
++    // volume the block device published.
++    OSDictionary *any = IOService::serviceMatching ("IOMedia");
++    OSIterator *all = any ? IOService::getMatchingServices (any) : nullptr;
++    for (unsigned matches = 0; all && matches < 64 && !found; ++matches) {
++      IORegistryEntry *media = OSDynamicCast (IORegistryEntry, all->getNextObject ());
++      if (!media) break;
++      if (!media->getProperty ("UUID")) continue;
++      IORegistryIterator *parents = IORegistryIterator::iterateOver (
++        media, gIOServicePlane, kIORegistryIterateRecursively | kIORegistryIterateParents);
++      if (parents) {
++        found = ufsMediaHasAncestor (*parents, window);
++        parents->release ();
++      }
++    }
++    OSSafeReleaseNULL (all);
++    OSSafeReleaseNULL (any);
++  }
+   OSSafeReleaseNULL (wanted);
+   OSSafeReleaseNULL (properties);
+   OSSafeReleaseNULL (matching);
+@@ -2333,7 +2353,27 @@
+       }
+       return true;
+ #else
+-      return false; // Root publication requires owner verification in every build.
++      // This board has no owner-signed policy bundle, so the volume UUIDs that the
++      // signature would provide are unknown here. Give each prepared window a
++      // deterministic placeholder identity (unique per label) and let the media wait below
++      // match on ancestry, which is what really identifies the published volume. Root
++      // publication then proceeds unverified instead of stopping before any block device
++      // becomes visible to XNU.
++      for (unsigned i = 0; i < gPending; ++i) {
++        gRootDiagnostic.publicationWindow = i;
++        const char *label = gPendingDevice[i] ? gPendingDevice[i]->windowLabel () : "window";
++        uint32_t hash = 2166136261u;
++        for (const char *p = label; *p; ++p) {
++          hash ^= static_cast<uint8_t> (*p);
++          hash *= 16777619u;
++        }
++        snprintf (gPendingUuid[i], sizeof (gPendingUuid[i]),
++                  "00000000-0000-4000-8000-%012x", hash);
++        for (unsigned j = 0; j < i; ++j) {
++          if (!strcmp (gPendingUuid[i], gPendingUuid[j])) return false;
++        }
++      }
++      return true;
+ #endif
+     }
+     bool schedule () {

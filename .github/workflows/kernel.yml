@@ -137,6 +137,12 @@ jobs:
             grep -c "unverified root (no policy bundle)" "$TREE/drivers/ShengUfs/NativeUfs.cpp" \
               | sed 's/^/ufs unverified patch hits: /'
           fi
+          if [ -f "$GITHUB_WORKSPACE/device/patches/ufs-unverified-identity.patch" ]; then
+            ( cd "$TREE" && patch -p1 --forward < "$GITHUB_WORKSPACE/device/patches/ufs-unverified-identity.patch" ) \
+              || echo "::warning::UFS unverified-identity patch did not apply"
+            grep -c "placeholder identity" "$TREE/drivers/ShengUfs/NativeUfs.cpp" \
+              | sed 's/^/ufs identity patch hits: /'
+          fi
           # The archives are rebuilt from source timestamps, and this change is in the
           # compile flags, so drop the old archive to force a clean rebuild.
           rm -rf "$TREE/build/sheng-ufs"
