@@ -15,7 +15,10 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: UniXNU/UniXNU
-          ref: main
+          # Pinned: upstream main moved drivers/ArmCpu to a commit that no longer exists
+          # (force-pushed away), so "ref: main" fails in the submodule fetch before any
+          # board code runs. This commit is the one every successful shennong build used.
+          ref: c740efb5b23e94453bb179f7801eb592baafacf6
           path: unixnu
           submodules: recursive
       - name: Check out uefi-sheng (panic screen font)
@@ -181,7 +184,7 @@ jobs:
           fi
           KM=$(ls -t "$TREE"/../kernel/kernel.macho 2>/dev/null | head -1)
           echo "kernel path: ${KM:-none}"
-          [ -n "$KM" ] && echo "kernel STAGE hits: $(strings -a "$KM" | grep -c 'STAGE ' || true)"
+          if [ -n "$KM" ]; then echo "kernel STAGE hits: $(strings -a "$KM" | grep -c 'STAGE ' || true)"; fi
           echo "=== LINK ARGS DUMP ==="
           for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
             echo "--- $f"
