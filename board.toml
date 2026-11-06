@@ -8,7 +8,7 @@
 "description" = "Xiaomi 14 Pro 23116PN5BC"
 "kit" = "shennong"
 "soc_source" = "sm8550"
-"os_profile" = "ipados-27.0.1-24A446"
+"os_profile" = "ios-27.0.1-24A446-iphone17,1"
 ["components"]
 "include" = ["ArmDTPlatform", "ArmCpu", "ShengUfs", "VirtioMmioBlock", "RamBlock", "VerifiedRoot", "XnuPrelink"]
 ["root"]
@@ -46,12 +46,12 @@
 # iPadOS 27.0.1 userland (arm64e). The previous iPad7,1 / 17.7.11 profile is ordinary arm64,
 # which the source-storage root path refuses, so the whole owner-root and SystemOS mount
 # machinery was unreachable on it.
-"url" = "https://updates.cdn-apple.com/2026FallFCS/6074e110-d48d-40c2-b0e8-b611520941a3/iPad17,1,iPad17,2,iPad17,3,iPad17,4_27.0.1_24A446_Restore.ipsw"
-"product" = "iPad17,3"
+"url" = "https://updates.cdn-apple.com/2026FallFCS/59ffd938-75b6-41e5-af04-f4295ee8aeb3/iPhone17,1_27.0.1_24A446_Restore.ipsw"
+"product" = "iPhone17,1"
 "version" = "27.0.1"
 "build" = "24A446"
-"device_class" = "j820ap"
-"chip_id" = 33090
+"device_class" = "d93ap"
+"chip_id" = 33088
 "board_id" = 12
 "fetch" = ["KernelCache", "DeviceTree", "StaticTrustCache", "Cryptex1,SystemTrustCache"]
 
