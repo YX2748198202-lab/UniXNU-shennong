@@ -41,7 +41,7 @@
   "component:RamBlock",
 ]
 "config_fragments" = ["arch:configs/common.config", "soc:configs/sm8550.config", "os:configs/ipados.config"]
-"patch_series" = ["arch:patches/xnu/series", "soc:patches/xnu/series", "os:patches/xnu/series", "device:patches/xnu/series"]
+"patch_series" = ["arch:patches/xnu/series", "soc:patches/xnu-12377/series", "os:patches/xnu/series"]
 ["ipsw"]
 # iPadOS 27.0.1 userland (arm64e). The previous iPad7,1 / 17.7.11 profile is ordinary arm64,
 # which the source-storage root path refuses, so the whole owner-root and SystemOS mount
