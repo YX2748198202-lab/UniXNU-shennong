@@ -1,0 +1,4 @@
+usage: build-sheng-source-storage.py [-h] [--tree TREE] [--device DEVICE]
+                                     [--storage-source STORAGE_SOURCE]
+                                     [--policy-dir POLICY_DIR]
+build-sheng-source-storage.py: error: This adapter requires an arm64e iPadOS profile

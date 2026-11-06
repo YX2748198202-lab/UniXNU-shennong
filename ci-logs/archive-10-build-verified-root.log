@@ -1,0 +1,3 @@
+build-verified-root: signing bundle from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/policies
+PASS: real VerifiedRoot crypto + empty policy table -> libVerifiedRoot.a
+      root verification is disabled: no signed policy bundle exists for this board
