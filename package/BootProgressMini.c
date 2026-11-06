@@ -73,6 +73,12 @@ static const char *const bp_stage_names[] = {
 // boot_progress_putc, so these lines appear on the diagnostic display.
 void kprintf(const char *fmt, ...);
 
+// The stage label has to survive the optimiser. At -O2 clang constant-folds the 8x8 font
+// lookup for a string literal and emits the pixels directly, so "STAGE " never reaches
+// .rodata and nothing in the image can be read back. A volatile pointer keeps the bytes
+// real while still costing one load per stage.
+static const char *volatile g_stage_label = "STAGE ";
+
 // 8x8 font, ASCII 32..126. Source: font8x8 by Daniel Hepper (public domain).
 static const unsigned char bp_font[95][8] = {
 	{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, /* 32 space */
@@ -453,7 +459,7 @@ static void bp_stage_line(unsigned index, const char *text)
 	// 4x scale: 32 pixels per glyph cell, legible on a 1260-wide panel in one photo.
 	y = gScreen.height * 54u / 100u;
 	bp_rect(0, y - 8, gScreen.width, 8 * 4 + 16, 0xFF000000u);
-	x = bp_text_scaled(8, y, "STAGE ", 4);
+	x = bp_text_scaled(8, y, g_stage_label, 4);
 	if (index != 0) {
 		do {
 			digits[n++] = (char)('0' + (value % 10u));
