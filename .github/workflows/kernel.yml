@@ -175,8 +175,13 @@ jobs:
           python3 "$TREE/scripts/audit-storage-interface.py" || echo "audit failed"
           echo "=== AUDIT END ==="
           ./unixnu build kernel > /tmp/pass2.log 2>&1; SECOND_RC=$?
-          mkdir -p "$GITHUB_WORKSPACE/device/ci-logs"
-          cp -f /tmp/pass2.log "$GITHUB_WORKSPACE/device/ci-logs/pass2.log" 2>/dev/null || true
+          # The ci-logs step copies every *.log from the build's own logs directory, which is the
+          # one path proven to be committed. Put the second pass there too: the job console is not
+          # always reachable, and the bootstrap log alone does not describe this failure.
+          PASS2_LOGS="$(dirname "$TREE")/logs"
+          mkdir -p "$PASS2_LOGS"
+          cp -f /tmp/pass2.log "$PASS2_LOGS/pass2.log" 2>/dev/null || true
+          echo "second pass log: $(wc -c < "$PASS2_LOGS/pass2.log" 2>/dev/null || echo 0) bytes at $PASS2_LOGS"
           if [ "$SECOND_RC" != 0 ]; then
             echo "::error::second pass failed"
             tail -40 /tmp/pass2.log | sed 's/^/::error::/'
