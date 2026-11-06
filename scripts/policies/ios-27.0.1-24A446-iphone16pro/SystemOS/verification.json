@@ -1,0 +1,15 @@
+{
+  "image_bytes": 6023020544,
+  "blocks_verified": 1470464,
+  "image_sha256": "00a9955249a452ac1dd4b7f47f8a00f828f711b2dee4e8bc74e5183b29082f9b",
+  "volume_uuid": "ECFE851C-29F1-40D4-86BD-13597F9A1EE8",
+  "generation": 1,
+  "trusted_key_sha256": "432feb26441ff873ce4a4251ff151e31f47c561fe0107f80692860b7b5542d33",
+  "real_c_signature_and_block_verification": true,
+  "note": "Signed by scripts/make-root-policy.py over the composed userdata image; the block tables are those of the written windows.",
+  "original_image_modified": false,
+  "host_only": false,
+  "boot_root_authenticated": false,
+  "qemu_tested": false,
+  "hardware_tested": false
+}

@@ -14,10 +14,10 @@
 ["root"]
 # The OS/SystemOS windows as they exist in the written root image: the source-storage
 # builder and the kernel's owner-root enforcement compare these against the policies.
-"os_volume_uuid" = "04769D26-2CA0-4825-B443-E2E5F88300F2"
-"systemos_volume_uuid" = "8846FE78-2910-4297-AF97-D59BB6F8FC16"
-"os_image_sha256" = "e5634d04a8ac35f024845f583394e0a35deb26a04cb0c00286a8674e25a9a4f2"
-"systemos_image_sha256" = "b4908cde41d23e6bc05e6af51a2c9eeb00cf0f863a6a18b1600c96a3fd70414f"
+"os_volume_uuid" = "C3A4D926-411E-4365-9855-1B66A5CE0263"
+"systemos_volume_uuid" = "ECFE851C-29F1-40D4-86BD-13597F9A1EE8"
+"os_image_sha256" = "79179f6ebb37ff664415af13b2c3b9e900fe2f02460f8a7d14c72957c3eca095"
+"systemos_image_sha256" = "00a9955249a452ac1dd4b7f47f8a00f828f711b2dee4e8bc74e5183b29082f9b"
 
 ["userdata"]
 "first_lba" = 2260480
@@ -37,6 +37,7 @@
   "component:ShengUfs",
   "build-verified-root.py",
   "build-storage-bindings.py",
+  "build-sheng-source-storage.py --policy-dir scripts/policies/ios-27.0.1-24A446-iphone16pro",
   "component:VirtioMmioBlock",
   "component:RamBlock",
 ]
@@ -83,7 +84,8 @@
 "dram_size" = "0x10000000"
 "panic_screen" = true
 "timeout" = 0
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3"]
+"root_policies" = "{tree}/build/sheng-source-storage/root-policies.bin"
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3", "native-source-storage=1"]
 ["payload"."adt"]
 "tool" = "scripts/make-shennong-adt.py"
 "owned_memory_size" = "0x10000000"
@@ -92,7 +94,7 @@
 # OS volume UUID of this OS profile (iPadOS 17.7.11 21H461). IOFindBSDRoot matches the
 # published IOMedia against this through the ADT's root-matching property; without it the
 # UFS windows are published but vfs_mountroot never selects one.
-"root_match_volume_uuid" = "04769D26-2CA0-4825-B443-E2E5F88300F2"
+"root_match_volume_uuid" = "C3A4D926-411E-4365-9855-1B66A5CE0263"
 ["bootimg"]
 "dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xFC400000", "0x0", "0x2B00000"] }] }]
 ["device_tree"]
