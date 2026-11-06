@@ -178,6 +178,10 @@ jobs:
           # The ci-logs step copies every *.log from the build's own logs directory, which is the
           # one path proven to be committed. Put the second pass there too: the job console is not
           # always reachable, and the bootstrap log alone does not describe this failure.
+          # Both the tree's policy directory and the device checkout decide what the ShengUfs
+          # component resolves when it calls the storage builder without --policy-dir.
+          echo "tree policies: $(ls "$TREE/scripts/policies" 2>/dev/null | tr '\n' ' ')"
+          echo "device policies: $(ls "$GITHUB_WORKSPACE/device/scripts/policies" 2>/dev/null | tr '\n' ' ')"
           PASS2_LOGS="$(dirname "$TREE")/logs"
           mkdir -p "$PASS2_LOGS"
           cp -f /tmp/pass2.log "$PASS2_LOGS/pass2.log" 2>/dev/null || true
