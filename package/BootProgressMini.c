@@ -595,17 +595,127 @@ void boot_progress_poll(void)
 {
 }
 
+// Labels for the exit/fault line. They go through a volatile table for the same
+// reason as g_stage_label: at -O2 a literal handed straight to the glyph walker is
+// constant-folded away and never reaches .rodata.
+static const char *volatile g_labels[] = {
+	"EXIT ", " st=", " ns=", " code=",      // 0..3
+	"FAULT ", " esr=", "BRK esr=",          // 4..6
+	"0x", " ",                              // 7..8
+};
+enum {
+	LBL_EXIT, LBL_ST, LBL_NS, LBL_CODE,
+	LBL_FAULT, LBL_ESR, LBL_BRK, LBL_HEX, LBL_SPACE
+};
+
+static unsigned bp_dec_scaled(unsigned x, unsigned y, unsigned long long value, unsigned scale)
+{
+	char digits[24];
+	unsigned n = 0;
+
+	do {
+		digits[n++] = (char)('0' + (unsigned)(value % 10ull));
+		value /= 10ull;
+	} while (value != 0 && n < sizeof(digits));
+	while (n > 0) {
+		bp_char_scaled(digits[--n], x, y, scale);
+		x += 8 * scale;
+	}
+	return x;
+}
+
+static unsigned bp_hex_scaled(unsigned x, unsigned y, unsigned long long value, unsigned scale)
+{
+	char digits[20];
+	unsigned n = 0;
+
+	do {
+		unsigned nibble = (unsigned)(value & 0xfull);
+		digits[n++] = (char)(nibble < 10 ? '0' + nibble : 'a' + (nibble - 10));
+		value >>= 4;
+	} while (value != 0 && n < sizeof(digits));
+	x = bp_text_scaled(x, y, g_labels[LBL_HEX], scale);
+	while (n > 0) {
+		bp_char_scaled(digits[--n], x, y, scale);
+		x += 8 * scale;
+	}
+	return x;
+}
+
+// One opaque line under the stage line, so a process exit or a user fault is visible
+// on the panel instead of being swallowed by the empty hooks this board shipped.
+static unsigned bp_event_begin(void)
+{
+	unsigned y = gScreen.height * 57u / 100u;
+
+	bp_rect(0, y - 8, gScreen.width, 8 * 4 + 16, 0xFF000000u);
+	return y;
+}
+
+static void bp_copy_name(char *out, unsigned size, const char *name)
+{
+	unsigned i = 0;
+
+	if (size == 0) {
+		return;
+	}
+	if (name != 0) {
+		while (i + 1 < size && name[i] != 0) {
+			out[i] = name[i];
+			++i;
+		}
+	}
+	out[i] = 0;
+}
+
 void boot_progress_user_breakpoint(void *a, unsigned b)
 {
+	unsigned y, x;
+
 	(void)a;
-	(void)b;
+	if (!gScreen.bound) {
+		return;
+	}
+	y = bp_event_begin();
+	x = bp_text_scaled(8, y, g_labels[LBL_BRK], 4);
+	bp_hex_scaled(x, y, b, 4);
 }
 
 void boot_progress_user_abort(void *a, unsigned b, uint64_t c)
 {
+	unsigned y, x;
+
 	(void)a;
-	(void)b;
-	(void)c;
+	if (!gScreen.bound) {
+		return;
+	}
+	y = bp_event_begin();
+	x = bp_text_scaled(8, y, g_labels[LBL_FAULT], 4);
+	x = bp_hex_scaled(x, y, c, 4);
+	x = bp_text_scaled(x, y, g_labels[LBL_ESR], 4);
+	bp_hex_scaled(x, y, b, 4);
+}
+
+void boot_progress_exit(int pid, const char *name, int status, unsigned ns, uint64_t code)
+{
+	char label[17];
+	unsigned y, x;
+
+	if (!gScreen.bound) {
+		return;
+	}
+	bp_copy_name(label, sizeof(label), name);
+	y = bp_event_begin();
+	x = bp_text_scaled(8, y, g_labels[LBL_EXIT], 4);
+	x = bp_dec_scaled(x, y, pid < 0 ? 0u : (unsigned)pid, 4);
+	x = bp_text_scaled(x, y, g_labels[LBL_SPACE], 4);
+	x = bp_text_scaled(x, y, label, 4);
+	x = bp_text_scaled(x, y, g_labels[LBL_ST], 4);
+	x = bp_dec_scaled(x, y, status < 0 ? 0u : (unsigned)status, 4);
+	x = bp_text_scaled(x, y, g_labels[LBL_NS], 4);
+	x = bp_dec_scaled(x, y, ns, 4);
+	x = bp_text_scaled(x, y, g_labels[LBL_CODE], 4);
+	bp_dec_scaled(x, y, code, 4);
 }
 
 void boot_progress_critical_exit(int a, char *b, bp_ulong c)
@@ -615,11 +725,3 @@ void boot_progress_critical_exit(int a, char *b, bp_ulong c)
 	(void)c;
 }
 
-void boot_progress_exit(int a, const char *b, int c, unsigned d, uint64_t e)
-{
-	(void)a;
-	(void)b;
-	(void)c;
-	(void)d;
-	(void)e;
-}
