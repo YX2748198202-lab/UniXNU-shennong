@@ -33,6 +33,8 @@
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",
+  "component:VirtioMmioBlock",
+  "component:RamBlock",
   "build-sheng-source-storage.py --policy-dir scripts/policies/ios-27.0.1-24A446-iphone16pro",
 ]
 "config_fragments" = ["arch:configs/common.config", "soc:configs/sm8550.config", "os:configs/ipados.config"]
