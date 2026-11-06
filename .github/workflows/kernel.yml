@@ -167,6 +167,21 @@ jobs:
           echo "=== AUDIT END ==="
           if ! ./unixnu build kernel; then SECOND_RC=1; else SECOND_RC=0; fi
           echo "second pass rc=$SECOND_RC"
+          # Did the second pass really rebuild the diagnostic archive, and did the linked
+          # kernel take it? The first pass had already produced BootProgressMini.o with the
+          # STAGE line, yet the shipped kernel carried only the old strings.
+          echo "after pass 2: $(ls -l "$TREE/build/boot-progress/" 2>/dev/null | tr '\n' ' ')"
+          if [ -f "$TREE/build/boot-progress/BootProgressMini.o" ]; then
+            echo "object STAGE hits: $(strings -a "$TREE/build/boot-progress/BootProgressMini.o" | grep -c 'STAGE ' || true)"
+            echo "object sha256: $(shasum -a 256 "$TREE/build/boot-progress/BootProgressMini.o" | cut -d' ' -f1)"
+          fi
+          if [ -f "$TREE/build/boot-progress/libBootProgress.a" ]; then
+            echo "archive STAGE hits: $(strings -a "$TREE/build/boot-progress/libBootProgress.a" | grep -c 'STAGE ' || true)"
+            echo "archive sha256: $(shasum -a 256 "$TREE/build/boot-progress/libBootProgress.a" | cut -d' ' -f1)"
+          fi
+          KM=$(ls -t "$TREE"/../kernel/kernel.macho 2>/dev/null | head -1)
+          echo "kernel path: ${KM:-none}"
+          [ -n "$KM" ] && echo "kernel STAGE hits: $(strings -a "$KM" | grep -c 'STAGE ' || true)"
           echo "=== LINK ARGS DUMP ==="
           for f in $(find "$TREE" -name '*.linkarguments' 2>/dev/null | head -3); do
             echo "--- $f"
