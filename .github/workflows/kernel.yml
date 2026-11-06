@@ -265,7 +265,8 @@ jobs:
           cp -f /tmp/second-rc.txt ci-logs/second-rc.txt 2>/dev/null || true
           { echo "second-rc: $(cat /tmp/second-rc.txt 2>/dev/null || echo missing)";
             echo "pass2.log: $(wc -c < /tmp/pass2.log 2>/dev/null || echo missing) bytes";
-            ls -la /tmp/*.log /tmp/*.txt 2>/dev/null; } > ci-logs/second-pass-evidence.txt
+            ls -la /tmp/pass2.log /tmp/second-rc.txt 2>/dev/null || echo "neither file present"; } \
+            > ci-logs/second-pass-evidence.txt || true
           cp -f ../unixnu/out/shennong/*/*/logs/*.log ci-logs/ 2>/dev/null || true
           cp -f /tmp/bsp.out ci-logs/ 2>/dev/null || true
           : > ci-logs/errors.txt
