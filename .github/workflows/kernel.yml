@@ -163,11 +163,8 @@ jobs:
           cp /tmp/VerifiedRoot/verified_root.h /tmp/VerifiedRoot/VerifiedBlockPolicy.h "$TREE/drivers/ShengUfs/". 2>/dev/null || true
           ls "$TREE/drivers/ShengUfs/" | head -20
           export PATH="$(brew --prefix llvm)/bin:$PATH"
-          if ! python3 "$TREE/scripts/build-sheng-platform-power.py" > /tmp/bsp.out 2>&1; then
-            echo "::error::build-sheng-platform-power failed"
-            tail -8 /tmp/bsp.out | sed 's/^/::error::/'
-            tail -6 /tmp/bsp.out
-          fi
+          # Not built: its XnuPrelink reader rejects arm64e kernels, and the iOS 27 reference
+          # archive list omits it. SHENG_PMGR stays off until that reader handles arm64e.
           if [ -f "$TREE/scripts/build-mockfs-fixture.py" ]; then
             python3 "$TREE/scripts/build-mockfs-fixture.py" || echo "::warning::mockfs fixture build failed"
           else
@@ -177,7 +174,13 @@ jobs:
           echo "=== STORAGE ABI AUDIT ==="
           python3 "$TREE/scripts/audit-storage-interface.py" || echo "audit failed"
           echo "=== AUDIT END ==="
-          if ! ./unixnu build kernel; then SECOND_RC=1; else SECOND_RC=0; fi
+          ./unixnu build kernel > /tmp/pass2.log 2>&1; SECOND_RC=$?
+          mkdir -p "$GITHUB_WORKSPACE/device/ci-logs"
+          cp -f /tmp/pass2.log "$GITHUB_WORKSPACE/device/ci-logs/pass2.log" 2>/dev/null || true
+          if [ "$SECOND_RC" != 0 ]; then
+            echo "::error::second pass failed"
+            tail -40 /tmp/pass2.log | sed 's/^/::error::/'
+          fi
           echo "second pass rc=$SECOND_RC"
           # Did the second pass really rebuild the diagnostic archive, and did the linked
           # kernel take it? The first pass had already produced BootProgressMini.o with the
