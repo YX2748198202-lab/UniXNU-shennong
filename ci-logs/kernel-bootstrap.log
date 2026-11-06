@@ -1,0 +1,81 @@
+Restored 0 omitted public headers from Apple; blob hashes verified
+       GENERATE kasan-denylist-x86_64
+             CC lexer.yy.o
+sed: 1: "s,^src:\./,src:/Users/r ...": bad flag in substitute command: '/'
+make[5]: *** [/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone17,1/shennong/tree/build/xnu/obj/san/kasan-denylist-x86_64] Error 1
+make[5]: *** Deleting file `/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone17,1/shennong/tree/build/xnu/obj/san/kasan-denylist-x86_64'
+make[4]: *** [build_setup] Error 2
+make[3]: *** [build_setup_recurse_into_memory] Error 2
+make[2]: *** [build_setup_recurse_into_san] Error 2
+make[2]: *** Waiting for unfinished jobs....
+lexer.yy.c:807:10: warning: missing terminating '"' character [-Winvalid-pp-token]
+  807 | #line 70 "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone17
+      |          ^
+lexer.yy.c:807:10: error: invalid filename for #line directive
+lexer.yy.c:817:1: error: function definition is not allowed here
+  817 | {
+      | ^
+lexer.yy.c:955:1: error: function definition is not allowed here
+  955 | {
+      | ^
+lexer.yy.c:987:1: error: function definition is not allowed here
+  987 | {
+      | ^
+lexer.yy.c:1093:1: error: function definition is not allowed here
+ 1093 | {
+      | ^
+lexer.yy.c:1110:1: error: function definition is not allowed here
+ 1110 | {
+      | ^
+lexer.yy.c:1141:1: error: function definition is not allowed here
+ 1141 | {
+      | ^
+lexer.yy.c:1155:1: error: function definition is not allowed here
+ 1155 | {
+      | ^
+lexer.yy.c:1183:1: error: function definition is not allowed here
+ 1183 | {
+      | ^
+lexer.yy.c:1203:1: error: function definition is not allowed here
+ 1203 | {
+      | ^
+lexer.yy.c:1230:1: error: function definition is not allowed here
+ 1230 | {
+      | ^
+lexer.yy.c:1259:1: error: function definition is not allowed here
+ 1259 | {
+      | ^
+lexer.yy.c:1289:1: error: function definition is not allowed here
+ 1289 | {
+      | ^
+lexer.yy.c:1308:1: error: function definition is not allowed here
+ 1308 | {
+      | ^
+lexer.yy.c:1357:1: error: function definition is not allowed here
+ 1357 | {
+      | ^
+lexer.yy.c:1394:1: error: function definition is not allowed here
+ 1394 | {
+      | ^
+lexer.yy.c:1407:1: error: function definition is not allowed here
+ 1407 | {
+      | ^
+lexer.yy.c:1441:1: error: function definition is not allowed here
+ 1441 | {
+      | ^
+lexer.yy.c:1469:1: error: function definition is not allowed here
+ 1469 | {
+      | ^
+fatal error: too many errors emitted, stopping now [-ferror-limit=]
+1 warning and 20 errors generated.
+make[5]: *** [lexer.yy.o] Error 1
+make[4]: *** [build_setup] Error 2
+make[3]: *** [build_setup_recurse_into_config] Error 2
+make[3]: *** Waiting for unfinished jobs....
+             CC decomment.o
+             LD decomment
+       CODESIGN decomment
+make[2]: *** [build_setup_recurse_into_SETUP] Error 2
+make[1]: *** [build_setup_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
+make: *** [installhdrs] Error 2
+build-xnu-4k-baseline.sh: line 144: make -C .cache/xnu-work installhdrs SDKROOT=macosx ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" MAKEJOBS=-j"${JOBS:-4}" OBJROOT="$ROOT/build/xnu/obj" SYMROOT="$ROOT/build/xnu/sym" DSTROOT="$KERNEL_SDKROOT" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} failed
