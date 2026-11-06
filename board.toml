@@ -11,6 +11,14 @@
 "os_profile" = "ipados-17.7.11-21H461"
 ["components"]
 "include" = ["ArmDTPlatform", "ArmCpu", "ShengUfs", "VirtioMmioBlock", "RamBlock", "VerifiedRoot", "XnuPrelink"]
+["root"]
+# The OS/SystemOS windows as they exist in the written root image: the source-storage
+# builder and the kernel's owner-root enforcement compare these against the policies.
+"os_volume_uuid" = "04769D26-2CA0-4825-B443-E2E5F88300F2"
+"systemos_volume_uuid" = "8846FE78-2910-4297-AF97-D59BB6F8FC16"
+"os_image_sha256" = "e5634d04a8ac35f024845f583394e0a35deb26a04cb0c00286a8674e25a9a4f2"
+"systemos_image_sha256" = "b4908cde41d23e6bc05e6af51a2c9eeb00cf0f863a6a18b1600c96a3fd70414f"
+
 ["userdata"]
 "first_lba" = 2260480
 "last_lba" = 64049146
@@ -29,6 +37,7 @@
   "component:ShengUfs",
   "build-verified-root.py",
   "build-storage-bindings.py",
+  "build-sheng-source-storage.py --policy-dir scripts/policies/ipados-17.7.11-21H461",
   "component:VirtioMmioBlock",
   "component:RamBlock",
 ]
@@ -72,7 +81,8 @@
 "dram_size" = "0x10000000"
 "panic_screen" = true
 "timeout" = 0
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3"]
+"root_policies" = "{tree}/build/sheng-source-storage/root-policies.bin"
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3", "native-source-storage=1"]
 ["payload"."adt"]
 "tool" = "scripts/make-shennong-adt.py"
 "owned_memory_size" = "0x10000000"
