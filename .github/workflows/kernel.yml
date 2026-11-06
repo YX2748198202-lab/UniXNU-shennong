@@ -151,7 +151,7 @@ jobs:
           cp "$GITHUB_WORKSPACE/device/policies/verified-root-key.bin" \
              "$GITHUB_WORKSPACE/device/policies/OS.policy" \
              "$GITHUB_WORKSPACE/device/policies/SystemOS.policy" \
-             "$TREE/build/verified-root/policies/"
+             "$TREE/build/verified-root/policies/" 2>/dev/null || true
           rm -f "$TREE/build/verified-root/verified-root-policies.cpp"
           echo "verified-root bundle: $(ls "$TREE/build/verified-root/policies" | tr '\n' ' ')"
           mkdir -p "$TREE/drivers"
@@ -187,6 +187,7 @@ jobs:
             tail -40 /tmp/pass2.log | sed 's/^/::error::/'
           fi
           echo "second pass rc=$SECOND_RC"
+          printf '%s\n' "$SECOND_RC" > /tmp/second-rc.txt
           # Did the second pass really rebuild the diagnostic archive, and did the linked
           # kernel take it? The first pass had already produced BootProgressMini.o with the
           # STAGE line, yet the shipped kernel carried only the old strings.
@@ -258,6 +259,13 @@ jobs:
           PY
           cd "$GITHUB_WORKSPACE/device"
           mkdir -p ci-logs
+          # Deterministic evidence for the second pass: the console is not always reachable, so
+          # record whether it ran at all and how big its log was.
+          cp -f /tmp/pass2.log ci-logs/pass2.log 2>/dev/null || true
+          cp -f /tmp/second-rc.txt ci-logs/second-rc.txt 2>/dev/null || true
+          { echo "second-rc: $(cat /tmp/second-rc.txt 2>/dev/null || echo missing)";
+            echo "pass2.log: $(wc -c < /tmp/pass2.log 2>/dev/null || echo missing) bytes";
+            ls -la /tmp/*.log /tmp/*.txt 2>/dev/null; } > ci-logs/second-pass-evidence.txt
           cp -f ../unixnu/out/shennong/*/*/logs/*.log ci-logs/ 2>/dev/null || true
           cp -f /tmp/bsp.out ci-logs/ 2>/dev/null || true
           : > ci-logs/errors.txt
