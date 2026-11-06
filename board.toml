@@ -30,16 +30,10 @@
   "build-corecrypto-14.py",
   "build-corecrypto-14.py --namespace",
   "build-libpthread-kernel.py",
-  "build-sheng-platform-power.py",
-  "build-mockfs-fixture.py",
   "component:ArmDTPlatform",
   "component:ArmCpu",
   "component:ShengUfs",
-  "build-verified-root.py",
-  "build-storage-bindings.py",
   "build-sheng-source-storage.py --policy-dir scripts/policies/ios-27.0.1-24A446-iphone16pro",
-  "component:VirtioMmioBlock",
-  "component:RamBlock",
 ]
 "config_fragments" = ["arch:configs/common.config", "soc:configs/sm8550.config", "os:configs/ipados.config"]
 "patch_series" = ["arch:patches/xnu/series", "soc:patches/xnu-12377/series", "os:patches/xnu/series"]
