@@ -715,6 +715,7 @@ jobs:
             unixnu/out/shennong/*/shennong/payload/payload-xpu.json
             unixnu/out/shennong/*/shennong/payload/payload.json
             unixnu/out/shennong/*/shennong/kernel/kernel.macho*
+            unixnu/out/shennong/*/shennong/kernel/kernel*.json
             unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
             unixnu/out/shennong/*/*/logs/*.log

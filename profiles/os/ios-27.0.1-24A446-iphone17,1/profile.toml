@@ -31,7 +31,11 @@
 "kernel" = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf"
 "kernelcache_sha256" = "38e6d9fa5f789b8228f4617ef4c6d2a3fd8ab564abdc9b62920f1db53fc1780a"
 "slide" = "-0x1000000"
-regression_policy = "scripts/policies/ipados-27.0.1-24A446/prelink-regression.json"
+# Deferred: that policy records the kernelcache hash and the missing/stubbed bounds
+# of the previous iPadOS qualification, so check_prelink_regressions rejects this
+# iPhone17,1 24A446 prelink ("names another kernelcache"). Re-baseline it from a
+# measured kernel.json before treating the prelink as regression-bound.
+# regression_policy = "scripts/policies/ipados-27.0.1-24A446/prelink-regression.json"
 # The AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0; the kernel patch calls it early.
 # Deferred: the iPadOS 27.0.1 value 0xfffffe00092551ac belongs to the iPad kernel VA space (kernel base
 # 0xfffffe0007004000). This kernelcache (iPhone17,1, 24A446) links at 0xfffffff007004000 and carries AMFI
