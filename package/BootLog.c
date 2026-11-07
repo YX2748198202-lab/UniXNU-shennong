@@ -1942,8 +1942,13 @@ void boot_log_tick(unsigned now) {
  * this file (BootLogDefaults.c), which is how components this board does not build are handled.
  * The sheng platform symbols below are declared in multi-declarator lines elsewhere, which that
  * line-based generator cannot parse, so repeat them one per line here. */
+/* The header defines static PMU helpers that only some of its includers call; this file needs only
+ * the sheng_pmu_fixup declaration below, so keep -Werror from turning them into an error here. */
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-function"
 #include <arm/thread.h>
 #include "BootSpringBoardProfile.h"
+#pragma clang diagnostic pop
 extern volatile uint32_t sheng_idle_sigp_cleared __attribute__((weak_import));
 extern volatile uint32_t sheng_idle_sigp_refused __attribute__((weak_import));
 extern volatile uint32_t sheng_idle_enter[8] __attribute__((weak_import));
