@@ -589,7 +589,8 @@ jobs:
           echo "trust cache: ${TC:-none}"
           TC_ARG=""; [ -n "$TC" ] && TC_ARG="--trust-cache $(cd "$(dirname "$TC")" && pwd)/$(basename "$TC")"
           if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" $TC_ARG > /tmp/payload.out 2>&1; then
-            tail -40 /tmp/payload.out | sed 's/^/::error::/'
+            head -20 /tmp/payload.out | sed 's/^/::error::/'
+            grep -n -A25 -E 'Traceback|Error:|error:' /tmp/payload.out | head -70 | sed 's/^/::error::/'
             echo "::error::build payload failed"
             for f in $(ls -t out/shennong/*/*/logs/*.log 2>/dev/null | head -4); do
               echo "--- $f ($(wc -c < "$f") bytes)"
@@ -719,6 +720,33 @@ jobs:
             unixnu/out/shennong/payload/payload.json
             unixnu/out/shennong/logs/*.log
             unixnu/out/shennong/*/*/logs/*.log
+      - name: Publish failure logs
+        if: failure()
+        run: |
+          # The build agent cannot read the Actions console, and the check-run annotation limit
+          # truncates the payload traceback, so keep every captured *.out and the tree logs on a
+          # branch. Files above the API content limit are cut to head+tail around the failure.
+          cd "$GITHUB_WORKSPACE/device"
+          mkdir -p ci-logs/tmp
+          for f in /tmp/*.out /tmp/pass2.log /tmp/second-rc.txt; do
+            [ -f "$f" ] || continue
+            b=$(basename "$f")
+            if [ "$(wc -c < "$f")" -gt 900000 ]; then
+              { head -c 300000 "$f"; printf '\n=== (truncated; last 300000 bytes follow) ===\n'; tail -c 300000 "$f"; } > "ci-logs/tmp/$b"
+            else
+              cp "$f" "ci-logs/tmp/$b"
+            fi
+          done
+          cp -f ../unixnu/out/shennong/*/*/logs/*.log ci-logs/ 2>/dev/null || true
+          cp -f ../unixnu/out/shennong/*/*/kernel/*.json ci-logs/ 2>/dev/null || true
+          cp -f ../unixnu/out/shennong/*/*/payload/*.json ci-logs/ 2>/dev/null || true
+          ls -l ci-logs ci-logs/tmp | head -24
+          git config user.name ci-bot
+          git config user.email ci-bot@local
+          git checkout -b "ci-logs-$GITHUB_RUN_ID" 2>/dev/null || git checkout "ci-logs-$GITHUB_RUN_ID"
+          git add -f ci-logs
+          git commit -m "ci: failure logs for run $GITHUB_RUN_ID" || echo nothing-to-commit
+          git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
   logs:
     needs: kernel
     if: always()
