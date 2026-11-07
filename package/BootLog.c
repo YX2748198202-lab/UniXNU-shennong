@@ -1937,3 +1937,18 @@ void boot_log_tick(unsigned now) {
   thread_t thread;
   if (kernel_thread_start_priority(writer, 0, BASEPRI_KERNEL, &thread) == KERN_SUCCESS) thread_deallocate(thread);
 }
+
+/* The framework derives weak zero definitions for every weak import declared on its own line in
+ * this file (BootLogDefaults.c), which is how components this board does not build are handled.
+ * The sheng platform symbols below are declared in multi-declarator lines elsewhere, which that
+ * line-based generator cannot parse, so repeat them one per line here. */
+#include <arm/thread.h>
+#include "BootSpringBoardProfile.h"
+extern volatile uint32_t sheng_idle_sigp_cleared __attribute__((weak_import));
+extern volatile uint32_t sheng_idle_sigp_refused __attribute__((weak_import));
+extern volatile uint32_t sheng_idle_enter[8] __attribute__((weak_import));
+extern volatile uint32_t sheng_idle_disallowed[8] __attribute__((weak_import));
+extern uint64_t native_gpu_role_thread(uint32_t,uint32_t) __attribute__((weak_import));
+extern volatile uint64_t native_gop_virtual __attribute__((weak_import));
+extern bool (*sheng_pmu_fixup)(arm_saved_state_t *) __attribute__((weak_import));
+/* --- board weak data sources --- */
