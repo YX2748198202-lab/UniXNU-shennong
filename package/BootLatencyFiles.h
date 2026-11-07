@@ -2,11 +2,13 @@
 #ifndef BOOT_LATENCY_FILES_H
 #define BOOT_LATENCY_FILES_H
 #include <string.h>
+static inline int bl_latency_contains(const char *text,size_t size,const char *term) __attribute__((unused));
 static inline int bl_latency_contains(const char *text,size_t size,const char *term) {
  size_t length=strlen(term);
  for(size_t at=0;at+length<=size;++at)if(!memcmp(text+at,term,length))return 1;
  return 0;
 }
+static inline int bl_crash_process(const char *path) __attribute__((unused));
 static inline int bl_crash_process(const char *path) {
  const char *name=path;for(const char *at=path;*at;++at)if(*at=='/')name=at+1;
  static const char *const processes[]={"STExtractionService","dasd","WidgetRenderer","FitnessWidget","CalendarWidget"};
@@ -16,11 +18,13 @@ static inline int bl_crash_process(const char *path) {
  }
  return -1;
 }
+static inline int bl_latency_file(const char *path) __attribute__((unused));
 static inline int bl_latency_file(const char *path) {
  return !strcmp(path,"/private/var/mobile/Library/Caches/com.apple.backboardd/m2v/frames.trace") ||
         !strcmp(path,"/private/var/root/Library/Caches/com.apple.backboardd/m2v/frames.trace") ||
         (bl_latency_contains(path,strlen(path),"/Library/Logs/CrashReporter/") && bl_crash_process(path)>=0);
 }
+static inline int bl_latency_message(const char *line,size_t size) __attribute__((unused));
 static inline int bl_latency_message(const char *line,size_t size) {
  static const char *const terms[]={"panic","EXC_","memorystatus:","watermark","STExtractionService",
   "dasd","WidgetRenderer","FitnessWidget","CalendarWidget","GPU fault","GPU hang","PAC exception"};
@@ -29,6 +33,7 @@ static inline int bl_latency_message(const char *line,size_t size) {
  }
  return 0;
 }
+static inline unsigned bl_latency_messages(char *text,unsigned bytes) __attribute__((unused));
 static inline unsigned bl_latency_messages(char *text,unsigned bytes) {
  unsigned out=0;
  for(unsigned at=0;at<bytes;) {

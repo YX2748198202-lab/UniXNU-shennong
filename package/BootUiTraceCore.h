@@ -21,9 +21,11 @@ struct bt_entry {
 };
 struct bt_groups {struct bt_entry entries[BT_MAX_GROUPS];unsigned count,threads,read_failures;};
 typedef int (*bt_reader)(void *,uint64_t,void *,unsigned);
+static int bt_user(uint64_t address,unsigned size) __attribute__((unused));
 static int bt_user(uint64_t address,unsigned size) {
  return address>=4096 && address<(UINT64_C(1)<<BT_USER_ADDRESS_BITS) && size<=(UINT64_C(1)<<BT_USER_ADDRESS_BITS)-address;
 }
+static void bt_walk_n(struct bt_entry *e,bt_reader read,void *context,uint64_t *frames,unsigned limit) __attribute__((unused));
 static void bt_walk_n(struct bt_entry *e,bt_reader read,void *context,uint64_t *frames,unsigned limit) {
  uint64_t fp=e->fp;
  for(unsigned i=0;i<limit && fp;++i) {
@@ -38,11 +40,13 @@ static void bt_walk_n(struct bt_entry *e,bt_reader read,void *context,uint64_t *
   fp=pair[0];
  }
 }
+static void bt_walk(struct bt_entry *e,bt_reader read,void *context) __attribute__((unused));
 static void bt_walk(struct bt_entry *e,bt_reader read,void *context) {
  bt_walk_n(e,read,context,e->frames,BT_FRAMES);
 }
 // Exact integer encoding, not truncated pointers. Seven radix-64 digits cover
 // all native 39-bit user addresses. This alphabet avoids punctuation separators.
+static void bt_address(char out[9],uint64_t value) __attribute__((unused));
 static void bt_address(char out[9],uint64_t value) {
  static const char digits[]="0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_";
  char reverse[11];unsigned n=0;
@@ -50,15 +54,18 @@ static void bt_address(char out[9],uint64_t value) {
  if(n>8){out[0]='?';out[1]=0;return;}
  for(unsigned i=0;i<n;++i)out[i]=reverse[n-i-1];out[n]=0;
 }
+static int bt_same(const struct bt_entry *a,const struct bt_entry *b) __attribute__((unused));
 static int bt_same(const struct bt_entry *a,const struct bt_entry *b) {
  return a->role==b->role && a->pc==b->pc && a->lr==b->lr && a->error==b->error && a->peer==b->peer && a->peer_code==b->peer_code &&
   !memcmp(a->frames,b->frames,sizeof(a->frames));
 }
+static void bt_add(struct bt_groups *g,const struct bt_entry *entry) __attribute__((unused));
 static void bt_add(struct bt_groups *g,const struct bt_entry *entry) {
  ++g->threads;g->read_failures+=entry->error==1;
  for(unsigned i=0;i<g->count;++i)if(bt_same(&g->entries[i],entry)){++g->entries[i].count;return;}
  if(g->count<BT_MAX_GROUPS){g->entries[g->count]=*entry;g->entries[g->count++].count=1;}
 }
+static void bt_format(const struct bt_entry *e,unsigned half,char out[BT_HALF]) __attribute__((unused));
 static void bt_format(const struct bt_entry *e,unsigned half,char out[BT_HALF]) {
  char a[6][9];
  if(!half) {
@@ -72,6 +79,7 @@ static void bt_format(const struct bt_entry *e,unsigned half,char out[BT_HALF]) 
    e->role,e->index,e->count,a[0],a[1],a[2],a[3],e->peer,e->peer_code);
  }
 }
+static void bt_rows(const struct bt_groups *g,unsigned page,char rows[BT_ROWS][120]) __attribute__((unused));
 static void bt_rows(const struct bt_groups *g,unsigned page,char rows[BT_ROWS][120]) {
  unsigned start=page*BT_ROWS;
  for(unsigned row=0;row<BT_ROWS;++row) {

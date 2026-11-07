@@ -2,10 +2,12 @@
 #ifndef SHENG_BOOT_UI_TRACE_DETAILS_H
 #define SHENG_BOOT_UI_TRACE_DETAILS_H
 struct bt_main {struct bt_entry entry;uint64_t frames[32],image;unsigned error,image_error;int pid;unsigned slide;};
+static char bt_role_char(unsigned role,const struct bt_main *m) __attribute__((unused));
 static char bt_role_char(unsigned role,const struct bt_main *m) {
  return role==0?(m->entry.role?m->entry.role:'B'):"BSTU"[role&3];
 }
 // Two roles per page (first_role, first_role+1); roles beyond the captured set stay blank.
+static void bt_main_rows(const struct bt_main *main,unsigned first_role,char rows[BT_ROWS][120]) __attribute__((unused));
 static void bt_main_rows(const struct bt_main *main,unsigned first_role,char rows[BT_ROWS][120]) {
  memset(rows,0,BT_ROWS*120);
  for(unsigned pair=0;pair<2;++pair) {

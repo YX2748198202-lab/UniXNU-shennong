@@ -32,6 +32,7 @@ struct br_found {uint32_t version, apids; int apid, owner;};
 static inline uint32_t br_cmd(uint8_t op, uint8_t byte_addr, uint8_t bc) {return ((uint32_t)op << 27) | ((uint32_t)byte_addr << 4) | (bc & 7u);}
 
 // Version, APID count and the APID that serves the SDAM peripheral for this EE. 0 on success; every refusal has its own code.
+static inline int br_find(const struct br_arbiter *a, struct br_found *f) __attribute__((unused));
 static inline int br_find(const struct br_arbiter *a, struct br_found *f) {
   f->version = a->core[0]; f->apids = a->core[BR_FEATURES / 4] & BR_FEATURES_APIDS_MASK; f->apid = -1; f->owner = -1;
   if (f->version < BR_VERSION_V7_MIN || f->version >= BR_VERSION_V8_MIN) return 1;   // not the layout this code knows
@@ -45,6 +46,7 @@ static inline int br_find(const struct br_arbiter *a, struct br_found *f) {
   }
   return f->apid < 0 ? 3 : 0;
 }
+static inline int br_wait(volatile uint32_t *base) __attribute__((unused));
 static inline int br_wait(volatile uint32_t *base) {
   for (unsigned n = 0; n < BR_POLLS; ++n) {
     uint32_t s = base[BR_STATUS / 4];
@@ -53,6 +55,7 @@ static inline int br_wait(volatile uint32_t *base) {
   return 1;
 }
 // One byte of the peripheral through the observer channel of this EE. obs/chn point at the channel bases (not the apid's channel).
+static inline int br_read8(volatile uint32_t *obs, const struct br_arbiter *a, int apid, uint8_t byte_addr, uint8_t *value) __attribute__((unused));
 static inline int br_read8(volatile uint32_t *obs, const struct br_arbiter *a, int apid, uint8_t byte_addr, uint8_t *value) {
   volatile uint32_t *ch = obs + (BR_OBS_EE_STRIDE * a->ee + BR_OBS_APID_STRIDE * (uint32_t)apid) / 4;
   ch[BR_CMD / 4] = br_cmd(BR_OP_EXT_READL, byte_addr, 0);
@@ -61,6 +64,7 @@ static inline int br_read8(volatile uint32_t *obs, const struct br_arbiter *a, i
   *value = (uint8_t)ch[BR_RDATA0 / 4];
   return 0;
 }
+static inline int br_write8(volatile uint32_t *chn, int apid, uint8_t byte_addr, uint8_t value) __attribute__((unused));
 static inline int br_write8(volatile uint32_t *chn, int apid, uint8_t byte_addr, uint8_t value) {
   volatile uint32_t *ch = chn + (BR_CHNL_APID_STRIDE * (uint32_t)apid) / 4;
   ch[BR_WDATA0 / 4] = value;
