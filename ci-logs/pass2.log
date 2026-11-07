@@ -1,0 +1,60 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+== kernel: prepare storage headers
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/prepare-storage-headers.py
+== kernel: archive-01-build-corecrypto-14
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-corecrypto-14.py
+== kernel: archive-02-build-corecrypto-14
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-corecrypto-14.py --namespace
+== kernel: archive-03-build-libpthread-kernel
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-libpthread-kernel.py
+== kernel: component-ArmDTPlatform
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ArmDTPlatform
+== kernel: component-ArmCpu
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ArmCpu
+== kernel: component-VirtioMmioBlock
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py VirtioMmioBlock
+== kernel: component-ShengUfs
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ShengUfs
+== kernel: component-RamBlock
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py RamBlock
+== kernel: archive-09-build-sheng-source-storage
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-sheng-source-storage.py --policy-dir scripts/policies/ipados-27.0.1-24A446
+== kernel: archive-10-build-fileset-release-reference
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-fileset-release-reference.py --tree . --lto
++ bash /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-xnu-4k-baseline.sh
+== kernel: prelink
+== ipsw: remote https://updates.cdn-apple.com/2026FallFCS/59ffd938-75b6-41e5-af04-f4295ee8aeb3/iPhone17,1_27.0.1_24A446_Restore.ipsw
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/emit_prelink.py --kernel /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf --prelinked /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/ipsw/24A446/kernelcache.decompressed --slide=-0x1000000 --root com.apple.AppleFSCompression.AppleFSCompressionTypeZlib --root com.apple.driver.AppleARMPlatform --root com.apple.driver.AppleARMWatchdogTimer --root com.apple.driver.AppleAudioClockLibs --root com.apple.driver.AppleEffaceableStorage --root com.apple.driver.AppleIISController --root com.apple.driver.AppleM2ScalerCSCDriver --root com.apple.driver.AppleMobileFileIntegrity --root com.apple.driver.ApplePMGR --root com.apple.driver.IODARTFamily --root com.apple.filesystems.apfs --root com.apple.iokit.CoreAnalyticsFamily --root com.apple.iokit.IOAVFamily --root com.apple.iokit.IOAudio2Family --root com.apple.iokit.IOCECFamily --root com.apple.iokit.IOCryptoAcceleratorFamily --root com.apple.iokit.IOGPUFamily --root com.apple.iokit.IOHDCPFamily --root com.apple.iokit.IOMobileGraphicsFamily --root com.apple.iokit.IOReportFamily --root com.apple.iokit.IOSlowAdaptiveClockingFamily --root com.apple.iokit.IOStorageFamily --root com.apple.iokit.IOSurface --root com.apple.kec.Libm --root com.apple.kec.corecrypto --root com.apple.kext.AppleMatch --root com.apple.kext.CoreTrust --root com.apple.security.AppleImage4 --root com.apple.security.sandbox --root com.apple.iokit.IOHIDFamily --root com.apple.iokit.IOHIDEventDriver --fileset-reference build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf --allow-missing --output /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/kernel/.prelink-wpxdxx7w/kernel.macho
+PAC checked shape anchors: 43
+reviewed data: 0
+reference data names: 221
+pure leaves: 18
+data slots: 0, data by users: 4, sysctl: 0, fields: 0
+functions: 16896/21692 (28 call-sites, 116 calls, 6 data-users, 1 metaclass-getter, 43 pac-checked-shape, 18 pure-leaf, 12891 reference-order, 1 reference-shape, 3682 reference-symbol, 110 string)
+data: 1204 (221 reference-data, 979 refs, 4 users)
+kext-facing targets named: 2621/3052
+conflicts: {'double-bind': 138}
+Traceback (most recent call last):
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/emit_prelink.py", line 381, in <module>
+    main()
+    ~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/emit_prelink.py", line 363, in main
+    image, report = emit_images(original_data, native_data, pairing, args.root,
+                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                stub_symbol=stub_symbol, early_security_init=initializers or None)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_emit.py", line 711, in emit_images
+    emit.rewrite_native_chains()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_segmented.py", line 61, in rewrite_native_chains
+    self.native_pointers, counts = relocate_native(self.data, self.layout)
+                                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_layout.py", line 269, in relocate_native
+    for kind, si, so, ti, to in split_references(native):
+                                ~~~~~~~~~~~~~~~~^^^^^^^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_layout.py", line 20, in split_references
+    raise ValueError('Native image has no split-segment relocation information')
+ValueError: Native image has no split-segment relocation information
+unixnu: python3 failed (1); full log: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/logs/prelink.log

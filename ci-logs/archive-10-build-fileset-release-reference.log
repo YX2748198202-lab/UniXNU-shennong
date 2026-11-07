@@ -1,0 +1,4 @@
+RELEASE reference exit 2 log /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/fileset-reference/lto-92385e9d92bf4a92/lto-build.log
+removed 67 unavailable forced exports; linking again
+RELEASE reference exit 0 log /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/fileset-reference/lto-92385e9d92bf4a92/lto-build.log
+reference /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf
