@@ -1,0 +1,9 @@
+In file included from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/BootLogDefaults.c:10:
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootSpringBoardProfile.h:40:13: error: unused function 'sb_pmu_fixup' [-Werror,-Wunused-function]
+   40 | static bool sb_pmu_fixup(arm_saved_state_t *state) {
+      |             ^~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootSpringBoardProfile.h:48:17: error: unused function 'sb_pmu_read' [-Werror,-Wunused-function]
+   48 | static unsigned sb_pmu_read(unsigned cpu, uint32_t values[2]) {
+      |                 ^~~~~~~~~~~
+2 errors generated.
+
