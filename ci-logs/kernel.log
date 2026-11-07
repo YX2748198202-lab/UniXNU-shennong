@@ -1,0 +1,891 @@
+Restored 0 omitted public headers from Apple; blob hashes verified
+PASS: minimal stage-marker diagnostic built against the source kernel ABI
+             CC pe_kprintf.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+     LDFILELIST pexpert
+             CC arm_init.o
+             CC sleh.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+In file included from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm/arm_init.c:216:
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/mach/dyld_kernel_fixups.h:367:12: warning: variable 'cnt' set but not used [-Wunused-but-set-variable]
+  367 |                 uint32_t cnt = 0;
+      |                          ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm64/sleh.c:1516:39: warning: implicit conversion loses integer precision: 'uint64_t' (aka 'unsigned long long') to 'unsigned int' [-Wshorten-64-to-32]
+ 1516 |         boot_progress_user_breakpoint(state, esr);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        ^~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm64/sleh.c:2084:34: warning: implicit conversion loses integer precision: 'uint64_t' (aka 'unsigned long long') to 'unsigned int' [-Wshorten-64-to-32]
+ 2084 |         boot_progress_user_abort(state, esr, fault_addr);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~        ^~~
+1 warning generated.
+             CC startup.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+             CC bsd_init.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+2 warnings generated.
+             CC serial_console.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+             CC video_console.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+             CC kern_exec.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/console/video_console.c:1773:52: warning: variable 'rowscanline' set but not used [-Wunused-but-set-variable]
+ 1773 |         uint32_t *from, *to, linelongs, i, line, rowline, rowscanline;
+      |                                                           ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:492:1: warning: no previous prototype for function 'native_apfs_probe_checkpoint' [-Wmissing-prototypes]
+  492 | native_apfs_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:491:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  491 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:520:1: warning: no previous prototype for function 'native_iogpu_probe_checkpoint' [-Wmissing-prototypes]
+  520 | native_iogpu_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:519:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  519 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:539:1: warning: no previous prototype for function 'native_mobile_graphics_probe_checkpoint' [-Wmissing-prototypes]
+  539 | native_mobile_graphics_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:538:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  538 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+3 warnings generated.
+             CC kern_exit.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:1932:27: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 1932 |         struct uthread          *uthread;
+      |                                  ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:4345:19: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 4345 |         struct uthread  *uthread = 0;   /* compiler complains if not set to 0*/
+      |                          ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:6038:19: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 6038 |         struct uthread  *uthread = NULL;
+      |                          ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:7017:19: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 7017 |         uint64_t entropy[limit];
+      |                          ^~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:7367:25: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 7367 |                 char hardened_runtime[HR_STRING_SIZE];
+      |                                       ^~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9519:27: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9519 | cdhash_to_string(char str[CS_CDHASH_STRING_SIZE], uint8_t const * const cdhash)
+      |                           ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9825:24: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9825 |                                 char cdhash_string[CS_CDHASH_STRING_SIZE];
+      |                                                    ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9868:23: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9868 |                         char cdhash_string[CS_CDHASH_STRING_SIZE];
+      |                                            ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exit.c:1647:18: warning: variable 'ut' set but not used [-Wunused-but-set-variable]
+ 1647 |         struct uthread *ut;
+      |                         ^
+1 warning generated.
+     LDFILELIST osfmk
+1 warning generated.
+8 warnings generated.
+     LDFILELIST bsd
+             LD mach.development.bcm2837.unstripped.noctf
+ld: warning: directory not found for option '-L/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/fakeroot/usr/local/lib/kernel/platform'
+duplicate symbol '_sheng_pmu_access' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLogDefaults.o)
+duplicate symbol '_sheng_pmu_access' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+duplicate symbol 'IOBlockStorageDevice::doGetProvisionStatus(unsigned long long, unsigned long long, unsigned int*, IOBlockStorageProvisionDeviceExtent*, unsigned long long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::init(OSDictionary*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::getMetaClass() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::requestIdle()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::doSynchronizeCache()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::MetaClass::alloc() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::~IOBlockStorageDevice()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::~IOBlockStorageDevice()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::~IOBlockStorageDevice()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::setProperties(OSObject*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::IOBlockStorageDevice(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol '__GLOBAL__sub_I_IOBlockStorageDevice.cpp' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::operator delete(void*, unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::operator new(unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::getProperty(OSSymbol const*) const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::doSynchronize(unsigned long long, unsigned long long, unsigned int)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::doUnmap(IOBlockStorageDeviceExtent*, unsigned int, unsigned int)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::doSetPriority(IOBlockStorageDeviceExtent*, unsigned int, unsigned char)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'vtable for IOBlockStorageDevice' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::getWriteCacheState(bool*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::setWriteCacheState(bool)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::superClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::metaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'IOBlockStorageDevice::gMetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'vtable for IOBlockStorageDevice::MetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(IOBlockStorageDevice.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(IOBlockStorageDevice.late.o)
+duplicate symbol 'NativeUfsBlock::configure(char const*, unsigned long long, unsigned long long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_utrl_ready' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::inspectSmmu()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::dumpFirmwareList()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::inspect()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::getMetaClass() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::getMetaClass() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::inspectContextBanks()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::configureVerification()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::free()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::MetaClass::alloc() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::MetaClass::alloc() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::~NativeUfs()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::~NativeUfsBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::NativeUfs()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::NativeUfsBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::~NativeUfs()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::~NativeUfsBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::NativeUfs()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::NativeUfsBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::~NativeUfs()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::~NativeUfsBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_dpu_smmu' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_progress_text' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_uic_result' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_fault' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_status' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_uic_status' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::NativeUfs(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::NativeUfsBlock(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::NativeUfs(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::NativeUfsBlock(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_atos' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_probe_calls' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_export_blocks' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_verified_blocks' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_verify_ticks' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_read_ticks' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'vtable for NativeUfs' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_bytes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_block_authenticates' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_integrity_failures' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_block_failures' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_block_reads' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_hcs' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '__GLOBAL__sub_I_NativeUfs.cpp' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_root_step' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_dpu_map' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_cap' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::doAsyncReadWrite(IOMemoryDescriptor*, unsigned long long, unsigned long long, IOStorageAttributes*, IOStorageCompletion*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_version' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_log_open' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_open' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::operator delete(void*, unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::operator delete(void*, unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_stream' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::operator new(unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::operator new(unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'vtable for NativeUfsBlock' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_dpu_check' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_gpt_check' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::waitSet(unsigned long, unsigned int, unsigned int, unsigned int)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::adoptAndRead(unsigned int)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::probe(IOService*, int*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::authenticatesVolume(char const*, unsigned char*) const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_dpu_live' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_export_write' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_log_write' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_write' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_dpu_state' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_source_create' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_root_failure' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_mode' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::start(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::start(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::startRoot(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::stop(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_hce' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_part_find' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_probe_requested' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_mapped' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_blocks_published' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_matched' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_uncached' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_part_read' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_read' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_log_sync' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_store_sync' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_log_panic' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::signedVolumeUuid(char*) const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_iova' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ufs_extra_va' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::superClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::superClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::metaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::metaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfs::gMetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'NativeUfsBlock::gMetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'vtable for NativeUfs::MetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol 'vtable for NativeUfsBlock::MetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeUfs.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeUfs.late.o)
+duplicate symbol '_native_ram_block_ready' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::getMetaClass() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::free()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::MetaClass::alloc() const' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::~NativeRamBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::NativeRamBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::~NativeRamBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::MetaClass::MetaClass()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::NativeRamBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::~NativeRamBlock()' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_gpt' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_present' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::NativeRamBlock(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::NativeRamBlock(OSMetaClass const*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_errors' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_resident_bytes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_bytes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_writes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_writes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_failures' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_pages' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_reads' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_syncs' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_gpt_after' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_header' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '__GLOBAL__sub_I_NativeRamBlock.cpp' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::doAsyncReadWrite(IOMemoryDescriptor*, unsigned long long, unsigned long long, IOStorageAttributes*, IOStorageCompletion*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_gpu_addon' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::operator delete(void*, unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::operator new(unsigned long)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'vtable for NativeRamBlock' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_state' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_sparse' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::start(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::stop(IOService*)' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_volume_device' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_volume_seed' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_loaded' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_data_persist_first_lba' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::superClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::metaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'NativeRamBlock::gMetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol 'vtable for NativeRamBlock::MetaClass' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_ram_block_seed_sha256' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(NativeRamBlock.late.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(NativeRamBlock.late.o)
+duplicate symbol '_native_source_storage_start' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceStorage.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceStorage.o)
+duplicate symbol '_native_source_storage_parent' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceStorage.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceStorage.o)
+duplicate symbol '_verified_root_policy_count' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootPolicies.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootPolicies.o)
+duplicate symbol '_verified_root_policies' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootPolicies.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootPolicies.o)
+duplicate symbol '_native_source_root_policies_load' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootPolicies.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootPolicies.o)
+duplicate symbol '_native_verified_block_volume_device' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootBinding.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootBinding.o)
+duplicate symbol '_native_verified_block_root_authorized' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootBinding.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootBinding.o)
+duplicate symbol '_native_verified_block_manifest_sha384' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(SourceRootBinding.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(SourceRootBinding.o)
+duplicate symbol '_boot_log_autoreset_text' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_export_put' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_diag_status' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_sheng_pmu_access' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_errors' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_rounds' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_open_refusal' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_tick' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_panic_flush' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_state' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_boot_log_first_lba' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLog.o)
+duplicate symbol '_sheng_pmu_access' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLogDefaults.o)
+duplicate symbol '_boot_reset_wdt_stats' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootReset.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootReset.o)
+duplicate symbol '_boot_reset_bootloader' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootReset.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootReset.o)
+duplicate symbol '_boot_reset_mark_bootloader' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootReset.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootReset.o)
+duplicate symbol '_boot_reset_watchdog' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootReset.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootReset.o)
+duplicate symbol '_boot_reset_probe' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootReset.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootReset.o)
+duplicate symbol '_vr_open_header' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(verified_root.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(verified_root.o)
+duplicate symbol '_vr_open' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(verified_root.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(verified_root.o)
+duplicate symbol '_vr_verify_block' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(verified_root.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(verified_root.o)
+duplicate symbol '_vr_xnu_crypto' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(xnu_crypto.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(xnu_crypto.o)
+duplicate symbol '_verified_root_key' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(RootAnchor.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(RootAnchor.o)
+duplicate symbol '_boot_process_busy' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_snapshot' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_rows' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_attempts' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_passes' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_seen' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_process_capture' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessProbe.o)
+duplicate symbol '_boot_ui_trace_ready' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_index' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_kthread_report' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_client_sampler_start' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_snapshot' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_cpu_count' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_client_count' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_client_target_count' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ptime_count' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_hot_rows' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_role_rows' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_rows' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_client_targets' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_sheng_pmu_access' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLog.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_groups' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_pages' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_threads' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_role_peer' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_begin' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_label' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_task' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_cpu_kick' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_publish' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_cpu_ring' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_client_ring' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ptime_ring' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ui_trace_phase' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_user_stack_here' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_ptime_name' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootUiTraceProbe.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootUiTraceProbe.o)
+duplicate symbol '_boot_process_start' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootProcessWorker.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootProcessWorker.o)
+duplicate symbol '_sheng_boot_watchdog_policy' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootWatchdogPolicy.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootWatchdogPolicy.o)
+duplicate symbol '_sheng_watchdog_policy_status' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootWatchdogPolicy.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootWatchdogPolicy.o)
+duplicate symbol '_boot_diag_errors' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootDiagExport.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootDiagExport.o)
+duplicate symbol '_boot_diag_files' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootDiagExport.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootDiagExport.o)
+duplicate symbol '_boot_diag_scan' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootDiagExport.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootDiagExport.o)
+duplicate symbol '_boot_diag_stream' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootDiagExport.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootDiagExport.o)
+duplicate symbol '_boot_diag_skipped' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootDiagExport.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootDiagExport.o)
+duplicate symbol '_sheng_wifi_firmware_read' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(WifiFirmware.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(WifiFirmware.o)
+duplicate symbol '_boot_latency_pmu' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_start' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_snapshot' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_sb_target' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_waiter' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_fault_drain' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_record' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+duplicate symbol '_boot_latency_enabled' in:
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-ufs/libShengUfs.a(BootLatencyTrace.o)
+    /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/sheng-source-storage/libShengSourceStorage.a(BootLatencyTrace.o)
+ld: 261 duplicate symbols for architecture arm64e
+clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+make[3]: *** [/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837//mach.development.bcm2837.unstripped.noctf] Error 1
+make[2]: *** [build_all] Error 2
+make[1]: *** [build_all_bootstrap_DEVELOPMENT^ARM64^BCM2837] Error 2
+make: *** [build] Error 2
+build-xnu-4k-baseline.sh: line 831: make -C .cache/xnu-work "${XNU_BUILD_TARGET:-build}" SDKROOT="${XNU_SDKROOT:-iphoneos}" ARCH_CONFIGS=ARM64 MACHINE_CONFIGS=BCM2837 KERNEL_CONFIGS=DEVELOPMENT ARCH_STRING_FOR_CURRENT_MACHINE_CONFIG="$XNU_ARCH_STRING" LARGE_MEMORY_DEFINE=-UARM_LARGE_MEMORY ARM64_LINK_ADDR=0xfffffff007004000 ARM64_PLKSEG_ADDR=0xfffffff004004000 DEPLOYMENT_TARGET_FLAGS="-miphoneos-version-min=$IOS_VERSION -DXNU_TARGET_OS_IOS" DEPLOYMENT_LINKER_FLAGS="-Wl,-ios_version_min,$IOS_VERSION" RC_DARWIN_KERNEL_VERSION="$XNU_DARWIN" RC_ProjectSourceVersion="$XNU_VERSION" BUILD_LTO=0 BOUND_CHECKS=0 BUILD_WERROR="${XNU_BUILD_WERROR:-0}" MAKEJOBS=-j"${JOBS:-4}" CFLAGS_EXTRA="$EXTRA_CFLAGS" "${EXTRA_MAKE_ARGS[@]}" ${XNU_HOST_MAKE_ARGS[@]+"${XNU_HOST_MAKE_ARGS[@]}"} OBJROOT="$ROOT/build/xnu/ios-obj" SYMROOT="$ROOT/build/xnu/ios-sym" DSTROOT="$ROOT/build/xnu/ios-dst" failed
