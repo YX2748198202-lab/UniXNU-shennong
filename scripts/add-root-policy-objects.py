@@ -59,14 +59,19 @@ def main():
 
     offset = align(total)
     objects = []
-    with open(args.image, 'ab') as target:
+    # r+b, not ab: in append mode every write goes to end-of-file whatever we seek to,
+    # which silently offsets every object after the first one.
+    with open(args.image, 'r+b') as target:
         target.truncate(offset)
         for spec in args.object:
             name, path = spec.split('=', 1)
             if name in names:
                 raise SystemExit(f'{name} is already an entry')
             data = Path(path).read_bytes()
-            offset = align(offset)
+            # RootLayout.h rejects an entry whose offset is not 4 KiB aligned and requires
+            # the 4 KiB-rounded size to fit inside image_bytes, so place every object on a
+            # 4 KiB boundary and record exactly where the bytes went.
+            offset = align(offset, 4096)
             target.seek(offset)
             target.write(data)
             objects.append({'name': name, 'path': path, 'offset': offset, 'size': len(data),
@@ -74,9 +79,13 @@ def main():
             offset += len(data)
 
     final = offset
+    # The driver rejects a manifest whose image_bytes is not a multiple of 4096 (bounds
+    # check, status 4), and fastboot cannot re-sparse an unaligned file, so the image ends
+    # on a 1 MiB boundary and the manifest reports that length.
+    padded = align(final)
     entries.extend({'name': o['name'], 'offset': o['offset'], 'size': o['size'],
                     'block': 4096, 'flags': 3, 'sha256': o['sha256']} for o in objects)
-    struct.pack_into('<IIQ', manifest, 8, 2, len(entries), final)
+    struct.pack_into('<IIQ', manifest, 8, 2, len(entries), padded)
     for index, entry in enumerate(entries):
         struct.pack_into('<32sQQII32s40s', manifest, 24 + ENTRY * index,
                          entry['name'].encode(), entry['offset'], entry['size'],
@@ -86,9 +95,26 @@ def main():
     with open(args.image, 'r+b') as target:
         target.seek(0)
         target.write(manifest)
-        target.truncate(final)
+        target.truncate(padded)
 
-    print(f'image {args.image}: version 2, {len(entries)} entries, {final} bytes')
+    # Read the objects back from where the manifest says they are: the driver trusts those
+    # offsets, so a mismatch here only shows up on the device as a hash-table failure.
+    with open(args.image, 'rb') as check:
+        for o in objects:
+            check.seek(o['offset'])
+            stored = check.read(o['size'])
+            if hashlib.sha256(stored).digest() != o['sha256']:
+                raise SystemExit(f"{o['name']}: stored bytes do not match at offset {o['offset']}")
+    # Mirror RootLayout.h's bounds check (manifestStatus 4) so a layout mistake fails here.
+    if padded % 4096:
+        raise SystemExit(f'image_bytes {padded} is not 4 KiB aligned')
+    for entry in entries:
+        offset, size = entry['offset'], entry['size']
+        if offset % 4096 or offset < 4096 or not size or offset >= padded:
+            raise SystemExit(f"{entry['name']}: bad offset/size ({offset}, {size})")
+        if size > padded - offset or (size + 4095) // 4096 * 4096 > padded - offset:
+            raise SystemExit(f"{entry['name']}: does not fit in image_bytes")
+    print(f'image {args.image}: version 2, {len(entries)} entries, {final} bytes, padded to {padded} (objects read back, bounds ok)')
     for o in objects:
         print(f"  {o['name']}: off {o['offset']} size {o['size']} sha256 {o['sha256'].hex()[:16]}...")
     if args.report:

@@ -123,7 +123,9 @@ jobs:
           # Which source does the boot-progress archive compile from, and does it carry
           # the STAGE line? The last round proved the pushed package/ copy has it while the
           # kernel did not, so record the resolved path and content before the second pass.
-          BP_SRC="$TREE/kits/shennong/BootProgressMini.c"
+          # The package links at kits/<board kit>; the board kit is "sheng" to match the
+          # framework's storage builders, but accept the older name too.
+          BP_SRC="$(ls "$TREE"/kits/sheng/BootProgressMini.c "$TREE"/kits/shennong/BootProgressMini.c 2>/dev/null | head -1)"
           echo "boot progress source: $BP_SRC -> $(readlink -f "$BP_SRC" 2>/dev/null || echo missing)"
           if [ -f "$BP_SRC" ]; then
             echo "boot progress STAGE hits: $(grep -c 'STAGE ' "$BP_SRC" || true)"

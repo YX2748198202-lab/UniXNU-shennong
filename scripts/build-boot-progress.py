@@ -28,7 +28,10 @@ OUT = ROOT / 'build/boot-progress'
 OUT.mkdir(parents=True, exist_ok=True)
 record = json.loads((ROOT / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/osfmk/DEVELOPMENT/startup.o.json')
                     .read_text().strip().rstrip(','))
-source = ROOT / 'kits/shennong/BootProgressMini.c'
+source = next((ROOT / 'kits' / name / 'BootProgressMini.c'
+                for name in ('sheng', 'shennong')
+                if (ROOT / 'kits' / name / 'BootProgressMini.c').is_file()),
+               ROOT / 'kits/sheng/BootProgressMini.c')
 obj = OUT / 'BootProgressMini.o'
 command = []
 args = record['arguments']
