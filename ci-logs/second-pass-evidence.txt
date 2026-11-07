@@ -1,0 +1,4 @@
+second-rc: missing
+pass2.log:     5544 bytes
+-rw-r--r--  1 runner  wheel  5544 Nov  7 05:55 /tmp/pass2.log
+neither file present

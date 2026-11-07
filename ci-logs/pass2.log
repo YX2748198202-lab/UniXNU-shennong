@@ -1,0 +1,50 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+== kernel: prepare storage headers
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/prepare-storage-headers.py
+== kernel: archive-01-build-corecrypto-14
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-corecrypto-14.py
+== kernel: archive-02-build-corecrypto-14
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-corecrypto-14.py --namespace
+== kernel: archive-03-build-libpthread-kernel
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-libpthread-kernel.py
+== kernel: component-ArmDTPlatform
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ArmDTPlatform
+== kernel: component-ArmCpu
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ArmCpu
+== kernel: component-VirtioMmioBlock
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py VirtioMmioBlock
+== kernel: component-ShengUfs
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-arm-driver.py ShengUfs
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1609:129: warning: implicit conversion changes signedness: 'int' to 'unsigned long' [-Wsign-conversion]
+ 1609 |         for (unsigned k = first; k < first + count && n > 0 && (size_t)n < sizeof row; ++k) n += snprintf(row + n, sizeof row - n, " %x", native_adreno_stall_mem[k]);
+      |                                                                                                                               ~ ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1518:120: warning: array index 16 is past the end of the array (that has type 'volatile uint32_t[16]' (aka 'volatile unsigned int[16]')) [-Warray-bounds]
+ 1518 |     snprintf(row, sizeof row, "[swipe2] heavy=%u.%03us controlcenter..%u.%03us notification..%u.%03us apps..%u.%03us", native_swipe_stats[16] / 1000,
+      |                                                                                                                        ^                  ~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:184:1: note: array 'native_swipe_stats' declared here
+  184 | extern volatile uint32_t native_swipe_stats[16] __attribute__((weak_import));
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1519:14: warning: array index 16 is past the end of the array (that has type 'volatile uint32_t[16]' (aka 'volatile unsigned int[16]')) [-Warray-bounds]
+ 1519 |              native_swipe_stats[16] % 1000, native_swipe_stats[9] / 1000, native_swipe_stats[9] % 1000, native_swipe_stats[10] / 1000,
+      |              ^                  ~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:184:1: note: array 'native_swipe_stats' declared here
+  184 | extern volatile uint32_t native_swipe_stats[16] __attribute__((weak_import));
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1847:16: warning: declaration shadows a local variable [-Wshadow]
+ 1847 |       thread_t diag;
+      |                ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1814:12: note: previous declaration is here
+ 1814 |   uint32_t diag = 0, diag_at = 0, gpu_trace = 0;
+      |            ^
+In file included from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootLog.c:1946:
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootSpringBoardProfile.h:40:13: error: unused function 'sb_pmu_fixup' [-Werror,-Wunused-function]
+   40 | static bool sb_pmu_fixup(arm_saved_state_t *state) {
+      |             ^~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/sheng/BootSpringBoardProfile.h:48:17: error: unused function 'sb_pmu_read' [-Werror,-Wunused-function]
+   48 | static unsigned sb_pmu_read(unsigned cpu, uint32_t values[2]) {
+      |                 ^~~~~~~~~~~
+21 warnings and 2 errors generated.
+
+unixnu: python3 failed (1); full log: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/logs/component-ShengUfs.log
