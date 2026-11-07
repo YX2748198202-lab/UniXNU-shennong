@@ -37,6 +37,10 @@ __asm__(
 "5: mov w0, #5\n  ret\n"
 "6: mov w0, #6\n  ret\n");
 
+/* Callers that include this header pull in every helper; the ones they do not use must not
+ * trip -Werror,-Wunused-function, including in the generated BootLogDefaults.c that copies the
+ * including file's #include lines. */
+static bool sb_pmu_fixup(arm_saved_state_t *state) __attribute__((unused));
 static bool sb_pmu_fixup(arm_saved_state_t *state) {
     uintptr_t pc = (uintptr_t)get_saved_state_pc(state);
     if (pc < (uintptr_t)sheng_pmu_begin || pc >= (uintptr_t)sheng_pmu_end)
@@ -45,6 +49,7 @@ static bool sb_pmu_fixup(arm_saved_state_t *state) {
     return true;
 }
 
+static unsigned sb_pmu_read(unsigned cpu, uint32_t values[2]) __attribute__((unused));
 static unsigned sb_pmu_read(unsigned cpu, uint32_t values[2]) {
     /* Only the owning CPU touches the entry, with interrupts masked. */
     static unsigned status[8];
