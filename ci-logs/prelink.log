@@ -1,0 +1,47 @@
+original: 21692 functions, 2820 diversities
+native:   51507 functions, 0 diversities
+reviewed anchors: 0
+original: 21692 functions, 2820 diversities
+native:   19815 functions, 0 diversities
+reviewed anchors: 0
+string anchors: 3582
+PAC checked shape anchors: 3487
+reviewed data: 0
+data slots: 0, data by users: 18, sysctl: 6, fields: 0
+functions: 12608/21692 (343 call-sites, 4408 calls, 420 data-users, 141 metaclass-getter, 3487 pac-checked-shape, 227 reference-shape, 3582 string)
+data: 2734 (2710 refs, 6 sysctl, 18 users)
+kext-facing targets named: 1740/3052
+conflicts: {'double-bind': 292}
+reference symbol anchors: 3682
+reference order anchors: 12891
+string anchors: 110
+PAC checked shape anchors: 43
+reviewed data: 0
+reference data names: 221
+pure leaves: 18
+data slots: 0, data by users: 4, sysctl: 0, fields: 0
+functions: 16896/21692 (28 call-sites, 116 calls, 6 data-users, 1 metaclass-getter, 43 pac-checked-shape, 18 pure-leaf, 12891 reference-order, 1 reference-shape, 3682 reference-symbol, 110 string)
+data: 1205 (221 reference-data, 980 refs, 4 users)
+kext-facing targets named: 2621/3052
+conflicts: {'double-bind': 138}
+Traceback (most recent call last):
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/emit_prelink.py", line 381, in <module>
+    main()
+    ~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/emit_prelink.py", line 363, in main
+    image, report = emit_images(original_data, native_data, pairing, args.root,
+                    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                                stub_symbol=stub_symbol, early_security_init=initializers or None)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_emit.py", line 710, in emit_images
+    emit.place_kernel()
+    ~~~~~~~~~~~~~~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_segmented.py", line 35, in place_kernel
+    self.layout = Layout(self.cache, self.native, self.closure)
+                  ~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_layout.py", line 141, in __init__
+    self.validate()
+    ~~~~~~~~~~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/kits/XnuPrelink/fileset_layout.py", line 206, in validate
+    raise ValueError(f'Native {segment["name"]} overlaps a retained segment')
+ValueError: Native __LASTDATA_CONST overlaps a retained segment
