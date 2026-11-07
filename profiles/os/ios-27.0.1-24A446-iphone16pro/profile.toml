@@ -33,7 +33,12 @@
 "slide" = "-0x1000000"
 regression_policy = "scripts/policies/ipados-27.0.1-24A446/prelink-regression.json"
 # The AMFI wrapper that calls _initializeAppleMobileFileIntegrity and returns 0; the kernel patch calls it early.
-"early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffe00092551ac"
+# Deferred: the iPadOS 27.0.1 value 0xfffffe00092551ac belongs to the iPad kernel VA space (kernel base
+# 0xfffffe0007004000). This kernelcache (iPhone17,1, 24A446) links at 0xfffffff007004000 and carries AMFI
+# __TEXT_EXEC at 0xfffffff009201820..0xfffffff00922d028, so that address is outside the component and
+# emit_prelink rejects it. Measured value needed before enabling; the kernel patch tolerates absence
+# (_NativePrelinkEarlySecurityInit is only set when this key is present).
+# "early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=0xfffffe00092551ac"
 # Bring-up: match against the symbol-bearing RELEASE build of the same XNU source
 # (scripts/build-fileset-release-reference.py --lto) and send unmatched calls to the
 # reporting stub of fileset-unmapped-call.patch.
