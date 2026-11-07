@@ -1,0 +1,28 @@
+original: 21692 functions, 2820 diversities
+native:   51509 functions, 957 diversities
+reviewed anchors: 0
+original: 21692 functions, 2820 diversities
+native:   19819 functions, 916 diversities
+reviewed anchors: 0
+string anchors: 3582
+PAC checked shape anchors: 3737
+reviewed data: 0
+data slots: 28, data by users: 19, sysctl: 9, fields: 5
+functions: 13941/21692 (359 call-sites, 4253 calls, 362 data-users, 142 metaclass-getter, 3737 pac-checked-shape, 223 reference-shape, 3582 string, 1283 vtable)
+data: 3364 (5 fields, 77 metaclass-vtable, 3189 refs, 28 slot, 9 sysctl, 19 users, 36 vtable-layout, 1 vtable-user)
+kext-facing targets named: 2121/3052
+conflicts: {'double-bind': 283}
+reference symbol anchors: 3921
+reference order anchors: 12831
+string anchors: 109
+PAC checked shape anchors: 45
+reviewed data: 0
+reference data names: 250
+pure leaves: 14
+data slots: 0, data by users: 1, sysctl: 0, fields: 0
+functions: 17068/21692 (29 call-sites, 111 calls, 7 data-users, 45 pac-checked-shape, 14 pure-leaf, 12831 reference-order, 1 reference-shape, 3921 reference-symbol, 109 string)
+data: 1447 (250 reference-data, 1038 refs, 1 users, 158 vtable-layout)
+kext-facing targets named: 2720/3052
+conflicts: {'double-bind': 153}
+wrote /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/kernel/.prelink-hxzx_asr/kernel.macho (94552064 bytes)
+unresolved closure references: 18; stubbed functions: 170; runtime qualification: pending
