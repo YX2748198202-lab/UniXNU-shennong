@@ -79,7 +79,40 @@ jobs:
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
           # them when they are there, before the first pass.
+          # This kernelcache leaves no slack for the native constant segment. Apple's own
+          # kernel fills __DATA_CONST (0xdc000) plus the __LASTDATA_CONST page exactly, so
+          # only 0xe0000 bytes exist between the collection's __DATA_CONST start and the
+          # first retained kext constant (com.apple.kec.pthread at +0xe0000). XNU requires
+          # the kext constants to start at the end of the kernel's __LASTDATA_CONST
+          # (arm_init_sptm: segPLKDATACONSTB = segLASTDATACONSTB + segSizeLASTDATACONST),
+          # so the DEVELOPMENT kernel's __const cannot simply be placed at the start.
+          # Move that section into __KLDDATA at link time: the kernel maps __KLDDATA
+          # read-only in arm_vm_init (arm_vm_page_granular_RNX) before any constant is
+          # read, and the prelink layout allocates __KLDDATA past the end of the file,
+          # where it has unlimited room. Probe the linker first; fall back to the classic
+          # linker, and warn instead of failing the build when neither accepts the flag.
+          export XNU_CONST_RENAME=""
+          cat > /tmp/linkcheck.c <<'EOF'
+          static const char *const linkcheck_table[] = { "a", "b" };
+          int main(void) { return linkcheck_table[0][0]; }
+          EOF
+          for _variation in \
+            "-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const" \
+            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"; do
+            if xcrun --sdk macosx clang /tmp/linkcheck.c -o /tmp/linkcheck $_variation >/tmp/linkcheck.log 2>&1; then
+              export XNU_CONST_RENAME="$_variation"
+              break
+            fi
+            echo "linker check failed for: $_variation"
+            tail -3 /tmp/linkcheck.log | sed 's/^/    /'
+          done
+          if [ -n "$XNU_CONST_RENAME" ]; then
+            echo "const section move: linker accepts $XNU_CONST_RENAME"
+          else
+            echo "::warning::no linker support for -rename_section; kernel constant move unavailable"
+          fi
           python3 - "$SRC_SCRIPT" <<'PY'
+          import os
           import sys
           from pathlib import Path
           script = Path(sys.argv[1])
@@ -97,6 +130,19 @@ jobs:
                             '  done\n')
                   script.write_text(text.replace(anchor, inject + anchor, 1))
                   print('storage archive link patch: applied')
+          flag = os.environ.get('XNU_CONST_RENAME', '').strip()
+          if flag:
+              text = script.read_text()
+              if flag in text:
+                  print('const section move: already present')
+              else:
+                  anchor = '  KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES ${XNU_EXTRA_LD_ARCHIVES:-}"'
+                  if anchor not in text:
+                      print('::error::const section move: anchor not found')
+                  else:
+                      inject = '  KERNEL_EXTRA_ARCHIVES="$KERNEL_EXTRA_ARCHIVES %s"\n' % flag
+                      script.write_text(text.replace(anchor, inject + anchor, 1))
+                      print('const section move: applied', flag)
           PY
           if ./unixnu build kernel; then
             FIRST_RC=0
@@ -223,6 +269,38 @@ jobs:
           for f in "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*; do
             [ -f "$f" ] && echo "macho $(basename "$f") $(wc -c < "$f") bytes"
           done
+          # The prelink places native segments against retained kext segments; when that
+          # fails, the native sizes are the only numbers that matter. Print them here so
+          # the layout failure can be read from the job log without the artifact.
+          NATIVE_KERNEL="$TREE/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837"
+          if [ -f "$NATIVE_KERNEL" ]; then
+            echo "=== NATIVE KERNEL SEGMENTS ==="
+            python3 - "$NATIVE_KERNEL" <<'PY'
+          import struct
+          import sys
+
+          data = open(sys.argv[1], 'rb').read()
+          count = struct.unpack_from('<I', data, 16)[0]
+          at = 32
+          for _ in range(count):
+              cmd, size = struct.unpack_from('<II', data, at)
+              if cmd == 0x19:
+                  name = data[at + 8:at + 24].split(b'\0')[0].decode()
+                  va, vmsize, fileoff, filesize = struct.unpack_from('<QQQQ', data, at + 24)
+                  print('seg %-18s va=%#x vmsize=%#010x filesize=%#010x' % (name, va, vmsize, filesize))
+                  nsects = struct.unpack_from('<I', data, at + 64)[0]
+                  for index in range(nsects):
+                      base = at + 72 + index * 80
+                      sect = data[base:base + 16].split(b'\0')[0].decode()
+                      seg = data[base + 16:base + 32].split(b'\0')[0].decode()
+                      addr, sect_size = struct.unpack_from('<QQ', data, base + 32)
+                      print('    %s,%s size=%#x' % (seg, sect, sect_size))
+              at += size
+          PY
+            echo "=== END NATIVE KERNEL SEGMENTS ==="
+          else
+            echo "native kernel absent at $NATIVE_KERNEL"
+          fi
           echo "::error::mock tree=$TREE"
           echo "::error::mock mode=$(cat "$TREE/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/bsd/DEVELOPMENT/.source-mockfs-mode" 2>/dev/null || echo unset)"
           echo "::error::mock fixture=$(ls "$TREE/build/mockfs-fixture/" 2>/dev/null | tr '\n' ',')"
@@ -603,6 +681,8 @@ jobs:
           retention-days: 7
           path: |
             unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
+            unixnu/out/shennong/*/shennong/tree/build/xnu/ios-obj/*/mach.development.bcm2837*
+            unixnu/out/shennong/*/shennong/build/xnu/ios-obj/*/mach.development.bcm2837*
             unixnu/out/shennong/kernel/kernel.macho*
             unixnu/out/shennong/payload/payload.img
             unixnu/out/shennong/*/shennong/payload/payload.img
