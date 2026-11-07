@@ -1953,4 +1953,9 @@ extern volatile uint32_t sheng_idle_disallowed[8] __attribute__((weak_import));
 extern uint64_t native_gpu_role_thread(uint32_t,uint32_t) __attribute__((weak_import));
 extern volatile uint64_t native_gop_virtual __attribute__((weak_import));
 extern bool (*sheng_pmu_fixup)(arm_saved_state_t *) __attribute__((weak_import));
+extern void (*sheng_user_fault_hook)(int,const int64_t *,unsigned) __attribute__((weak_import));
+extern void (*sheng_user_exit_hook)(int,int,uint32_t,uint64_t,const char *,const char *) __attribute__((weak_import));
+extern void (*sheng_unnest_hook)(uint64_t,uint64_t) __attribute__((weak_import));
+extern uint64_t sheng_sb_wait_tid __attribute__((weak_import));
+extern void (*sheng_sb_wait_hook)(unsigned,uint64_t,unsigned,int,uint32_t) __attribute__((weak_import));
 /* --- board weak data sources --- */
