@@ -182,6 +182,9 @@ jobs:
           # component resolves when it calls the storage builder without --policy-dir.
           echo "tree policies: $(ls "$TREE/scripts/policies" 2>/dev/null | tr '\n' ' ')"
           echo "device policies: $(ls "$GITHUB_WORKSPACE/device/scripts/policies" 2>/dev/null | tr '\n' ' ')"
+          echo "tree package -> $(readlink -f "$TREE/package" 2>/dev/null)"
+          echo "tree kits: $(ls "$TREE/kits" 2>/dev/null | tr '\n' ' ')"
+          echo "device package BootLog.c: $(ls -l "$GITHUB_WORKSPACE/device/package/BootLog.c" 2>&1 | head -1)"
           PASS2_LOGS="$(dirname "$TREE")/logs"
           mkdir -p "$PASS2_LOGS"
           cp -f /tmp/pass2.log "$PASS2_LOGS/pass2.log" 2>/dev/null || true
