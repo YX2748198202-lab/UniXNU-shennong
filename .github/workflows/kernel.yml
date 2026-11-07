@@ -144,6 +144,31 @@ jobs:
                       script.write_text(text.replace(anchor, inject + anchor, 1))
                       print('const section move: applied', flag)
           PY
+          # The prelink kit relocates native split-segment references through
+          # LC_SEGMENT_SPLIT_INFO. A kernel linked without that command has no such
+          # references at all, so its absence is not an error: every pointer still moves
+          # through the chained-fixup pass in relocate_native. Only the case where the
+          # image has neither records nor chained fixups is a real failure.
+          python3 - kits/XnuPrelink/fileset_layout.py <<'PY'
+          import sys
+          from pathlib import Path
+          OLD = "        raise ValueError('Native image has no split-segment relocation information')"
+          NEW = ("        if not image.fixups():\n"
+                 "            raise ValueError('Native image has neither split-segment records nor chained fixups')\n"
+                 "        return")
+          path = Path(sys.argv[1])
+          if not path.is_file():
+              print('::warning::split-segment tolerance: kit not at', path)
+          else:
+              text = path.read_text()
+              if NEW in text:
+                  print('split-segment tolerance: already present')
+              elif OLD in text:
+                  path.write_text(text.replace(OLD, NEW, 1))
+                  print('split-segment tolerance: applied')
+              else:
+                  print('::warning::split-segment tolerance: pattern not found')
+          PY
           if ./unixnu build kernel; then
             FIRST_RC=0
             echo "first pass rc=0"
