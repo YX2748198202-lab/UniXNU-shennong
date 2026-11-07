@@ -10,9 +10,16 @@ extern unsigned sheng_pmu_access(unsigned setup, uint32_t values[2]);
 extern const char sheng_pmu_begin[], sheng_pmu_end[], sheng_pmu_trapped[];
 extern bool (*sheng_pmu_fixup)(arm_saved_state_t *) __attribute__((weak_import));
 
+/* The body is emitted once per translation unit that includes this header, so its symbols are
+ * weak definitions: Mach-O then merges them into one, where a plain .globl definition made the
+ * archive fail to link with "duplicate symbol '_sheng_pmu_access'" across BootLog.o,
+ * BootLogDefaults.o and BootUiTraceProbe.o. All four symbols are weak so that they always merge
+ * as a set and sb_pmu_fixup's range check keeps meaning the same code. */
 __asm__(
-".text\n.p2align 2\n.globl _sheng_pmu_access\n_sheng_pmu_access:\n"
+".text\n.p2align 2\n.globl _sheng_pmu_access\n.weak_definition _sheng_pmu_access\n"
+"_sheng_pmu_access:\n"
 "  bti c\n"
+".globl _sheng_pmu_begin\n.weak_definition _sheng_pmu_begin\n"
 "_sheng_pmu_begin:\n"
 "  cbz w0, 1f\n"
 "  mrs x2, ID_AA64DFR0_EL1\n  ubfx x2, x2, #8, #4\n"
@@ -30,8 +37,10 @@ __asm__(
 "  mov x4, #0x80000000\n  add x5, x4, #8\n  mrs x2, PMEVTYPER0_EL0\n  cmp x2, x5\n  b.ne 6f\n"
 "  add x5, x4, #17\n  mrs x2, PMEVTYPER1_EL0\n  cmp x2, x5\n  b.ne 6f\n"
 "  mrs x2, PMEVCNTR0_EL0\n  mrs x3, PMEVCNTR1_EL0\n"
+".globl _sheng_pmu_end\n.weak_definition _sheng_pmu_end\n"
 "_sheng_pmu_end:\n  stp w2, w3, [x1]\n  mov w0, #1\n  ret\n"
 "2: mov w0, #2\n  ret\n"
+".globl _sheng_pmu_trapped\n.weak_definition _sheng_pmu_trapped\n"
 "_sheng_pmu_trapped:\n  mov w0, #3\n  ret\n"
 "4: mov w0, #4\n  ret\n"
 "5: mov w0, #5\n  ret\n"
