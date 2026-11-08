@@ -685,6 +685,80 @@ jobs:
           if not done:
               raise SystemExit('panic cave: no script patched')
           PY
+          # The reference panic cave (right after the probe caves) is sized for the Apple
+          # kernelcache layout; a kernel linked elsewhere leaves too little there (0xa30 for a
+          # 0xa47-byte screen) while large zero runs remain in __TEXT_EXEC. Put the screen in the
+          # largest zero run of an executable segment instead of a fixed offset.
+          python3 - <<'PY'
+          import glob
+          from pathlib import Path
+          HELPERS = (
+              "def _exec_segments(data):\n"
+              "    magic, _, _, _, ncmds = struct.unpack_from('<IiiII', data, 0)\n"
+              "    table, offset = [], 32\n"
+              "    for _ in range(ncmds):\n"
+              "        cmd, size = struct.unpack_from('<II', data, offset)\n"
+              "        if cmd == 0x19:\n"
+              "            name, va, vsize, foff, fsize, maxprot, initprot = struct.unpack_from('<16s4Q2I', data, offset + 8)\n"
+              "            if fsize and initprot & 4:\n"
+              "                table.append((va, vsize, foff, fsize))\n"
+              "        offset += size\n"
+              "    return table\n"
+              "\n"
+              "\n"
+              "def _free_panic_cave(data, need=0x1000):\n"
+              "    best = None\n"
+              "    needle = bytes(0x100)\n"
+              "    for va, vsize, foff, fsize in _exec_segments(data):\n"
+              "        span = data[foff:foff + min(vsize, fsize)]\n"
+              "        at = 0\n"
+              "        while True:\n"
+              "            hit = span.find(needle, at)\n"
+              "            if hit < 0:\n"
+              "                break\n"
+              "            run = 0\n"
+              "            while hit + run < len(span) and span[hit + run] == 0:\n"
+              "                run += 1\n"
+              "            if run >= need and (best is None or run > best[2]):\n"
+              "                best = (va + hit, va + hit + run, run)\n"
+              "                break\n"
+              "            at = hit + 1\n"
+              "    if best is None:\n"
+              "        return None, None\n"
+              "    return best[0], best[1]\n"
+              "\n"
+              "\n")
+          CAVE_OLD = (
+              "        PANIC_CAVE = max(CAVES[stage] for _, stage, _ in sites) + CAVE_SIZE\n"
+              "        if word(PANIC_VA) in (0, 0xFFFFFFFF) or any(data[file_offset(PANIC_CAVE):file_offset(PANIC_CAVE_END)]):\n"
+              "            raise SystemExit('panic() or the panic screen padding is not as expected')\n")
+          CAVE_NEW = (
+              "        PANIC_CAVE, PANIC_CAVE_END = _free_panic_cave(data)\n"
+              "        if PANIC_CAVE is None or word(PANIC_VA) in (0, 0xFFFFFFFF):\n"
+              "            raise SystemExit('panic() or the panic screen padding is not as expected')\n")
+          targets = ['scripts/patch-xnu-entry-probe.py']
+          targets += glob.glob('out/shennong/*/*/shennong/tree/scripts/patch-xnu-entry-probe.py')
+          done = 0
+          for name in targets:
+              path = Path(name)
+              if not path.is_file():
+                  continue
+              source = path.read_text()
+              if '_free_panic_cave' in source:
+                  print('panic cave scan: already present in', path)
+                  done += 1
+                  continue
+              if CAVE_OLD not in source:
+                  print('::warning::panic cave scan: anchor missing in', path)
+                  continue
+              source = source.replace(CAVE_OLD, CAVE_NEW, 1)
+              source = source.replace('def main():\n', HELPERS + 'def main():\n', 1)
+              path.write_text(source)
+              print('panic cave scan: applied to', path)
+              done += 1
+          if not done:
+              raise SystemExit('panic cave scan: no script patched')
+          PY
           if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" $TC_ARG > /tmp/payload.out 2>&1; then
             head -20 /tmp/payload.out | sed 's/^/::error::/'
             grep -n -A25 -E 'Traceback|Error:|error:' /tmp/payload.out | head -70 | sed 's/^/::error::/'
