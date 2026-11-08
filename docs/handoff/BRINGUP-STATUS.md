@@ -18,7 +18,7 @@
 |---|---|---|
 | A | 构建链与加载器 | ✅ 2026-11-08 复验（iOS 27 payload：`drivers 1 loaded / 0 failed` + handoff）|
 | B | UEFI 实机（菜单稳定）| ✅ v6 |
-| C | XNU 早期启动到 `vfs_mountroot` | 🟡 iPadOS 供体 2026-11-05 已验收；**iOS 27 供体未复现**（见下节）|
+| C | XNU 早期启动到 `vfs_mountroot` | 🟡 iPadOS 供体 2026-11-05 已验收；iOS 27 供体卡在 `_arm_init` 早期（探针定位，待梯级色带照片判读）|
 | D | 中断 / CPU / 内存 | 🟡 iPadOS 供体验收；iOS 27 待同条件复核 |
 | E | UFS 驱动 + iOS 根卷 | 🟡 存储栈已通，剩根窗口发布（iPadOS 根卷语义，iOS 27 需重做根卷/策略）|
 | F | 用户态（launchd / SpringBoard）| ⬜ |
@@ -38,7 +38,10 @@
 | 持久日志（pstore 等价物）| 📋 方案已定，未接线 | houji 实测 pstore 不可用；走 NativeUfs 日志窗口 + 重启后读回（[../bringup.md](../bringup.md) A.4）|
 
 > 结论：现在**没有证据**说明 iOS 27 的 XNU 能走到阶段 C；iPadOS 时期的阶段 C/D 记录
-> 只作历史参考。下一张屏幕照片会给出内核实际停在哪一步。
+> 只作历史参考。2026-11-08 的入口探针把卡点缩小到 `_arm_init` 早期
+> （`_machine_startup` 之前，且 stage-3 证明入口代码已执行），
+> 下一张 `Mu-ladder.img` 的照片会读出具体停在哪个里程碑，判读表见
+> [../bringup.md](../bringup.md) A.5。
 
 
 ## 历史结论（仍然成立，值得先读）

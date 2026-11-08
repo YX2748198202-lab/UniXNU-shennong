@@ -84,6 +84,34 @@
   `sheng-log` 与 `sheng-log-reserve`；但 `kernel_args` 尚未传 `sheng-log=1`，仓库里也还没有
   读取脚本 → 待补。
 
+### A.5 早期卡点定位（入口探针二分，2026-11-08 深夜）
+
+工具：`scripts/patch-xnu-entry-probe.py`。它只改 payload 里那份 kernel 的几条指令，
+不需要重编内核，所以每轮几分钟就能上机：
+
+- stage 3：MMU 打开后等 `--reset-delay` 秒再 PSCI `SYSTEM_RESET`，**不继续执行**；
+  用于证明“入口代码跑到了”。
+- stage 4：在 `_arm_init` 里指定符号的调用处等待/立即复位（`--reset-before` 立即复位），
+  用于二分“有没有走到这个调用”。
+
+实测记录：
+
+| 轮 | 探针 | 结果 | 判读 |
+|---|---|---|---|
+| 1 | stage 3，6 秒 | 推镜像约 2 分钟后手机自行重启进 recovery（`/proc/uptime`=1248 s 吻合）| 内核入口代码执行、PSCI 复位可用；但该模式**停在 MMU 打开处不继续** |
+| 2 | stage 4 `--reset-before _machine_startup` | 5 分钟无复位，设备停在镜像里且无 USB | 内核**没有走到** `_machine_startup` 调用点 |
+
+结论：iOS 27 内核的卡点在 `_arm_init` 的**早期**（`_OSRuntimeSignStructors` …
+`_arm_vm_init` 之间），而不是 `vfs_mountroot`。
+
+注意：stage 4 探针“没走到”时设备会停住且无 USB（没有 serial、没有显示驱动），
+只能强制重启（长按电源 ~12 秒；音量下 + 电源进 fastboot）。
+
+下一步判读用 `Mu-ladder.img`：同一批调用点上各画一条 1/16 高的色带
+（白=fileset 签名、红=PE_init_platform、黄=CPU 拓扑、青=cpu_init、橙=processor_bootstrap、
+柠檬绿=到达 arm_vm_init）。照片上最高的那条色带就是内核走到的地方；这条路线不阻塞，
+拍一张照片即可，不需要实时观察。
+
 ## 阶段 E：UFS 与根卷
 
 - 采用 NativeUfs（UniXNU/ShengUfs，SM8550 起源）

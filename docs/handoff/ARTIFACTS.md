@@ -52,6 +52,19 @@ boot image、根卷镜像）**刻意不入库**：它们包含原厂 kernelcache
   屏幕在 handoff 之后不会变化。
 - 本次上机只用 `fastboot boot`，未写任何分区。
 
+### 2026-11-08 入口探针镜像（本地现打，不改内核源码）
+
+| 镜像 | 用途 | 字节 | sha256 |
+|---|---|---|---|
+| `Mu-stage3.img` | stage 3：MMU 打开后 6 秒复位（证明入口执行）| 203,726,848 | `e8f593b54c8c86db22da47deec764189aa3f49fc4ae0d697e1291dd1a2b5137a` |
+| `Mu-ms.img` | stage 4：`_machine_startup` 调用前复位（二分）| 203,726,848 | `45f588ecd479ed4e477d2cd80197e740f66bb4d34486c08dba380bc9e837ea35` |
+| `Mu-ladder.img` | 六个里程碑色带，照片判读卡点 | 203,726,848 | `4a9a54506a263e5d299fdc7177a51a7a3a5276d68828874b8cba22d537e4824e` |
+
+构造方式：取 CI artifact 里的 `payload/payload.img` 与 `kernel/kernel.macho`，
+用 `scripts/patch-xnu-entry-probe.py`（stage 3/4）或本地 `patch-milestones.py`（色带）
+改内核副本 → `mcopy` 覆盖 payload 里的 `kernel.macho` → `repack-v0-bootimg.py`
+套 `Mu-shennong-smp.img` 模板。payload 阶段没有再封 corecrypto POST（CI 日志里也没有该步骤）。
+
 ## 重建步骤
 
 ```bash
