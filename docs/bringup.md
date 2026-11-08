@@ -252,3 +252,60 @@ profile 里遗留的 `0xfffffe00092551ac` 属于 iPadOS 内核的地址空间（
   - format1 的 `[kernel].archives` 只接受脚本名，`component:` 语法属于 format2
   - PMGR archive 需在正式 kernel pass 前预构建（bootstrap pass 就会引用 `sheng_pmgr_run`）
   - defconfig 必须含 `CONFIG_XNU_BUILD_ARCHIVES=y`
+
+## 早期色带的盲区：引导页表不含 framebuffer（2026-11-08 定位）
+
+### 现象
+
+把 `_arm_init` 及其前 15 个调用点全部替换成"画一条色带"的探针后，真机屏幕上**只有
+loader 自己画的三条带**（绿=交接、蓝=进入内核、品红=开 MMU 前一刻），之后无论探针放在
+哪里都没有任何输出，容易被读成"内核停在这里"。
+
+### 根因
+
+内核在 `0xAD832A8` 写 `TCR_EL1` 之后、开 MMU 之前，用自己建的页表接管了两套翻译：
+
+| 寄存器 | 值 | 来源 |
+|---|---|---|
+| `TTBR0` | `pool & ~1` | `_set_mmu_ttb`（VA `0xFFFFFFF00AD88930`，内含 `msr ttbr0_el1, x0`）在 `0xAD832B4` 被调用 |
+| `TTBR1` | `(pool + 0x1000) & ~1` | `0xAD832C4` |
+| `TCR_EL1` | `0x00080022A51A251A`（T0SZ=T1SZ=26，TG0=TG1=4 KiB，IPS=2） | `0xAD832A8` |
+
+两套表只覆盖 `boot_args` 给的窗口：`[PhysicalBase, PhysicalBase + MemorySize)`
+（本机 `0x0DB0004000 + 0x10000000`）。**framebuffer 在 `0xFC400000`，落在窗口外**，
+所以开 MMU 之后任何写 framebuffer 的指令都会触发数据中止；而异常向量在 KVA
+（`VBAR=0xAD7C000+slide`，属 TTBR1），向量里的画带同样写 framebuffer，于是双重故障、
+静默死锁。屏幕就永远停在 loader 的三条带上。
+
+这也解释了 `docs/devices/elden.md` 里那句"MMU 打开后内核只映射 VirtualBase + (PA - PhysicalBase)
+的 256 MiB 窗口，framebuffer 在窗口外，之后的 console 输出需要显式映射或者必须在切换前完成"。
+
+### 修法
+
+`scripts/patch-fb-map.py`：在 `0xAD832C8`（`mov x0, xzr`，此时 TTBR0 已装好、MMU 未开、
+`tlbi vmalle1` 未做）注入一个 148 字节的 cave，借引导表池里空闲的第 4/5 页建两张 L2 表，
+把 `0xFC400000` 起 30 个、`0x100000000` 起 8 个 2 MiB 块（`0x40D` = 有效块 + AttrIdx 3
+= Device-nGnRnE）填进 V=P 表的 L1 槽位 3/4。
+
+池布局（`pool` 是在 V=P 下 `adrp` 算出的**物理**地址 `0x0DB58B4000`）：
+
+| 偏移 | 用途 | 谁用 |
+|---|---|---|
+| `+0x0000` | V=P 表根（TTBR0） | 内核建表循环 |
+| `+0x1000` | KVA 表根（TTBR1） | 内核建表循环 |
+| `+0x2000` | V=P 窗口 L2 | 内核建表循环 |
+| `+0x3000` | KVA 窗口 L2 | 内核建表循环 |
+| `+0x4000` | framebuffer L1[3] 的 L2 | `patch-fb-map.py` |
+| `+0x5000` | framebuffer L1[4] 的 L2 | `patch-fb-map.py` |
+
+### 验证
+
+用按同一算法写的走表模拟器（以真机打印的 `VB/PB/MemorySize` 为输入）核对：
+
+- `VA 0xDB3D8341C`（开 MMU 时的 PC）→ 有效块、AF=1、AttrIdx=0（Normal WB）
+- `VA 0xFFFFFFF00B4768D0`（`_arm_init`）→ `PA 0x0DB44768D0`
+- `VA 0xFC400000` → `PA 0xFC400000`、AttrIdx=3（Device），补丁生效
+- `VA 0x100000000` / `0x100A4E000`（后 16 条色带所在）→ 已覆盖
+
+结论：**此后任何"开 MMU 后没有输出"的判断，都必须先确认 `patch-fb-map.py` 在同一张镜像里**，
+否则结论无效（本仓库 2026-11-08 之前基于色带得到的"停点"结论都需要按这个前提重读）。

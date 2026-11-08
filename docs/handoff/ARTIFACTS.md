@@ -177,3 +177,22 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img \
 CI 只产出 `kernel.macho` 与 `payload.img`。boot image 的组装（header v0 +
 gzip(BootShim+FD) + append_dtb）需要固定模板，而模板来自本机（UEFI 固件不在仓库）。
 详见 [BRINGUP-STATUS.md](BRINGUP-STATUS.md) 的「已废弃路线」一节。
+
+## 2026-11-08：早期诊断镜像（framebuffer 映射 + 阶梯）
+
+| 镜像 | sha256（前 16 位） | 内容 |
+|---|---|---|
+| `Mu-fb.img` | `f123f4a7130d0f46` | `patch-fb-map.py` + 入口/第 1–15 调用点共 16 条色带 |
+| `Mu-fb-l2c.img` | `a3a812677625e531` | `patch-fb-map.py` + 入口/第 16–30 调用点共 16 条色带 |
+| `Mu-fb-gap.img` | `c86ffc7780b7f6cd` | `patch-fb-map.py` + 开 MMU 后/自检/入口 + 4 类异常向量 |
+
+组装方式（本机）：
+
+```bash
+cp payload/payload.img pl.img
+mcopy -o -i pl.img kernel.macho ::/EFI/UniXNU/Payloads/kernel.macho
+python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl.img --out Mu-fb.img
+```
+
+补丁脚本：`scripts/patch-fb-map.py`、`scripts/patch-init-ladder.py`、`scripts/patch-gap-probe.py`
+（后两者需要 `patch-xnu-entry-probe.py` 提供装配与 Mach-O 读写）。
