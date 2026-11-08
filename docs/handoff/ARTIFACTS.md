@@ -52,6 +52,39 @@ boot image、根卷镜像）**刻意不入库**：它们包含原厂 kernelcache
   屏幕在 handoff 之后不会变化。
 - 本次上机只用 `fastboot boot`，未写任何分区。
 
+### 2026-11-08 复位探针批量镜像（远程判读，无需拍照）
+
+`Mu-probe-1.img` … `Mu-probe-13.img`：每个镜像在内核 `_arm_init` 的一个里程碑上
+用 PSCI `SYSTEM_RESET` 停住。**命中即自动重启**（回到 recovery/fastboot），主机侧
+USB 事件就能判读；**未命中则设备挂住无 USB**，需要一次强制重启。从最早的里程碑
+往后顺序跑，最多只会有一次未命中。
+
+| 序号 | 里程碑 | 字节 | sha256 |
+|---|---|---|---|
+| 1 | `_OSRuntimeSignStructors` 返回 | 203,726,848 | `b188c6da8b710be94e3cc98eeabf1741d373fa849b304da8f6d1271b029657dc` |
+| 2 | `_PE_init_platform` 返回 | 203,726,848 | `bb512d0dab3304373ca896a55c3a2c01e2366e826308ebc1707687c27d593d90` |
+| 3 | `_configure_timer_apple_regs` 返回 | 203,726,848 | `eb33a924f88c87e34adc05bc24ed432a49d49988d9716c825e775aedc21f6dad` |
+| 4 | 第二次 `_SecureDTGetProperty` 返回 | 203,726,848 | `e2d732c9b3afba5b89988ed4b01771dae47fa36b779923ea2abcace4709c2930` |
+| 5 | `_check_for_failure_injection` 返回 | 203,726,848 | `a3afa36e0c3d72fc90f95d68bc872b5d96d14a89b24400b673de79c0e58ba525` |
+| 6 | `_ml_parse_cpu_topology` 返回 | 203,726,848 | `b8e633bd39698caf28a344093478c45437e8abbc5693b8e3b55f490a1fc612fb` |
+| 7 | `_thread_bootstrap` 返回 | 203,726,848 | `d95b49c620029c3686493ad0cb629ecdef58f1c139609a2ee85a315dba47bd0a` |
+| 8 | `_cpu_bootstrap` 返回 | 203,726,848 | `fadd46d5c3616b28a9d65b9802bf3862e95eadba011269a9b7119bde1d05895e` |
+| 9 | `_kernel_startup_bootstrap` 返回 | 203,726,848 | `1673c732d743226a57036cc68a8e8d5055875954e8fd8f6d76cf15ab9a8a83c6` |
+| 10 | `_timer_call_init` 返回 | 203,726,848 | `89bb7d97dba525e575c44a3f9a65df9ff0e91f853c86ea6eb983c6a84e736b60` |
+| 11 | `_cpu_init` 返回 | 203,726,848 | `d5c5fc02b593c24fee6cf1af2306cba9c5c90573c46056b10daeed2af7cc6fbe` |
+| 12 | `_processor_bootstrap` 返回 | 203,726,848 | `27cacfb00854c2f97dc9af57851b6588027cec1daffcca266bef9eebb8457e77` |
+| 13 | `_arm_vm_init` 调用前 | 203,726,848 | `d19b8b8cc00599e859183f46452648674779aa38e53ad0412bb67b6718c2bbc6` |
+
+另有 2 个对照（都在 `_machine_startup` 调用前复位，和之前挂住的那次同一点）：
+
+| 镜像 | 变量 | sha256 |
+|---|---|---|
+| `Mu-ct-ms.img` | ADT cpu0 加 `cluster-type='E'` | `c2b7f5df114d49ee4a78…`（完整值见 Windows 产物）|
+| `Mu-minargs-ms.img` | 内核参数缩减为 `-v serial=3` | `47ede480f4413c7c13aa…` |
+
+驱动器：`scripts/run-entry-bisect.sh`（先 `adb reboot bootloader`，逐点 `fastboot boot`，
+命中即继续、未命中即停并提示需要强制重启）。
+
 ### 2026-11-08 最终诊断镜像（叠加在 CI 已打补丁的内核上）
 
 这两张是**首选**：底版用的是 CI payload 里那份已打好补丁的 kernel（`_panic` 已被改成
