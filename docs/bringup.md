@@ -107,6 +107,12 @@
 注意：stage 4 探针“没走到”时设备会停住且无 USB（没有 serial、没有显示驱动），
 只能强制重启（长按电源 ~12 秒；音量下 + 电源进 fastboot）。
 
+> **同 SoC 参考（fuxi，SM8550，同一套 XNU 12377）**：同类现象的设备记录把停点定在
+> `ml_parse_cpu_topology`——ADT 的簇数/cluster-type 与内核的 `MAX_CPU_CLUSTERS` 不匹配，
+> 在内核有一条 assert，控制台出现之前就 panic。修法是让 ADT 的 cluster-type 与内核
+> 的簇配置一致（fuxi 用 AMP 补丁把 `MAX_CPU_CLUSTERS` 提到 2）。我们的 ADT 里 cpu0
+> **没有** `cluster-type`，因此准备了两份镜像做对照。
+
 下一步判读用 `Mu-ladder.img`：同一批调用点上各画一条 1/16 高的色带
 （白=fileset 签名、红=PE_init_platform、黄=CPU 拓扑、青=cpu_init、橙=processor_bootstrap、
 柠檬绿=到达 arm_vm_init）。照片上最高的那条色带就是内核走到的地方；这条路线不阻塞，
