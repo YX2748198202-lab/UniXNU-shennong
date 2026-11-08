@@ -380,3 +380,16 @@ trampoline 在装好 SCTLR 之后的代码是这样的：
 窗口 `0xAD832CC…0xAD83418` 全程 MMU 关闭：MAIR 组装 → `msr mair_el1` → `tlbi vmalle1` / `ic iallu` → （热启动分支里从 `0xC8B2000+0x208` 重装 TTBR1）→ VBAR ← `0xAD7C000+slide` → PAC 密钥生成（用 `cntpct_el0` 做种子写入 `0xB6B8000+0x120`）→ `msr apiakey/apibkey/apdakey/apdbkey/apgakey_*_el1` → 最后才 `b 0xAD81560`。
 
 其中 `msr apiakey*_el1` 一族在**不支持指针认证的核心上是未定义指令**（会触发同步异常，而此时异常向量刚装好但没有可用处理器）。骁龙 8 Gen 3 的 Cortex-X4/A720 支持 PAC，理论上不会在这里炸，但这正是 `Mu-pre.img` 阶梯要逐段验证的内容。
+
+
+## 内核自己的画带代码确认了停点在开 MMU 之前（2026-11-08 反汇编）
+
+| 位置 | 颜色 | 落点 |
+| --- | --- | --- |
+| loader `Entry.S` | green `0xFF00FF00` | band 0 |
+| 内核入口 `0xAD81500`（`0xAD81488` 的 `b` 目标） | blue `0xFF0000FF` | band 1 |
+| `0xAD81560`（`0xAD83418` 的 `b` 目标，紧接着 `msr sctlr_el1`） | white `0xFFFFFFFF` | band 2 |
+
+真机照片里 band 0 白（我们的 cave）、band 1 蓝、band 2 **品红**。蓝带出现说明内核入口执行了；band 2 没变白说明**内核从未执行到 `0xAD83418`**。因此阶段 C 的停点不在 `_arm_init`，而在开 MMU 之前那段 `0xAD830D4…0xAD83418` 的窗口里：清池 → 建 V=P/KVA 两级表 → `msr tcr_el1` → `bl _set_mmu_ttb`（装 TTBR0）→ MAIR → `tlbi vmalle1` / `ic iallu` → 重装 VBAR → 生成并写入 PAC 密钥（`msr apiakey/apibkey/apdakey/apdbkey/apgakey_*_el1`）。
+
+`scripts/patch-pre-mmu-squares.py` 在这段窗口里放了 24 个检查点，每个检查点画一个 60×60 方块（不是整条带，所以不受 16 条带限制），并且**只用 x7/x8/x16/x17、不碰栈**（此时 SP 仍是未映射的内核虚拟地址）。第一个没出现的方块就是死掉的位置。
