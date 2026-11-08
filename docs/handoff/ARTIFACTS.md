@@ -235,3 +235,7 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl
 | 镜像 | sha256 前缀 | 作用 |
 | --- | --- | --- |
 | `Mu-sq4.img` | `dd5d3382a043e142` | 与 `Mu-sq3` 同样的 39 个检查点，但所有 cave 都放在 `__TEXT_EXEC` 的零填充区 `0xB4F9700` 内，不再覆盖真实函数 |
+
+## 阶梯自检
+
+`scripts/verify-squares.py <kernel.macho>` 会逐个核对：每个注入点是否正好是 `b <对应 cave>`、每个 cave 是否以 `b <site+4>` 收尾。当前 `Mu-sq4` 的 kernel 通过 39/39、0 失败。
