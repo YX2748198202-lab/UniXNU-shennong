@@ -309,3 +309,23 @@ loader 自己画的三条带**（绿=交接、蓝=进入内核、品红=开 MMU 
 
 结论：**此后任何"开 MMU 后没有输出"的判断，都必须先确认 `patch-fb-map.py` 在同一张镜像里**，
 否则结论无效（本仓库 2026-11-08 之前基于色带得到的"停点"结论都需要按这个前提重读）。
+
+
+## 进度槽：把早期进度写进内存、下一轮在开 MMU 前读出（2026-11-08 实证）
+
+framebuffer 在引导窗口之外，开 MMU 之后的任何色带都不可信；但**开 MMU 之前**画屏是可靠的。两次真机实验确认：
+
+| 实验 | 镜像 | 结果 |
+| --- | --- | --- |
+| cave 在 `0xAD832C8` 画白带（MMU 关闭、PA 直写） | `Mu-vis3.img` `6e9bc8f00565f799` | **白带出现**，替换了 loader 的绿带 → 注入点确实被执行 |
+| 同一镜像再在 `_arm_init` 入口用 KVA 别名画红带 | 同上 | 无红带 → 开 MMU 后的可见性仍不可用 |
+
+因此诊断通道改成「写内存 + 下轮启动读出」：
+
+1. 进度槽放在内核自己的引导表池第 15 页：`VA 0xFFFFFFF00C8BF000`（`x25 + 0xF000`）。trampoline 在 `0xAD830E4` 才把池清零，读点必须在清零之前。
+2. 读点注入 `0xAD83088`（`ldr x26,[x20,#0x470]`，此时 `x25` 已就绪、MMU 仍关、栈不可用）。cave 用 `add x9,x25,#0xf,lsl #12; ldr w19,[x9]; str wzr,[x9]` 读并清零，只碰 `x9-x17/x19`，`x20`/`x22-x26` 一律不碰。
+3. 画法：band 0 恒白（证明读出 cave 执行），band 1..8 依次是记录值的 bit0..bit7（白=1、黑=0），逐带前进 `0x119400` 字节。
+4. 标记点用开 MMU 后的普通 store 写槽（只写内存），一次启动记录、下一次启动显示，天然形成「一轮一格」的对照实验。
+5. `scripts/patch-progress-slot.py --sites "value@target,..."` 支持任意符号/地址作为标记点；当前链路覆盖 MMU 后第一指令、自检、`_arm_init` 入口与若干调用点、`arm_vm_init`、`early_random`、`device_service_create`、`phys_carveout_init`、`kdp_init`、`cpu_init`、`timer_call_init`、`rtclock_early_init`、`PE_init_printf`、`PE_init_iokit`、`machine_startup`、`kernel_bootstrap`、`bsd_init`、`bsd_autoconf`、`vfs_mountroot` 共 26 个点。
+
+读表：band 1..8 的二进制值就是「最后一格到达的标记编号」，0 表示一个都没到。
