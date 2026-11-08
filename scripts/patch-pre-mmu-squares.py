@@ -18,9 +18,24 @@ import struct
 from pathlib import Path
 
 CAVE_BASE = 0xFFFFFFF00B4F5000
-COLOURS = [0xFFFFFFFF, 0xFFFF0000]
+COLOURS = [0xFFFFFFFF, 0xFFFF0000, 0xFF00FF00]
 SITES = [
-    0xFFFFFFF00AD830D4,   # pool zero setup (before the 16k-iteration loop)
+    0xFFFFFFF00AD8305C,   # msr oslar_el1 (very first instruction)
+    0xFFFFFFF00AD83060,   # msr daifset
+    0xFFFFFFF00AD83064,   # mov x20, x0 (boot_args PA)
+    0xFFFFFFF00AD8306C,   # adrp for the early VBAR
+    0xFFFFFFF00AD83074,   # msr vbar_el1 (physical vectors)
+    0xFFFFFFF00AD83078,   # ldr x22 = VirtualBase
+    0xFFFFFFF00AD83080,   # ldr x24 = MemorySize
+    0xFFFFFFF00AD83084,   # adrp x25 = bootstrap pool
+    0xFFFFFFF00AD83088,   # ldr x26 = [args+0x470]
+    0xFFFFFFF00AD83094,   # adrp for the IRQ stack
+    0xFFFFFFF00AD830A4,   # msr spsel, #1
+    0xFFFFFFF00AD830AC,   # adrp for the FIQ stack
+    0xFFFFFFF00AD830BC,   # msr spsel, #0
+    0xFFFFFFF00AD830C4,   # adrp x30 = _arm_init trampoline return
+    0xFFFFFFF00AD830D4,   # pool zero setup
+    0xFFFFFFF00AD830E4,   # pool zero loop
     0xFFFFFFF00AD830F0,   # pool zeroed
     0xFFFFFFF00AD83128,   # relocation applied (x18)
     0xFFFFFFF00AD83144,   # L1/L2 loop setup
