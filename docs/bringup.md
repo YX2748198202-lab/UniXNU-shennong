@@ -113,10 +113,28 @@
 > 的簇配置一致（fuxi 用 AMP 补丁把 `MAX_CPU_CLUSTERS` 提到 2）。我们的 ADT 里 cpu0
 > **没有** `cluster-type`，因此准备了两份镜像做对照。
 
-下一步判读用 `Mu-ladder.img`：同一批调用点上各画一条 1/16 高的色带
-（白=fileset 签名、红=PE_init_platform、黄=CPU 拓扑、青=cpu_init、橙=processor_bootstrap、
-柠檬绿=到达 arm_vm_init）。照片上最高的那条色带就是内核走到的地方；这条路线不阻塞，
-拍一张照片即可，不需要实时观察。
+下一步判读用 **13 色带**镜像 `Mu-ladder2.img`（`scripts/patch-milestones.py` 生成）。
+它在 `_arm_init` 的 13 个关键调用点各画一条 1/16 高的色带，位置固定、颜色固定：
+
+| 带 | 颜色 | 含义（画带时说明上一个调用已返回）|
+|---|---|---|
+| 3 | 白 | `_OSRuntimeSignStructors` 返回（fileset 签名完成）|
+| 4 | 红 | `_PE_init_platform` 返回 |
+| 5 | 橙 | `_configure_timer_apple_regs` 返回 |
+| 6 | 黄 | 第二次 `_SecureDTGetProperty` 返回（DT 读取完成）|
+| 7 | 黄绿 | `_check_for_failure_injection` 返回 |
+| 8 | 绿 | `_ml_parse_cpu_topology` 返回 |
+| 9 | 春绿 | `_thread_bootstrap` 返回 |
+| 10 | 青 | `_cpu_bootstrap` 返回 |
+| 11 | 天蓝 | `_kernel_startup_bootstrap` 返回 |
+| 12 | 蓝 | `_timer_call_init` 返回 |
+| 13 | 紫 | `_cpu_init` 返回 |
+| 14 | 品红 | `_processor_bootstrap` 返回 |
+| 15 | 柠檬绿 | 到达 `_arm_vm_init` 调用点 |
+
+照片上**最高的那条色带**就是内核走到的地方；它不阻塞、不需要实时观察，
+之后任意时间拍一张照片即可。`Mu-ladder2-ct.img` 是同一套色带外加 ADT
+`cluster-type='E'` 的对照组，用来验证 fuxi 记录里的簇配置假设。
 
 ## 阶段 E：UFS 与根卷
 
