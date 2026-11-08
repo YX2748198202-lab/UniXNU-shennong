@@ -133,7 +133,12 @@
 | 15 | 柠檬绿 | 到达 `_arm_vm_init` 调用点 |
 
 照片上**最高的那条色带**就是内核走到的地方；它不阻塞、不需要实时观察，
-之后任意时间拍一张照片即可。`Mu-ladder2-ct.img` 是同一套色带外加 ADT
+之后任意时间拍一张照片即可。
+
+另一点已核实：CI payload 内核本来就把 `_panic` 改成了跳转（跳到 `0xfffffff00b4f6ea8`
+的 panic 屏代码），但真机上 panic 屏从没出现过。结合 fuxi 的记录，这说明卡住的位置
+在内核映射帧缓冲之前（`arm_vm_init` 之前），panic 屏同样画不出来，因此只能靠
+直接写物理地址的色带。最终镜像 `Mu-ladder2b.img` 就是“CI 补丁 + 13 色带”的叠加。`Mu-ladder2-ct.img` 是同一套色带外加 ADT
 `cluster-type='E'` 的对照组，用来验证 fuxi 记录里的簇配置假设。
 
 ## 阶段 E：UFS 与根卷

@@ -52,6 +52,20 @@ boot image、根卷镜像）**刻意不入库**：它们包含原厂 kernelcache
   屏幕在 handoff 之后不会变化。
 - 本次上机只用 `fastboot boot`，未写任何分区。
 
+### 2026-11-08 最终诊断镜像（叠加在 CI 已打补丁的内核上）
+
+这两张是**首选**：底版用的是 CI payload 里那份已打好补丁的 kernel（`_panic` 已被改成
+`b 0xfffffff00b4f6ea8`，带 panic 屏和入口两条色带），再叠加 13 条里程碑色带。
+
+| 镜像 | 说明 | 字节 | sha256 |
+|---|---|---|---|
+| `Mu-ladder2b.img` | 13 色带 + CI panic 屏，ADT 不变 | 203,726,848 | `f3226ff0e128422078f0af8a8c2a2ba2aa8f72cb0a690be1be8d737bc8d94fd3` |
+| `Mu-ladder2b-ct.img` | 同上 + ADT 给 cpu0 加 `cluster-type='E'` | 203,726,848 | `7d7b3dcd163f6691ecf1e45c255754cad4a13630d1485303a1cf0d2e549cc2f6` |
+
+判读：照片从上往下数 1/16 色带，最高出现的那条对应 `docs/bringup.md` A.5 的里程碑表；
+若 panic 屏生效，画面会出现文字（24A446 的 panic 屏在 `arm_vm_init` 之前的 panic 上
+画不出来，因为那时内核还没映射帧缓冲）。
+
 ### 2026-11-08 入口探针镜像（本地现打，不改内核源码）
 
 | 镜像 | 用途 | 字节 | sha256 |
