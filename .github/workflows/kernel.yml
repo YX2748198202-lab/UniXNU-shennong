@@ -60,6 +60,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           UNIXNU_UEFI: ${{ github.workspace }}/uefi
+          # The board has no serial port and no display driver in XNU yet, so the framebuffer
+          # stage screen is the only channel that says how far the kernel got. It is compiled
+          # in only when this is 1; build-xnu-4k-baseline.sh defaults it to 0 and the previous
+          # image therefore carried the archive but none of the calls (build log: "env: unset").
+          XNU_BOOT_PROGRESS: '1'
         run: |
           trap 'echo "::error::Build kernel failed at line $LINENO: $BASH_COMMAND"' ERR
           SRC_SCRIPT=scripts/build-xnu-4k-baseline.sh
