@@ -427,6 +427,44 @@ jobs:
             fi
           done
           export CONF_PATH="$PWD/Conf"
+          # The firmware may already carry a gUniXNULoaderProtocolGuid instance from an older
+          # UniXNU package. DarwinBootEntry() then returns EFI_ALREADY_STARTED at once, the
+          # menu reports "start failed" and RunXnu() still finds no usable loader. Replace the
+          # stale instance instead of refusing to start.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('drivers/DarwinBoot/DarwinBootPkg/Driver/DarwinBoot.c')
+          text = path.read_text()
+          old = ('  Status = gBS->LocateProtocol (&gUniXNULoaderProtocolGuid, NULL, &Existing);\n'
+                 '  if (!EFI_ERROR (Status)) { return EFI_ALREADY_STARTED; }\n')
+          new = ('  Status = gBS->LocateProtocol (&gUniXNULoaderProtocolGuid, NULL, &Existing);\n'
+                 '  if (!EFI_ERROR (Status)) {\n'
+                 '    EFI_HANDLE  *Handles;\n'
+                 '    UINTN       HandleCount;\n'
+                 '    UINTN       HandleIndex;\n'
+                 '\n'
+                 '    Handles     = NULL;\n'
+                 '    HandleCount = 0;\n'
+                 '    if (!EFI_ERROR (gBS->LocateHandleBuffer (ByProtocol, &gUniXNULoaderProtocolGuid, NULL, &HandleCount, &Handles))) {\n'
+                 '      for (HandleIndex = 0; HandleIndex < HandleCount; HandleIndex++) {\n'
+                 '        VOID  *Interface;\n'
+                 '\n'
+                 '        Interface = NULL;\n'
+                 '        if (!EFI_ERROR (gBS->HandleProtocol (Handles[HandleIndex], &gUniXNULoaderProtocolGuid, &Interface))) {\n'
+                 '          gBS->UninstallProtocolInterface (Handles[HandleIndex], &gUniXNULoaderProtocolGuid, Interface);\n'
+                 '        }\n'
+                 '      }\n'
+                 '      gBS->FreePool (Handles);\n'
+                 '    }\n'
+                 '  }\n')
+          if 'LocateHandleBuffer (ByProtocol, &gUniXNULoaderProtocolGuid' in text:
+              print('darwinboot: stale protocol replacement already patched')
+          elif old not in text:
+              raise SystemExit('darwinboot: ALREADY_STARTED anchor not found')
+          else:
+              path.write_text(text.replace(old, new, 1))
+              print('darwinboot: stale protocol replacement applied')
+          PY
           export UNIXNU_EDK2="$EDK2"
           # CLANGPDB needs llvm-lib/llvm-objcopy next to clang; Xcode's toolchain has clang but
           # no llvm-lib, which failed the previous attempt with:
