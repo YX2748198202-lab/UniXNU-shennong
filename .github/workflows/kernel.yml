@@ -417,8 +417,22 @@ jobs:
               exit 1
             fi
           fi
+          # EDK2's build needs $WORKSPACE/Conf/tools_def.txt; edksetup.sh normally creates it
+          # from the templates. Without this the build dies with:
+          #   build.py... : error 000E: File/directory not found in workspace .../unixnu/Conf/tools_def.txt
+          mkdir -p Conf
+          for base in tools_def target build_rule; do
+            if [ ! -f "Conf/$base.txt" ]; then
+              cp "$EDK2/BaseTools/Conf/$base.template" "Conf/$base.txt"
+            fi
+          done
+          export CONF_PATH="$PWD/Conf"
           export UNIXNU_EDK2="$EDK2"
-          export CLANG_BIN="$(dirname "$(xcrun -f clang)")/"
+          CLANG_DIR="$(xcrun -f clang 2>/dev/null | xargs -I{} dirname {})"
+          if [ -z "$CLANG_DIR" ] || [ ! -d "$CLANG_DIR" ]; then
+            CLANG_DIR="$(dirname "$(command -v clang)")"
+          fi
+          export CLANG_BIN="$CLANG_DIR/"
           export TARGET=RELEASE
           if ! bash scripts/build-darwinboot.sh > /tmp/darwinboot.out 2>&1; then
             tail -40 /tmp/darwinboot.out | sed 's/^/::error::/'
