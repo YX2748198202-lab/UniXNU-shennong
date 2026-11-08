@@ -101,7 +101,16 @@ ELR_EL1 / SPSR_EL1** 各 16 位十六进制画在屏幕顶部（黑底，四行�
 |---|---|---|---|
 | `Mu-fault.img` | 13 色带 + 故障寄存器转储 | 203,726,848 | `b3055d18f37ae3d2…`（完整值见 Windows 产物）|
 
-工具：`scripts/patch-fault-dump.py` + `scripts/fault-dump/{dump.c,cave.S}`。
+自恢复变体 **`Mu-fault-reset.img`**（13 色带 + 故障转储 + 拍照窗口 45 秒后
+PSCI 自动重启）：
+
+| 镜像 | 行为 | sha256 |
+|---|---|---|
+| `Mu-fault-reset.img` | 异常时画寄存器 → 等 45 秒 → 自动重启；异常发生在转储代码内部则直接重启；EL0 异常则放行给内核 | `983b10f2dec3bf5fc1e87e49aafa89eb7eaf626ab4735f8de0b02e9414c627c0` |
+
+这样“异常导致的停机”可以自恢复，不再需要人工断电；只有**死循环型**停机仍需强制重启。
+
+工具：`scripts/patch-fault-dump.py`（`--mode paint|reset`）+ `scripts/fault-dump/{dump.c,dump_reset.c,cave.S}`。
 转储代码 600 字节，放在 `0xfffffff00b4fa400`（`__TEXT_EXEC` 尾部空白，色带 cave
 之后，两段不重叠）；字体是自带的 5×7 十六进制点阵，不依赖内核任何资源。
 

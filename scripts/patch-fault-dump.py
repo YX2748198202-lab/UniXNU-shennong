@@ -16,6 +16,9 @@ def main():
     ap.add_argument('--probe-tool', type=Path, default=Path('/tmp/probe/patch-xnu-entry-probe.py'))
     ap.add_argument('--src', type=Path, default=Path('/tmp/probe/fault'))
     ap.add_argument('--va', type=lambda s: int(s, 0), default=CAVE_VA)
+    ap.add_argument('--mode', choices=('paint', 'reset'), default='paint',
+                    help='paint only, or paint then wait --photo-seconds and reset')
+    ap.add_argument('--photo-seconds', type=int, default=45)
     args = ap.parse_args()
 
     spec = importlib.util.spec_from_file_location('probe', args.probe_tool)
@@ -27,13 +30,17 @@ def main():
     handler = syms['_sleh_synchronous']
     first = struct.unpack_from('<I', data, probe.file_offset(handler))[0]
     work = Path(tempfile.mkdtemp())
+    size_hint = 0x300
     asm = (args.src / 'cave.S').read_text().replace('.inst 0x00000000', f'.inst {first:#010x}')
     (work / 'cave.S').write_text(asm)
     clang = 'clang'; lld = 'ld.lld'; objcopy = 'llvm-objcopy'; nm = 'llvm-nm'
     subprocess.run([clang, '--target=aarch64-none-elf', '-c', work / 'cave.S', '-o', work / 'cave.o'], check=True)
     subprocess.run([clang, '--target=aarch64-none-elf', '-ffreestanding', '-fno-builtin',
                     '-fno-stack-protector', '-fno-asynchronous-unwind-tables', '-mgeneral-regs-only',
-                    '-fno-pic', '-mcmodel=tiny', '-Oz', '-c', args.src / 'dump.c',
+                    '-fno-pic', '-mcmodel=tiny', '-Oz',
+                    f'-DCAVE_LO={args.va:#x}', f'-DCAVE_HI={args.va + size_hint:#x}',
+                    f'-DPHOTO_SECONDS={args.photo_seconds}',
+                    '-c', args.src / ('dump_reset.c' if args.mode == 'reset' else 'dump.c'),
                     '-o', work / 'dump.o'], check=True)
     # .rodata (the font) must sit right after .text: the default placement jumps a
     # page and would land in the hole between __TEXT_EXEC and __DATA.
