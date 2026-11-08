@@ -1,0 +1,8 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== payload
+== kernel args: -v serial=3 debug=0x14e armcpu-diagnostics=1 boot-progress=2 sheng-pmgr=2 native-ufs-probe=3 native-source-storage=1
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/patch-xnu-entry-probe.py /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/payload/stage/EFI/UniXNU/Payloads/kernel.macho --panic-screen --no-reset
+Padding at 0xfffffff00ad815c0 is not empty
+unixnu: python3 failed (1); full log: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/logs/payload-patch.log

@@ -1,0 +1,7 @@
+KEXTPROBE nm=/opt/homebrew/opt/llvm/bin/llvm-nm
+Traceback (most recent call last):
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/shennong-kext-exports-probe.py", line 46, in <module>
+    image = np.macho(data)
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/XnuPrelink/native_prelink.py", line 19, in macho
+    raise ValueError('Only ordinary little-endian ARM64 is supported')
+ValueError: Only ordinary little-endian ARM64 is supported
