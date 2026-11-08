@@ -85,6 +85,21 @@ USB 事件就能判读；**未命中则设备挂住无 USB**，需要一次强�
 驱动器：`scripts/run-entry-bisect.sh`（先 `adb reboot bootloader`，逐点 `fastboot boot`，
 命中即继续、未命中即停并提示需要强制重启）。
 
+### 2026-11-08 故障寄存器转储镜像（一次拍照同时回答“停在哪”和“为什么”）
+
+`Mu-fault.img` = CI 补丁内核（panic 屏 + 入口两条色带）+ 13 条里程碑色带 +
+`_sleh_synchronous` 的故障转储：EL1 同步异常发生时，把 **ESR_EL1 / FAR_EL1 /
+ELR_EL1 / SPSR_EL1** 各 16 位十六进制画在屏幕顶部（黑底，四行四色），再回到
+原异常处理流程。
+
+| 镜像 | 内容 | 字节 | sha256 |
+|---|---|---|---|
+| `Mu-fault.img` | 13 色带 + 故障寄存器转储 | 203,726,848 | `b3055d18f37ae3d2…`（完整值见 Windows 产物）|
+
+工具：`scripts/patch-fault-dump.py` + `scripts/fault-dump/{dump.c,cave.S}`。
+转储代码 600 字节，放在 `0xfffffff00b4fa400`（`__TEXT_EXEC` 尾部空白，色带 cave
+之后，两段不重叠）；字体是自带的 5×7 十六进制点阵，不依赖内核任何资源。
+
 ### 2026-11-08 最终诊断镜像（叠加在 CI 已打补丁的内核上）
 
 这两张是**首选**：底版用的是 CI payload 里那份已打好补丁的 kernel（`_panic` 已被改成

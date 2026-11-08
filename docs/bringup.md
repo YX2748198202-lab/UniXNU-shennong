@@ -84,6 +84,18 @@
   `sheng-log` 与 `sheng-log-reserve`；但 `kernel_args` 尚未传 `sheng-log=1`，仓库里也还没有
   读取脚本 → 待补。
 
+### A.7 故障寄存器转储（2026-11-08）
+
+`arm_vm_init` 之前 panic 屏画不出来（内核还没映射帧缓冲），但 **loader 的页表仍在**，
+所以物理地址 `0xFC400000` 可写。`Mu-fault.img` 把 `_sleh_synchronous` 的入口改成跳到
+一段 600 字节的 cave：读 `ESR_EL1 / FAR_EL1 / ELR_EL1 / SPSR_EL1`，用自带 5×7 点阵
+把四个 64 位值画成十六进制（黑底、四行四色：白=ESR、红=FAR、绿=ELR、蓝=SPSR），
+然后跳回原处理流程。配合 13 条里程碑色带，一张照片就能读出“停在哪一步 + 是不是
+同步异常、异常类型/访问地址/出错 PC”。
+
+注意：若停点是**死循环**而不是异常，这段代码不会触发（屏幕只显示色带），
+这本身也是判读依据。
+
 ### A.6 内核里 `cluster-type` 的真实语义（反汇编核实，2026-11-08）
 
 用 capstone 反汇编 `_ml_parse_cpu_topology`（`0xfffffff00ad85fa0`）核实：
