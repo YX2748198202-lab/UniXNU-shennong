@@ -82,6 +82,11 @@ USB 事件就能判读；**未命中则设备挂住无 USB**，需要一次强�
 | `Mu-ct-ms.img` | ADT cpu0 加 `cluster-type='E'` | `c2b7f5df114d49ee4a78…`（完整值见 Windows 产物）|
 | `Mu-minargs-ms.img` | 内核参数缩减为 `-v serial=3` | `47ede480f4413c7c13aa…` |
 
+**上机前已校验（2026-11-08）**：13 个镜像的 payload 内 ADT 全部是基线
+（10,520 字节，sha256 前缀 `a44c58abad7f`），只有 `kernel.macho` 不同；每个镜像
+只改 `_arm_init` 里的一处 `bl`，改成 `b 0xfffffff00ad81620`（该地址在原始内核里
+是 4 KB 空白区，内容为计数器等待 + PSCI `SYSTEM_RESET` 桩），其它调用点原样保留。
+
 驱动器：`scripts/run-entry-bisect.sh`（先 `adb reboot bootloader`，逐点 `fastboot boot`，
 命中即继续、未命中即停并提示需要强制重启）。
 
