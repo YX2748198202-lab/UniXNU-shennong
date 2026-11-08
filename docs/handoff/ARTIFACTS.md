@@ -239,3 +239,11 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl
 ## 阶梯自检
 
 `scripts/verify-squares.py <kernel.macho>` 会逐个核对：每个注入点是否正好是 `b <对应 cave>`、每个 cave 是否以 `b <site+4>` 收尾。当前 `Mu-sq4` 的 kernel 通过 39/39、0 失败。
+
+## 备用方案 B：39 方块全出现时用（2026-11-08）
+
+| 镜像 | sha256 前缀 | 作用 |
+| --- | --- | --- |
+| `Mu-guard2.img` | `b85b1f3100c03474` | 守卫旁路（SCTLR 自检失败写 0x81 到进度槽第二字并继续）+ 26 点整链进度记录 + 下次启动读出 9 条带；cave 全部在安全填充区（读出 `0xAD815A4`、守卫 `0xAD82784`、标记 `0xB4F9700` 起） |
+
+判定路径：先 boot `Mu-sq4`（39 方块）→ 若方块全出现，说明 trampoline 跑完、死在 `0xAD81560` 的开 MMU 瞬间或 SCTLR 自检；此时改 boot `Mu-guard2`，再下一次启动读条带即可区分「自检失败（band 9 白）」与「开 MMU 后取指失败（值停在 0x80/1）」。

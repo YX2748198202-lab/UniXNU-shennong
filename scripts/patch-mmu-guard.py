@@ -12,7 +12,7 @@ import importlib.util
 import struct
 from pathlib import Path
 
-CAVE = 0xFFFFFFF00B4F8800
+CAVE = 0xFFFFFFF00AD82784   # zero padding in __TEXT_EXEC (0x87C bytes)
 SITE = 0xFFFFFFF00AD83430          # cmp x0, x1
 RESUME = 0xFFFFFFF00AD83438        # mov x0, #0x300000
 SLOT_VA = 0xFFFFFFF00C8BF000
