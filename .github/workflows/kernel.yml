@@ -27,6 +27,8 @@ jobs:
           repository: UniXNU/uefi-sheng
           ref: sheng
           path: uefi
+          # Mu_Basecore is the EDK2 tree DarwinBoot builds against.
+          submodules: recursive
       - name: Check out the device repository
         uses: actions/checkout@v4
         with:
@@ -396,6 +398,43 @@ jobs:
           git add -f ci-logs
           git commit -m "ci: logs for run $GITHUB_RUN_ID" || echo nothing-to-commit
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
+      - name: Build DarwinBoot (the UEFI XNU loader)
+        working-directory: unixnu
+        run: |
+          # uefi-sheng ships no UniXNULoaderProtocol implementation, so the loader that
+          # RunXnu() needs has to come from drivers/DarwinBoot and travel in the payload
+          # ([payload] loader = "payload" -> unixnu.toml [[driver]] Payloads/DarwinBoot.efi).
+          set -eu
+          EDK2="$GITHUB_WORKSPACE/uefi/Mu_Basecore"
+          if [ ! -f "$EDK2/MdePkg/MdePkg.dec" ]; then
+            echo "::error::Mu_Basecore/EDK2 is missing at $EDK2"
+            exit 1
+          fi
+          if [ ! -x "$EDK2/BaseTools/Source/C/bin/VfrCompile" ] && [ ! -d "$EDK2/BaseTools/Source/C/bin" ]; then
+            if ! make -C "$EDK2/BaseTools" -j"$(sysctl -n hw.ncpu)" > /tmp/basetools.out 2>&1; then
+              tail -25 /tmp/basetools.out | sed 's/^/::error::/'
+              echo "::error::EDK2 BaseTools build failed"
+              exit 1
+            fi
+          fi
+          export UNIXNU_EDK2="$EDK2"
+          export CLANG_BIN="$(dirname "$(xcrun -f clang)")/"
+          export TARGET=RELEASE
+          if ! bash scripts/build-darwinboot.sh > /tmp/darwinboot.out 2>&1; then
+            tail -40 /tmp/darwinboot.out | sed 's/^/::error::/'
+            echo "::error::DarwinBoot build failed"
+            exit 1
+          fi
+          EFI=$(find Build -name DarwinBoot.efi -type f 2>/dev/null | head -1)
+          if [ -z "$EFI" ]; then
+            echo "::error::DarwinBoot.efi was not produced"
+            find Build -maxdepth 4 -name '*.efi' 2>/dev/null | head -5
+            exit 1
+          fi
+          cp "$EFI" /tmp/DarwinBoot.efi
+          echo "darwinboot: $EFI"
+          ls -l /tmp/DarwinBoot.efi
+          shasum -a 256 /tmp/DarwinBoot.efi
       - name: Build ShengUfs archive for probing
         if: always()
         working-directory: unixnu
@@ -772,6 +811,20 @@ jobs:
             done
             exit 1
           fi
+          # The menu loads the XNU loader from the payload volume: without this file
+          # RunXnu() has no gUniXNULoaderProtocolGuid and returns EFI_UNSUPPORTED.
+          if [ ! -f /tmp/DarwinBoot.efi ]; then
+            echo "::error::no DarwinBoot.efi to inject; the menu would report EFI_UNSUPPORTED"
+            exit 1
+          fi
+          PAYLOAD=$(ls -t out/shennong/*/shennong/payload/payload.img out/shennong/payload/payload.img 2>/dev/null | head -1)
+          if [ -z "$PAYLOAD" ]; then
+            echo "::error::payload.img is missing after a successful payload build"
+            exit 1
+          fi
+          mcopy -o -i "$PAYLOAD" /tmp/DarwinBoot.efi ::/EFI/UniXNU/Payloads/DarwinBoot.efi
+          mdir -i "$PAYLOAD" ::/EFI/UniXNU/Payloads | grep -i darwinboot | sed 's/^/payload driver: /'
+          echo "payload: DarwinBoot.efi injected into $PAYLOAD ($(wc -c < "$PAYLOAD") bytes)"
       - name: Replace the schema-2 ADT with the board ADT
         working-directory: unixnu
         run: |
