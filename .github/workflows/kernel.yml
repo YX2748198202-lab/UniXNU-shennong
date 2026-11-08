@@ -431,19 +431,34 @@ jobs:
           # CLANGPDB needs llvm-lib/llvm-objcopy next to clang; Xcode's toolchain has clang but
           # no llvm-lib, which failed the previous attempt with:
           #   /bin/sh: /Applications/Xcode_26.6.app/.../usr/bin/llvm-lib: No such file or directory
-          CLANG_DIR=""
-          for candidate in /opt/homebrew/opt/llvm/bin /usr/local/opt/llvm/bin; do
-            if [ -x "$candidate/llvm-lib" ] && [ -x "$candidate/clang" ]; then
-              CLANG_DIR="$candidate"
-              break
-            fi
-          done
-          if [ -z "$CLANG_DIR" ]; then
-            CLANG_DIR="$(dirname "$(xcrun -f clang 2>/dev/null || command -v clang)")"
+          # CLANGPDB wants clang, llvm-lib and lld-link in one directory. Homebrew ships the
+          # first two in llvm/bin and the linker in the separate lld formula, which failed as:
+          #   /bin/sh: /opt/homebrew/opt/llvm/bin/lld-link: No such file or directory
+          LLVM_DIR="$(brew --prefix llvm)/bin"
+          LLD_DIR="$(brew --prefix lld)/bin"
+          if [ ! -x "$LLVM_DIR/llvm-lib" ]; then
+            LLVM_DIR="$(dirname "$(xcrun -f clang 2>/dev/null || command -v clang)")"
           fi
-          export CLANG_BIN="$CLANG_DIR/"
-          echo "darwinboot toolchain: $CLANG_DIR ($(ls "$CLANG_DIR" | grep -c '^llvm-') llvm tools)"
-          ls "$CLANG_DIR"/llvm-lib "$CLANG_DIR"/llvm-objcopy 2>/dev/null || true
+          SHIM="$PWD/Conf/llvmbin"
+          rm -rf "$SHIM"
+          mkdir -p "$SHIM"
+          for tool in "$LLVM_DIR"/*; do
+            ln -s "$tool" "$SHIM/$(basename "$tool")"
+          done
+          for tool in lld-link ld.lld lld; do
+            if [ -x "$LLD_DIR/$tool" ]; then ln -sf "$LLD_DIR/$tool" "$SHIM/$tool"; fi
+          done
+          if [ ! -x "$SHIM/lld-link" ]; then
+            FOUND="$(command -v lld-link || true)"
+            [ -n "$FOUND" ] && ln -sf "$FOUND" "$SHIM/lld-link"
+          fi
+          if [ ! -x "$SHIM/lld-link" ]; then
+            echo "::error::no lld-link for the CLANGPDB toolchain"
+            ls "$LLD_DIR" 2>/dev/null | head -10
+            exit 1
+          fi
+          export CLANG_BIN="$SHIM/"
+          echo "darwinboot toolchain: $LLVM_DIR + $(readlink -f "$SHIM/lld-link")"
           export TARGET=RELEASE
           if ! bash scripts/build-darwinboot.sh > /tmp/darwinboot.out 2>&1; then
             tail -40 /tmp/darwinboot.out | sed 's/^/::error::/'
