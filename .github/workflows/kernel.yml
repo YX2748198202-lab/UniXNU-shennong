@@ -428,11 +428,22 @@ jobs:
           done
           export CONF_PATH="$PWD/Conf"
           export UNIXNU_EDK2="$EDK2"
-          CLANG_DIR="$(xcrun -f clang 2>/dev/null | xargs -I{} dirname {})"
-          if [ -z "$CLANG_DIR" ] || [ ! -d "$CLANG_DIR" ]; then
-            CLANG_DIR="$(dirname "$(command -v clang)")"
+          # CLANGPDB needs llvm-lib/llvm-objcopy next to clang; Xcode's toolchain has clang but
+          # no llvm-lib, which failed the previous attempt with:
+          #   /bin/sh: /Applications/Xcode_26.6.app/.../usr/bin/llvm-lib: No such file or directory
+          CLANG_DIR=""
+          for candidate in /opt/homebrew/opt/llvm/bin /usr/local/opt/llvm/bin; do
+            if [ -x "$candidate/llvm-lib" ] && [ -x "$candidate/clang" ]; then
+              CLANG_DIR="$candidate"
+              break
+            fi
+          done
+          if [ -z "$CLANG_DIR" ]; then
+            CLANG_DIR="$(dirname "$(xcrun -f clang 2>/dev/null || command -v clang)")"
           fi
           export CLANG_BIN="$CLANG_DIR/"
+          echo "darwinboot toolchain: $CLANG_DIR ($(ls "$CLANG_DIR" | grep -c '^llvm-') llvm tools)"
+          ls "$CLANG_DIR"/llvm-lib "$CLANG_DIR"/llvm-objcopy 2>/dev/null || true
           export TARGET=RELEASE
           if ! bash scripts/build-darwinboot.sh > /tmp/darwinboot.out 2>&1; then
             tail -40 /tmp/darwinboot.out | sed 's/^/::error::/'
