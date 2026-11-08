@@ -8,7 +8,9 @@ produced no visible output.  This probe sidesteps the problem completely:
 * each marker inside _arm_init stores its index into a fixed slot in DRAM
   (a plain store through the kernel's KVA window, no framebuffer involved);
 * the cave that runs *before* the MMU comes on reads that slot with the MMU
-  off, paints one white band plus eight bit bands, and clears the slot.
+  off, paints one white band plus eight bit bands, and seeds the slot with
+  0x80 so the next readout separates "never got here" (0) from "reached the
+  MMU-off cave but nothing after the MMU came on" (0x80) from a real marker.
 
 So the screen of boot N+1 reports the last marker reached by boot N, drawn at
 a stage where framebuffer writes are known to work.
@@ -37,7 +39,10 @@ _start:
   /* read the slot with the MMU off: bootstrap pool page 15, before it is zeroed */
   add  x9, x25, #0xf, lsl #12
   ldr  w19, [x9]
-  str  wzr, [x9]
+  ldr  w17, [x9, #4]
+  mov  w12, #0x80
+  str  w12, [x9]
+  str  wzr, [x9, #4]
   /* band 0: white, proves the readout ran */
   movz x10, #0xfc40, lsl #16
   movz x11, #0x9400
@@ -70,6 +75,21 @@ _start:
   lsl  x13, x13, #1
   subs x14, x14, #1
   b.ne 2b
+  /* band 9: guard-failure flag (0x81 from the SCTLR self-check) */
+  tst  w17, #1
+  b.eq 6f
+  movz w12, #0xffff
+  movk w12, #0xffff, lsl #16
+  b    7f
+6:
+  movz w12, #0x0000
+  movk w12, #0x0000, lsl #16
+7:
+  mov  x16, x11
+8:
+  stp  w12, w12, [x10], #8
+  subs x16, x16, #8
+  b.ne 8b
   {tail}
   b    back
 .ltorg
