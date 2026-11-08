@@ -636,6 +636,55 @@ jobs:
           if not patched:
               raise SystemExit('probe symbols: no script patched')
           PY
+          # PANIC_CAVE_END is a constant of the Apple kernelcache layout; a kernel linked at
+          # another address keeps zero padding past it and the panic screen is rejected for a
+          # few dozen bytes. Extend the cave end through the real zero run (never over data)
+          # and only as far as the assembled code needs.
+          python3 - <<'PY'
+          import glob
+          from pathlib import Path
+          GLOBAL_OLD = "def main():\n"
+          GLOBAL_NEW = "def main():\n    global PANIC_CAVE_END\n"
+          FIT_OLD = (
+              "        if load + len(code) > PANIC_CAVE_END:\n"
+              "            raise SystemExit(f'panic screen is {len(code):#x} bytes at {load:#x}, the padding ends at {PANIC_CAVE_END:#x}')\n")
+          FIT_NEW = (
+              "        if load + len(code) > PANIC_CAVE_END:\n"
+              "            extended = PANIC_CAVE_END\n"
+              "            while extended < load + len(code) + 0x10:\n"
+              "                try:\n"
+              "                    if data[file_offset(extended)]:\n"
+              "                        break\n"
+              "                except SystemExit:\n"
+              "                    break\n"
+              "                extended += 0x10\n"
+              "            if load + len(code) > extended:\n"
+              "                raise SystemExit(f'panic screen is {len(code):#x} bytes at {load:#x}, the padding ends at {extended:#x}')\n"
+              "            PANIC_CAVE_END = extended\n")
+          targets = ['scripts/patch-xnu-entry-probe.py']
+          targets += glob.glob('out/shennong/*/*/shennong/tree/scripts/patch-xnu-entry-probe.py')
+          done = 0
+          for name in targets:
+              path = Path(name)
+              if not path.is_file():
+                  continue
+              source = path.read_text()
+              if FIT_NEW in source:
+                  print('panic cave: already extended in', path)
+                  done += 1
+                  continue
+              if FIT_OLD not in source:
+                  print('::warning::panic cave: fit check missing in', path)
+                  continue
+              source = source.replace(FIT_OLD, FIT_NEW, 1)
+              if 'global PANIC_CAVE_END' not in source:
+                  source = source.replace(GLOBAL_OLD, GLOBAL_NEW, 1)
+              path.write_text(source)
+              print('panic cave: extended in', path)
+              done += 1
+          if not done:
+              raise SystemExit('panic cave: no script patched')
+          PY
           if ! ./unixnu build payload --uefi "$GITHUB_WORKSPACE/uefi" $TC_ARG > /tmp/payload.out 2>&1; then
             head -20 /tmp/payload.out | sed 's/^/::error::/'
             grep -n -A25 -E 'Traceback|Error:|error:' /tmp/payload.out | head -70 | sed 's/^/::error::/'
