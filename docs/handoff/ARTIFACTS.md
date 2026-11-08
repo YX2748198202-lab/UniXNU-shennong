@@ -204,3 +204,10 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl
 | `Mu-vis3.img` | `6e9bc8f00565f799` | 白带自证实验：cave 在开 MMU 前画白带，确认注入点被执行 |
 | `Mu-slot5.img` | `cd1b60267183cf7c` | 进度槽读出（修好按带前进的读出 cave） |
 | `Mu-chain.img` | `1baf9291be9f4f63` | 26 个标记点的整链进度记录 + 读出 |
+
+## 守卫旁路系列（2026-11-08）
+
+| 镜像 | sha256 前缀 | 作用 |
+| --- | --- | --- |
+| `Mu-chain2.img` | `df90bd8f7196d95f` | 26 点整链记录 + 0x80 种子 + `cpus=1` |
+| `Mu-guard.img` | `6108a699a12050a3` | 上一行全部能力 + SCTLR 自检旁路（失败写 0x81 到槽第二字） |

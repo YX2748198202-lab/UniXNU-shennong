@@ -329,3 +329,32 @@ framebuffer 在引导窗口之外，开 MMU 之后的任何色带都不可信；
 5. `scripts/patch-progress-slot.py --sites "value@target,..."` 支持任意符号/地址作为标记点；当前链路覆盖 MMU 后第一指令、自检、`_arm_init` 入口与若干调用点、`arm_vm_init`、`early_random`、`device_service_create`、`phys_carveout_init`、`kdp_init`、`cpu_init`、`timer_call_init`、`rtclock_early_init`、`PE_init_printf`、`PE_init_iokit`、`machine_startup`、`kernel_bootstrap`、`bsd_init`、`bsd_autoconf`、`vfs_mountroot` 共 26 个点。
 
 读表：band 1..8 的二进制值就是「最后一格到达的标记编号」，0 表示一个都没到。
+
+
+## 开 MMU 之后的第一道静默死循环：SCTLR 自检（2026-11-08 反汇编确认）
+
+trampoline 在装好 SCTLR 之后的代码是这样的：
+
+```
+0xAD83408-0xAD83414   x0 = 0xFC54793D        ; 内核期望的 SCTLR_EL1 值
+0xAD83418             b   0xAD81560          ; 画第 3 条带、写 SCTLR、开 MMU、返回
+0xAD8341C             isb                     ; ← 开 MMU 之后的第一条指令
+0xAD83420-0xAD8342C   x1 = 0xFC54793D
+0xAD83430             cmp x0, x1
+0xAD83434             b.ne 0xAD83434          ; ← 回读不匹配就原地永久自旋，无输出、无复位
+0xAD83438             mov x0, #0x300000       ; cpacr_el1
+```
+
+`b.ne` 的目标就是自己，所以只要回读值与这个 ARMv8 时代的常量有一位不同（ARMv9.x 核心的 RES1/RAZ 位可能不同），内核就在这里**静默卡死**——症状与我们看到的完全一致：屏幕停在 loader 界面、USB 消失、永不复位。
+
+`scripts/patch-mmu-guard.py` 把这条自检改成：保留比较 → 不相等时把 `0x81` 写进进度槽第二字 → **继续走正常路径**。这样守卫失败既可观测、又不再致命，配合进度槽的读出（band 9 专画这个标志）就能一次启动定位。
+
+### 进度槽读出条带布局（`Mu-guard.img` 起）
+
+| 条带 | 含义 |
+| --- | --- |
+| 0 | 恒白：读出 cave 在开 MMU 前执行了 |
+| 1..8 | 上一轮记录值的 bit0..bit7（白=1，黑=0） |
+| 9 | SCTLR 自检失败标志（白=失败过） |
+
+记录值含义：`0`=loader 没跑到 cave，`0x80`=跑到 cave 但开 MMU 后第一条指令没执行，`1`=开 MMU 后第一条指令执行了（若 band 9 也白则卡在自检死循环），`2`=过了自检，`3`=`_arm_init` 入口，`4..11`=`_arm_init` 的调用点，`12..26` 见 `scripts/patch-progress-slot.py` 的链路表。
