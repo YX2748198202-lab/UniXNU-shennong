@@ -229,3 +229,9 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl
 | 镜像 | sha256 前缀 | 作用 |
 | --- | --- | --- |
 | `Mu-sq3.img` | `97315bd5139327f3` | 一次启动覆盖整条早期链：第一行白方块 17 个（内核入口序言：`msr oslar_el1` → 栈切换 → 清池完成），第二行红方块 22 个（建表 → `msr tcr_el1` → `bl _set_mmu_ttb` → MAIR → TLB → VBAR → PAC 密钥 → `b 0xAD81560`）。方块坐标：`x = 16 + i%20 * 70`，`y = 20 + i/20 * 70` |
+
+## 修正 cave 位置后的阶梯（2026-11-08）
+
+| 镜像 | sha256 前缀 | 作用 |
+| --- | --- | --- |
+| `Mu-sq4.img` | `dd5d3382a043e142` | 与 `Mu-sq3` 同样的 39 个检查点，但所有 cave 都放在 `__TEXT_EXEC` 的零填充区 `0xB4F9700` 内，不再覆盖真实函数 |

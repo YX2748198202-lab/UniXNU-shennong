@@ -23,8 +23,8 @@ import importlib.util
 import struct
 from pathlib import Path
 
-READ_BASE = 0xFFFFFFF00B4F8000
-MARK_BASE = 0xFFFFFFF00B4F9000
+READ_BASE = 0xFFFFFFF00AD815A4      # zero padding in __TEXT_EXEC (0xA5C bytes)
+MARK_BASE = 0xFFFFFFF00B4F9700      # zero padding in __TEXT_EXEC (0x2978 bytes)
 MARK_STRIDE = 0x80
 BAND_BYTES = (5760 * 3200 // 16) & ~7
 SLOT_PA = 0x0DB58B4000 + 0xF000   # bootstrap pool page 15 (runtime: x25 + 0xF000)

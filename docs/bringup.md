@@ -450,3 +450,30 @@ trampoline 在装好 SCTLR 之后的代码是这样的：
 | 红行到 `0xAD832B4`（`bl _set_mmu_ttb`）断开 | TTBR0 安装路径异常 | 读 `_set_mmu_ttb`（`0xAD88930`）实现，确认 x0 的 ASID/属性位 |
 | 红行到 PAC 段断开 | `msr apiakey*_el1` 一类未定义（核心不支持指针认证） | 用 `scripts/patch-mmu-guard.py` 的同类手法把 PAC 写入改成可跳过，或用 `SCTLR_EL1.EnIA` 控制 |
 | 39 个全出现 | 死在 `0xAD81560` 内部（画 band 2 白 或 `msr sctlr_el1`），即开 MMU 瞬间 | 下一步查引导表的恒等映射是否覆盖当前 PC 与 `_arm_init` 的 KVA |
+
+
+## Cave 必须放进已验证的零填充区（2026-11-08 自查发现的工具缺陷）
+
+早期几版探针把 cave 写在了 `0xB4F5000 / 0xB4F6000 / 0xB4F8000 / 0xB4F9000`，事后按符号表核对，这些地址**落在真实函数里**：
+
+| 地址 | 实际落在 |
+| --- | --- |
+| `0xB4F5000` | `NativeUfs::start` 的 `.cold.4`（+0x14） |
+| `0xB4F6000` | `_ccdigest_update`（+0x11C） |
+| `0xB4F8000` | `OSRuntimeSignStructorsInSegment` 函数开头 |
+| `0xB4F9000` | `KLDBootstrap::readBuiltinPersonalities`（+0x214） |
+
+这些函数大多在 kext 加载阶段才跑，所以不一定是本次挂死的原因，但**补丁污染内核代码本身不可接受**，也会让后续阶段的结论不可信。
+
+正确做法：先扫 `__TEXT_EXEC` 里连续 ≥0x400 字节的零填充，再往里面放 cave。当前内核（iOS 27.0.1 24A446 / XNU 12377）的可用填充段：
+
+| 起始 VA | 长度 |
+| --- | --- |
+| `0xFFFFFFF00B4F9688` | `0x2978` |
+| `0xFFFFFFF00AD80090` | `0xF70` |
+| `0xFFFFFFF00AD815A4` | `0xA5C` |
+| `0xFFFFFFF00AD82784` | `0x87C` |
+| `0xFFFFFFF00B4F78F0` | `0x710` |
+| `0xFFFFFFF00AD7BA50` | `0x5B0` |
+
+现在 `patch-pre-mmu-squares.py` 用 `0xB4F9700`（39 个 cave × 0x100 = 0x2700，正好落在 `0xB4F9688+0x2978 = 0xB4FC000` 之前，并带断言），`patch-progress-slot.py` 的读出 cave 用 `0xAD815A4`、标记 cave 用 `0xB4F9700`。

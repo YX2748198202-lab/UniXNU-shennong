@@ -17,7 +17,8 @@ import importlib.util
 import struct
 from pathlib import Path
 
-CAVE_BASE = 0xFFFFFFF00B4F5000
+# verified zero-filled padding inside __TEXT_EXEC: 0xB4F9688 .. 0xB4FC000
+CAVE_BASE = 0xFFFFFFF00B4F9700
 COLOURS = [0xFFFFFFFF, 0xFFFF0000, 0xFF00FF00]
 SITES = [
     0xFFFFFFF00AD8305C,   # msr oslar_el1 (very first instruction)
@@ -125,8 +126,9 @@ def main():
         data[off:off + len(blob)] = blob
         struct.pack_into('<I', data, site_off, probe.branch(site, cave))
         print(f'  #{index:02d} site {site:#x} square ({x},{y}) colour {colour:#010x}')
+    assert CAVE_BASE + len(SITES) * 0x100 <= 0xFFFFFFF00B4FC000, 'caves leave the padding'
     args.kernel.write_bytes(bytes(data))
-    print(f'pre-MMU square ladder: {len(SITES)} checkpoints')
+    print(f'pre-MMU square ladder: {len(SITES)} checkpoints in padding {CAVE_BASE:#x}')
 
 
 if __name__ == '__main__':
