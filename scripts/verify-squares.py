@@ -28,7 +28,7 @@ def main():
     probe.load_segments(data)
     failures = 0
     for index, site in enumerate(ladder.SITES):
-        cave = ladder.CAVE_BASE + index * 0x100
+        cave = ladder.CAVE_BASE + index * ladder.CAVE_STRIDE
         word = struct.unpack_from('<I', data, probe.file_offset(site))[0]
         expected = probe.branch(site, cave)
         if word != expected:
@@ -36,8 +36,8 @@ def main():
             failures += 1
             continue
         # the cave must end with a branch back to site+4
-        blob = data[probe.file_offset(cave):probe.file_offset(cave) + 0x100]
-        for offset in range(0, 0xF8, 4):
+        blob = data[probe.file_offset(cave):probe.file_offset(cave) + ladder.CAVE_STRIDE]
+        for offset in range(0, ladder.CAVE_STRIDE - 8, 4):
             word = struct.unpack_from('<I', blob, offset)[0]
             if word & 0xFC000000 == 0x14000000:
                 delta = word & 0x3FFFFFF

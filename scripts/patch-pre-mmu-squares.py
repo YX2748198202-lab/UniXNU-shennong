@@ -19,7 +19,8 @@ from pathlib import Path
 
 # verified zero-filled padding inside __TEXT_EXEC: 0xB4F9688 .. 0xB4FC000
 CAVE_BASE = 0xFFFFFFF00B4F9700
-COLOURS = [0xFFFFFFFF, 0xFFFF0000, 0xFF00FF00]
+CAVE_STRIDE = 0x80           # 18 instructions per cave, so 0x80 is enough
+COLOURS = [0xFFFFFFFF, 0xFFFF0000, 0xFF0000FF]
 SITES = [
     0xFFFFFFF00AD8305C,   # msr oslar_el1 (very first instruction)
     0xFFFFFFF00AD83060,   # msr daifset
@@ -60,6 +61,9 @@ SITES = [
     0xFFFFFFF00AD833CC,   # msr apiakeylo_el1
     0xFFFFFFF00AD83404,   # isb after the key writes
     0xFFFFFFF00AD83418,   # branch into 0xAD81560
+    0xFFFFFFF00AD81560,   # entry of the band-2 white painter
+    0xFFFFFFF00AD81598,   # white band-2 loop finished (args/FB writes were fine)
+    0xFFFFFFF00AD8159C,   # msr sctlr_el1 -- the MMU switch itself
 ]
 
 ASM = """.text
@@ -71,15 +75,15 @@ _start:
   add  x8, x8, x16
   movz w17, #0x{col_lo}
   movk w17, #0x{col_hi}, lsl #16
-  mov  x7, #60
+  mov  x7, #48
 1:
-  mov  x16, #60
+  mov  x16, #48
 2:
   str  w17, [x8], #4
   subs x16, x16, #1
   b.ne 2b
-  sub  x8, x8, #236
-  movz x16, #0x5a00
+  sub  x8, x8, #192
+  movz x16, #0x1680
   add  x8, x8, x16
   subs x7, x7, #1
   b.ne 1b
@@ -108,25 +112,25 @@ def main():
     probe.load_segments(bytes(data))
     probe.kernel_symbols(args.kernel)
     args.workdir.mkdir(parents=True, exist_ok=True)
-    stride = 5760 * 4
+    stride = 5760          # rowBytes from boot_args Video[2] (bytes per row)
     for index, site in enumerate(SITES):
         site_off = probe.file_offset(site)
         original = struct.unpack_from('<I', data, site_off)[0]
-        x = 16 + (index % 20) * 70
-        y = 20 + (index // 20) * 70
+        x = 8 + (index % 20) * 72
+        y = 8 + (index // 20) * 56
         offset = y * stride + x * 4
-        colour = COLOURS[0] if index < 20 else COLOURS[1]
+        colour = COLOURS[min(index // 20, 2)]
         asm = ASM.format(off_lo=f'{offset & 0xFFFF:04x}', off_hi=f'{(offset >> 16) & 0xFFFF:04x}',
                          col_lo=f'{colour & 0xFFFF:04x}', col_hi=f'{(colour >> 16) & 0xFFFF:04x}',
                          tail=f'.inst {original:#010x}')
-        cave = CAVE_BASE + index * 0x100
+        cave = CAVE_BASE + index * CAVE_STRIDE
         blob = probe.assemble(asm, cave, {'back': site + 4}, args.workdir)
-        assert len(blob) <= 0x100, f'cave {index} is {len(blob)} bytes'
+        assert len(blob) <= CAVE_STRIDE, f'cave {index} is {len(blob)} bytes'
         off = probe.file_offset(cave)
         data[off:off + len(blob)] = blob
         struct.pack_into('<I', data, site_off, probe.branch(site, cave))
         print(f'  #{index:02d} site {site:#x} square ({x},{y}) colour {colour:#010x}')
-    assert CAVE_BASE + len(SITES) * 0x100 <= 0xFFFFFFF00B4FC000, 'caves leave the padding'
+    assert CAVE_BASE + len(SITES) * CAVE_STRIDE <= 0xFFFFFFF00B4FC000, 'caves leave the padding'
     args.kernel.write_bytes(bytes(data))
     print(f'pre-MMU square ladder: {len(SITES)} checkpoints in padding {CAVE_BASE:#x}')
 
