@@ -109,6 +109,23 @@ sha256 = `fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95`，
 与线上下载的构建产物 `kernel.json` 里 `inputs.kernelcache_sha256` **完全一致**，
 说明本机复现的就是 CI 实际用的那个供体。
 
+**早期安全初始化地址已测出并启用**（2026-11-08）：AMFI 的 `__TEXT_EXEC` 内
+`0xfffffff00921000c` 处正是补丁要求的 `void(void)` 契约：
+
+```
+bti c; pacibsp; stp x29, x30, [sp, #-0x10]!; mov x29, sp
+bl 0xfffffff00920f854        ; initializeAppleMobileFileIntegrity
+mov w0, #0; ldp x29, x30, [sp], #0x10; retab
+```
+
+校验链（三层独立证据）：
+1. 在**下载的供体内核缓存**里该地址字节如上；
+2. 在**线上构建产物** `kernel.macho` 里搜索这 40 字节签名，唯一命中位置反推正好是
+   `0xfffffff00921000c`（AMFI `__TEXT_EXEC` 起点 `0xfffffff009201820` 起算）；
+3. 产物里 AMFI 的 `__TEXT_EXEC` 段与供体完全一致（`va=0xfffffff009201820`、
+   `size=0x2b808`、`initprot=5`、`maxprot=5`），且 AMFI 在供体元数据里
+   `AppleSecurityExtension = true`，满足 `emit_prelink` 的全部前置条件。
+
 同一份缓存里量出 AMFI 的代码段（`scripts/donor/parse-donor.py`）：
 
 | 项 | 值 |
