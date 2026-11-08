@@ -211,3 +211,9 @@ python3 scripts/repack-v0-bootimg.py --template Mu-shennong-smp.img --payload pl
 | --- | --- | --- |
 | `Mu-chain2.img` | `df90bd8f7196d95f` | 26 点整链记录 + 0x80 种子 + `cpus=1` |
 | `Mu-guard.img` | `6108a699a12050a3` | 上一行全部能力 + SCTLR 自检旁路（失败写 0x81 到槽第二字） |
+
+## 开 MMU 前提早阶梯（2026-11-08）
+
+| 镜像 | sha256 前缀 | 作用 |
+| --- | --- | --- |
+| `Mu-pre.img` | `132632ae9482de3c` | 在 `0xAD832CC…0xAD83418`（MMU 仍关）放 11 个条带检查点 + `cpus=1`；哪条带没出现就说明死在哪条指令前，同一轮启动即可看到 |

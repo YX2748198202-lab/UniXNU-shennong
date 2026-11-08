@@ -358,3 +358,25 @@ trampoline 在装好 SCTLR 之后的代码是这样的：
 | 9 | SCTLR 自检失败标志（白=失败过） |
 
 记录值含义：`0`=loader 没跑到 cave，`0x80`=跑到 cave 但开 MMU 后第一条指令没执行，`1`=开 MMU 后第一条指令执行了（若 band 9 也白则卡在自检死循环），`2`=过了自检，`3`=`_arm_init` 入口，`4..11`=`_arm_init` 的调用点，`12..26` 见 `scripts/patch-progress-slot.py` 的链路表。
+
+
+## 0xAD81560 写的是白色，但屏幕上是品红：卡点在开 MMU 之前（2026-11-08）
+
+`0xAD83418` 的 `b 0xAD81560` 是开 MMU 前的最后一步。`0xAD81560` 的代码：
+
+```
+0xAD81560  ldr x1, [x20, #0x28]   ; boot_args.Video.v_baseAddr
+0xAD81564-0xAD81570  x2 = rowBytes * height / 16 & ~7   ; 一条带的字节数
+0xAD81570-0xAD81580  x1 = base + 2 * band_bytes
+0xAD81584-0xAD8158C  w6 = 0xFFFFFFFF          ; 白色
+0xAD8158C            stp w6, w6, [x1], #8      ; 画第 3 条带
+0xAD81598            dsb sy
+0xAD8159C            msr sctlr_el1, x0         ; 开 MMU
+0xAD815A0            b   0xAD8341C
+```
+
+也就是说：**只要内核走到这里，第 3 条带就会变成白色**。而真机照片里第 3 条带始终是品红（loader 画的），所以内核**从来没有走到 `0xAD83418`**——阶段 C 的停点在这之前，而不是在 `_arm_init` 里。
+
+窗口 `0xAD832CC…0xAD83418` 全程 MMU 关闭：MAIR 组装 → `msr mair_el1` → `tlbi vmalle1` / `ic iallu` → （热启动分支里从 `0xC8B2000+0x208` 重装 TTBR1）→ VBAR ← `0xAD7C000+slide` → PAC 密钥生成（用 `cntpct_el0` 做种子写入 `0xB6B8000+0x120`）→ `msr apiakey/apibkey/apdakey/apdbkey/apgakey_*_el1` → 最后才 `b 0xAD81560`。
+
+其中 `msr apiakey*_el1` 一族在**不支持指针认证的核心上是未定义指令**（会触发同步异常，而此时异常向量刚装好但没有可用处理器）。骁龙 8 Gen 3 的 Cortex-X4/A720 支持 PAC，理论上不会在这里炸，但这正是 `Mu-pre.img` 阶梯要逐段验证的内容。
