@@ -84,6 +84,26 @@
   `sheng-log` 与 `sheng-log-reserve`；但 `kernel_args` 尚未传 `sheng-log=1`，仓库里也还没有
   读取脚本 → 待补。
 
+### A.6 内核里 `cluster-type` 的真实语义（反汇编核实，2026-11-08）
+
+用 capstone 反汇编 `_ml_parse_cpu_topology`（`0xfffffff00ad85fa0`）核实：
+
+- 它先读启动参数 `cpus` / `cpumask`（默认 CPU 数 8），再对 `/cpus` 做 `SecureDTLookupEntry`
+  和 `SecureDTInitEntryIterator`，逐个 CPU 节点读：`state`（与字符串 `running` 比较）、
+  `die-id`、`reg`（走 `_ml_readprop`）、`l2-cache-size/id`、`l3-cache-size/id`、
+  `coresight-reg`、`cluster-type`、`cluster-power-down`、`cpu-impl-reg`、`cpm-impl-reg`、
+  `die-cluster-id`、`cluster-core-id`、`acc-impl-reg`、`kernPOST`、`enable_skstb`、
+  `enable_skstsct`、`cluster_power`。
+- `cluster-type` 的取值语义（`0xad86544` 起）：先写默认值 **0**，然后按属性长度读 1/2/4/8
+  字节；`'P'(0x50)` → 2、`'M'(0x4d)` → 3、`'E'(0x45)` → 1；属性缺失时保持 0，**这个函数
+  本身不会因为缺失而 panic**。
+- 我们在 ADT 里给 cpu0 加 `cluster-type='E'`（u32 0x45，小端字节 `45 00 00 00`）就是让它
+  走 1（E 核）这条分支；对照组 `Mu-ct-ms.img` 用来验证后续调度器是否接受该值。
+
+结论：fuxi 记录里"簇数超过 `MAX_CPU_CLUSTERS` 触发 assert"的路径不在这个函数里（本版内核
+该函数对未知/缺失类型是静默降级到 0）。因此 `cluster-type` 是**待验证的可疑项**，不是已证实的根因；
+真正的停点仍要由 `Mu-probe-*` 序列或色带照片判定。
+
 ### A.5 早期卡点定位（入口探针二分，2026-11-08 深夜）
 
 工具：`scripts/patch-xnu-entry-probe.py`。它只改 payload 里那份 kernel 的几条指令，
