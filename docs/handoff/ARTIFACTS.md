@@ -26,11 +26,31 @@ boot image、根卷镜像）**刻意不入库**：它们包含原厂 kernelcache
 
 | 东西 | 为什么 |
 |---|---|
-| iPadOS 17.7.11 (21H461) IPSW | 根卷、kext、绑定测量都从它来 |
+| iPhone 17,1 iOS 27.0.1 (24A446) IPSW | **当前供体**：内核、kext、信任缓存都从它来 |
+| iPadOS 17.7.11 (21H461) IPSW | 历史供体（A–E 阶段的根卷、kext、绑定测量来自它），iOS 27 线重做根卷前仍需对照 |
 | `Mu-shennong-smp.img` 模板 | `repack-v0-bootimg.py` 复用它的前 2,400,256 字节（设备 `/sdcard` 已被覆盖，此模板现在只在电脑上） |
 | 根策略私钥 | 重新生成策略头时才需要（`.artifacts/policy/root-key.rsa`） |
 | `SILICIUM_UEFI.fd` | 重建 kernel 区时用（同样只在电脑上） |
 | `backups/partitions/` | 87 个分区的只读备份，恢复 Android 用 |
+
+## 2026-11-08 产物（iOS 27 供体，阶段 A 复验）
+
+| 产物 | 位置 | 字节 | sha256 |
+|---|---|---|---|
+| 启动镜像（loader 协议修复 + iOS 27 payload） | 本机 `/tmp/Mu-fix-protocol.img` | 203,726,848 | `e4375a77aa6ce9747f5b930b3ddbb89c0434c1bbb3df7d17336ecffb4db5efe7` |
+| v0 模板（前 2,400,256 B 复用） | `%TEMP%\unixnu-shennong\Mu-shennong-smp.img` | — | — |
+| 内核 + payload | Actions run `42462550406`，artifact `shennong-kernel-1` | 299,154,030 | — |
+| 诊断内核（进度屏打开） | Actions run `42468975624`（提交 `4f12b68`） | — | 构建中 |
+
+要点：
+
+- `board.toml` 的 `[payload] loader` 必须是 `"payload"`：本机固件自带的是旧版 DarwinBoot
+  （拒绝 arm64e，并且已经占住 `gUniXNULoaderProtocolGuid`），内核必须随 payload 注入，
+  由 `4484825` 卸载旧实例后再安装。
+- `XNU_BOOT_PROGRESS=1` 由 CI 的 `Build kernel` 步骤 `env` 给出（`4f12b68`）。本地重编内核
+  时同样要显式带上；缺了它内核只是被强制链入归档，`boot_progress_*` 调用点全是空操作，
+  屏幕在 handoff 之后不会变化。
+- 本次上机只用 `fastboot boot`，未写任何分区。
 
 ## 重建步骤
 

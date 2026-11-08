@@ -25,6 +25,12 @@
 
 ## 阶段 C：XNU 启动
 
+> **供体变更提醒（2026-11-08 补记）**：下面 2026-11-05 的验收用的是 **iPadOS 17.7.11
+> （21H461，arm64）** 供体。供体在此之后改为 **iPhone17,1 iOS 27.0.1（24A446，arm64e，
+> XNU 12377.121.6）**（目标是手机用户态，不是平板）。**iOS 27 供体还没有重复这条验收**，
+> 现状见 [handoff/BRINGUP-STATUS.md](handoff/BRINGUP-STATUS.md)。
+> 表里的 `Mu-shennong-*` 镜像都属于 iPadOS 供体时代，不能当作 iOS 27 的证据。
+
 | 版本 | 现象 | 根因 | 修复 |
 |---|---|---|---|
 | Mu-shennong-1 | 菜单 `no boot entry found` | 用了 header v4，`fastboot boot` 场景 ABL 无 vendor_boot DTB，initrd 传不进 | 改 header v0 + gzip + append_dtb（与参考设备一致）|
@@ -35,6 +41,48 @@
 
 **阶段 C 里程碑**：XNU 完成入口、MMU、IOKit、Platform Expert、AMFI、bsd_init 全流程，停在 vfs_mountroot。
 与 UniXNU 官方参考设备（sirius/sheng）的记录完全一致。
+
+## 2026-11-08：阶段 A 复验与 iOS 27 早期启动诊断
+
+### A.1 阶段 A 复验通过（loader）
+
+- 现象：`drivers 0 loaded / 1 failed`、`\A: start failed`、entry `returned: Unsupported`。
+- 根因：出厂固件里已经存在一个旧 `DarwinBoot`，它先安装了 `gUniXNULoaderProtocolGuid`；
+  新的 `DarwinBoot` 入口发现协议已存在就返回 `EFI_ALREADY_STARTED`，所以根本没跑到加载。
+- 修复：CI 提交 `4484825` —— 先 `LocateHandleBuffer` 卸载所有既有实例，再安装自己的协议。
+- 真机复验（照片）：`drivers 1 loaded / 0 failed`，随后
+  `DARWINBOOT: inputs validated: exiting boot services`、`DARWINBOOT: hand-off to the kernel`。
+
+### A.2 交接后屏幕无输出：不是内核挂死，是进度屏没编进去
+
+- 现象：DarwinBoot 打完寄存器诊断（kernel va/pa、entry、video、SCTLR/TCR、MMFR0/PFR0）
+  后画面静止，没有任何 XNU 输出。
+- 查证依据（构建日志，不是猜）：run `42462550406` 的日志里是
+  `XNU_BOOT_PROGRESS env: unset`；`scripts/build-xnu-4k-baseline.sh` 取
+  `BOOT_PROGRESS=${XNU_BOOT_PROGRESS:-0}`，于是所有 `boot_progress_*` 调用编译成空操作。
+- **陷阱**：`strings kernel.macho | grep 'STAGE '` 命中 7 次**不能**证明进度屏可用 ——
+  归档被强制链接进去了，但调用点没有生成，屏幕自然不动。
+- 修复：提交 `4f12b68` 在 `Build kernel` 步骤的 `env` 加 `XNU_BOOT_PROGRESS: '1'`，
+  run `42468975624` 重编诊断内核。
+
+### A.3 诊断屏怎么读（之后每张照片按这个规则判读）
+
+- 帧缓冲绑定成功（`vcattach` / `initialize_screen` 路径）时，左上角会画 **48×48 红色方块**（8,8）。
+- 高度 60%：8 位二进制计数 = `boot_progress_stage()` 事件个数；68%：`bsd_init:` 打印次数。
+- 高度 76% / 84%：两条里程碑 lane（固定颜色与槽位）。
+- 高度 54%：`STAGE <n> <名字>` 大字行，名字按阶段表顺序单调递增。
+- **没有红方块 ⇒ 内核没到 `initialize_screen`**（它在 `kernel_bootstrap_thread` 里、`spllo()` 之后），
+  问题在更早的 `arm_vm_init` / `machine_startup` 段。
+
+### A.4 持久日志通道（“内核转储 / pstore 等价物”）
+
+- 同 SoC（SM8650）参考 houji 的实测结论：ramoops/pstore 区 `A7000000–A73FFFFF` 与启动固件
+  保留区重叠，重启后为空，**不能作为本平台的转储通道**。
+- 可用路线：NativeUfs 固定日志窗口（`package/BootLog.c`，4096 B 块：头部 / 内核消息缓冲 /
+  文本环）写入 userdata 尾部，重启后经 ADB 或恢复环境读回；houji 已跨重启核验过 CRC。
+- 本仓库现状：内核已导出 `native_ufs_log_open/write/sync/export_blocks/log_panic`，也解析
+  `sheng-log` 与 `sheng-log-reserve`；但 `kernel_args` 尚未传 `sheng-log=1`，仓库里也还没有
+  读取脚本 → 待补。
 
 ## 阶段 E：UFS 与根卷
 

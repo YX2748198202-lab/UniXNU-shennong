@@ -1,27 +1,45 @@
 # 移植状态报告
 
-最后更新：2026-11-05
+最后更新：2026-11-08
 设备：Xiaomi 14 Pro / `shennong` / `23116PN5BC` / SM8650 (pineapple) / 12 GB RAM
 仓库：https://github.com/Y2748198202-lab/UniXNU-shennong
 
 > 本文件是**状态索引与历史结论**。阶段 E 的逐轮设备证据、根策略机制和产物哈希在
 > [UFS-E3-2026-11-05.md](UFS-E3-2026-11-05.md)，各阶段实机记录在
 > [../bringup.md](../bringup.md)。
+>
+> **供体说明**：A–E 的验收发生在 **iPadOS 17.7.11（21H461，arm64）** 供体上；
+> 2026-11-07 起供体改为 **iPhone17,1 iOS 27.0.1（24A446，arm64e，XNU 12377.121.6）**。
+> 下表的 ✅ 若没有注明 iOS 27，就只代表 iPadOS 供体。
 
 ## 当前位置
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| A | 构建链与加载器 | ✅ |
+| A | 构建链与加载器 | ✅ 2026-11-08 复验（iOS 27 payload：`drivers 1 loaded / 0 failed` + handoff）|
 | B | UEFI 实机（菜单稳定）| ✅ v6 |
-| C | XNU 早期启动到 `vfs_mountroot` | ✅ 2026-11-05 真机验收 |
-| D | 中断 / CPU / 内存 | ✅ 板级 ADT 修好后 `/cpus` 正常 |
-| E | UFS 驱动 + iOS 根卷 | 🟡 存储栈已通，剩根窗口发布 |
+| C | XNU 早期启动到 `vfs_mountroot` | 🟡 iPadOS 供体 2026-11-05 已验收；**iOS 27 供体未复现**（见下节）|
+| D | 中断 / CPU / 内存 | 🟡 iPadOS 供体验收；iOS 27 待同条件复核 |
+| E | UFS 驱动 + iOS 根卷 | 🟡 存储栈已通，剩根窗口发布（iPadOS 根卷语义，iOS 27 需重做根卷/策略）|
 | F | 用户态（launchd / SpringBoard）| ⬜ |
 | G | 硬件功能（显示 / 触控 / GPU / 网络 / 音频）| ⬜ |
 
 阶段 C 的验收判据：屏幕出现 `Failed to mount root device @IOKitBSDInit.cpp:984`，
 即 XNU 走完 AMFI / bsd_init / IOKit / Platform Expert，停在 `vfs_mountroot`。
+
+## 2026-11-08 本轮记录（iOS 27 供体）
+
+| 项 | 结果 | 依据 |
+|---|---|---|
+| 阶段 A（loader）| ✅ 通过 | 照片：`drivers 1 loaded / 0 failed`、`hand-off to the kernel`；修复提交 `4484825`（卸载旧协议实例再安装）|
+| 交接后内核输出 | ⬜ 无输出，原因已定位 | 构建日志 `42462550406`：`XNU_BOOT_PROGRESS env: unset`，`boot_progress_*` 全是空操作 |
+| 诊断内核 | 🔄 run `42468975624` 构建中 | 提交 `4f12b68` 设 `XNU_BOOT_PROGRESS: '1'` |
+| 后续判读 | 红方块=到了 `initialize_screen`；无红方块=更早的 `arm_vm_init` 段 | [../bringup.md](../bringup.md) A.3 |
+| 持久日志（pstore 等价物）| 📋 方案已定，未接线 | houji 实测 pstore 不可用；走 NativeUfs 日志窗口 + 重启后读回（[../bringup.md](../bringup.md) A.4）|
+
+> 结论：现在**没有证据**说明 iOS 27 的 XNU 能走到阶段 C；iPadOS 时期的阶段 C/D 记录
+> 只作历史参考。下一张屏幕照片会给出内核实际停在哪一步。
+
 
 ## 历史结论（仍然成立，值得先读）
 

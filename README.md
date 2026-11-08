@@ -5,19 +5,34 @@ Xiaomi 14 Pro（`shennong` / 23116PN5BC / SM8650 "pineapple"）的 UniXNU 移植
 目标：在真实硬件上启动 Apple XNU 内核并运行 iOS 用户态，逐步恢复显示、触控、GPU 等硬件功能。
 非模拟器、非主题仿制。
 
-## 当前状态（2026-11-05）
+## 当前状态（2026-11-08）
+
+> 供体：A–E 的验收在 **iPadOS 17.7.11（21H461，arm64）** 上完成；2026-11-07 起供体改为
+> **iPhone17,1 iOS 27.0.1（24A446，arm64e，XNU 12377.121.6）**。表格里没写 iOS 27 的 ✅
+> 只代表 iPadOS 供体，不代表当前目标。
 
 | 阶段 | 内容 | 状态 |
 |---|---|---|
-| A | 构建链与加载器（BootShim / FD / boot.img 打包）| ✅ 完成 |
+| A | 构建链与加载器（BootShim / FD / boot.img 打包）| ✅ 2026-11-08 复验（iOS 27 payload：`drivers 1 loaded / 0 failed` + handoff）|
 | B | UEFI 实机（UniXNU 菜单稳定显示）| ✅ 完成（v6）|
-| C | XNU 早期启动（AMFI / bsd_init / 内核栈）| ✅ **完成**：停在 `vfs_mountroot`（`IOKitBSDInit.cpp:984`）|
-| D | 中断 / CPU / 内存 | ✅ 完成：ADT 换成板级树后 `/cpus` 正常认领，`AppleARMCPU` 不再 panic |
-| E | UFS 驱动 + iOS 根卷 | 🟢 **根窗口已发布**（`published=2`，两个 IOMedia + APFS 分区表可读），进入挂载 |
+| C | XNU 早期启动（AMFI / bsd_init）| 🟡 iPadOS 供体停在 `vfs_mountroot`（`IOKitBSDInit.cpp:984`）；**iOS 27 供体未复现** |
+| D | 中断 / CPU / 内存 | 🟡 iPadOS 供体验收（ADT 板级树后 `/cpus` 正常）；iOS 27 待复核 |
+| E | UFS 驱动 + iOS 根卷 | 🟢 iPadOS 供体根窗口已发布（`published=2`）；iOS 27 需重做根卷与策略 |
 | F | 用户态（launchd / SpringBoard）| ⬜ 待开始 |
 | G | 硬件功能（显示 / 触控 / GPU / Wi-Fi / 音频）| ⬜ 待开始 |
 
-### 阶段 E 目前的位置
+### 2026-11-08 本轮的关键结论
+
+- 阶段 A 的 `start failed` 根因是**出厂固件自带旧 DarwinBoot 且已占用 loader 协议**；
+  `4484825` 先卸载旧实例再安装，真机恢复 `drivers 1 loaded / 0 failed` + `hand-off to the kernel`。
+- 交接后屏幕没有输出**不是**内核一定挂死：run `42462550406` 的构建日志是
+  `XNU_BOOT_PROGRESS env: unset`，所以 `boot_progress_*` 全被编译成空操作。
+  `4f12b68` 打开进度屏，run `42468975624` 产出诊断内核；判读规则见
+  [docs/bringup.md](docs/bringup.md) 的「2026-11-08」一节。
+- 持久日志：SM8650 上 pstore/ramoops 不可用（houji 实测），可用路线是 NativeUfs 日志窗口
+  写入 userdata 尾部、重启后读回；本仓库内核已导出该组符号，缺 `sheng-log=1` 与读取脚本。
+
+### 阶段 E 目前的位置（iPadOS 供体，历史记录）
 
 真机已验证：UFS 控制器 / GCC / PHY 起来、SMMU 独占 bank 被接管、GPT 解析正确、
 写进 `userdata` 的 SHNGROOT 卷读回（`magic=474e4853 544f4f52`、`manifest=0`、`windows=2`）、
