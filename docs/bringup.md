@@ -96,6 +96,35 @@
 注意：若停点是**死循环**而不是异常，这段代码不会触发（屏幕只显示色带），
 这本身也是判读依据。
 
+### A.8 供体内核缓存核对与 `early_security_init` 实测范围（2026-11-08）
+
+用 HTTP range 直接取 profile 里那条 IPSW URL 的成员，不下载 12.3 GB 整包：
+
+```
+scripts/donor/fetch-ipsw-member.py KernelCache <IPSW URL>
+```
+
+取到的 `kernelcache.release.iphone17` 解 IM4P → LZFSE → 0x0100000c 切片后
+sha256 = `fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95`，
+与线上下载的构建产物 `kernel.json` 里 `inputs.kernelcache_sha256` **完全一致**，
+说明本机复现的就是 CI 实际用的那个供体。
+
+同一份缓存里量出 AMFI 的代码段（`scripts/donor/parse-donor.py`）：
+
+| 项 | 值 |
+|---|---|
+| kext 装载地址 | `0xfffffff00764ece0` |
+| `__TEXT_EXEC` | `0xfffffff009201820 .. 0xfffffff00922d028`（`initprot=5`、`maxprot=5`，unslid）|
+
+profile 里遗留的 `0xfffffe00092551ac` 属于 iPadOS 内核的地址空间（内核基址
+`0xfffffe0007004000`），落在本供体模块之外，`emit_prelink` 会直接拒绝；因此
+这一项仍保持**不启用**（线上产物 `kernel.json` 的 `early_security_init` 就是 `{}`）。
+下一件要做的就是把 AMFI 里那个「调用 `_initializeAppleMobileFileIntegrity` 并返回 0」
+的 `void(void)` 包装函数在这段范围内定位出来，再写成
+`"early_security_init" = "com.apple.driver.AppleMobileFileIntegrity=<VA>"`。
+
+顺带修正了 profile 里过期的 `kernel.prelink.kernelcache_sha256`（原来是另一份供体的值）。
+
 ### A.6 内核里 `cluster-type` 的真实语义（反汇编核实，2026-11-08）
 
 用 capstone 反汇编 `_ml_parse_cpu_topology`（`0xfffffff00ad85fa0`）核实：

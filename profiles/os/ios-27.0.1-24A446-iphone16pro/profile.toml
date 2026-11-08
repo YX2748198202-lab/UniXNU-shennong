@@ -29,7 +29,10 @@
 ["kernel"."prelink"]
 "tool" = "kits/XnuPrelink/emit_prelink.py"
 "kernel" = "build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf"
-"kernelcache_sha256" = "38e6d9fa5f789b8228f4617ef4c6d2a3fd8ab564abdc9b62920f1db53fc1780a"
+# Measured 2026-11-08 from the profile's own IPSW URL: range-fetch of
+# kernelcache.release.iphone17, IM4P -> LZFSE -> the single 0x0100000c fat slice.
+# Equals kernel.json inputs.kernelcache_sha256 of the booted artifact.
+"kernelcache_sha256" = "fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95"
 "slide" = "-0x1000000"
 # Deferred: that policy records the kernelcache hash and the missing/stubbed bounds
 # of the previous iPadOS qualification, so check_prelink_regressions rejects this
