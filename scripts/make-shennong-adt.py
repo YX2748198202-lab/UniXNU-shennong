@@ -49,6 +49,8 @@ def main():
     p.add_argument('--cpu-regs', choices=['0'], default='0')
     p.add_argument('--psci-method', choices=['smc'], default='smc')
     p.add_argument('--trust-cache', action='store_true')
+    p.add_argument('--root-policies', action='store_true',
+                   help='Reserve the /chosen/memory-map RootPolicies slot for kernel.macho.vroot')
     p.add_argument('--root-match-volume-uuid', type=uuid.UUID,
                    help='Match a published IOMedia volume UUID after UFS qualification')
     p.add_argument('--data-ramdisk', action='store_true',
@@ -75,7 +77,8 @@ def main():
                           if args.root_match_volume_uuid else []),
                         ('amfi-only-platform-code', u32(1)), *nvram_proxy()],
              [node('memory-map', ([('RAMDisk', bytes(16))] if args.data_ramdisk else []) +
-                                 ([('TrustCache', bytes(16))] if args.trust_cache else [])),
+                                 ([('TrustCache', bytes(16))] if args.trust_cache else []) +
+                                 ([('RootPolicies', bytes(16))] if args.root_policies else [])),
               node('manifest-properties')]),
         node('cpus', children=[node('cpu0', [('state', b'running\0'), ('reg', u32(0)),
              ('device_type', b'cpu\0'), ('compatible', b'qcom,kryo\0'),

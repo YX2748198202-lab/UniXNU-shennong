@@ -848,11 +848,18 @@ jobs:
           echo "adt root-match volume uuid: ${ROOT_UUID:-none}"
           TC=$(ls -t build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
           echo "adt trust cache: ${TC:-none}"
+          # DarwinBoot refuses to boot when kernel.macho.vroot exists but the ADT has no
+          # RootPolicies slot (DarwinBoot.c: PolicyOffset == MAX_UINTN -> EFI_COMPROMISED_DATA).
+          POLICIES_ARG=""
+          if mtype -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.vroot > /dev/null 2>&1; then
+            POLICIES_ARG="--root-policies"
+            echo "adt: payload carries kernel.macho.vroot; reserving RootPolicies"
+          fi
           python3 "$GITHUB_WORKSPACE/device/scripts/make-shennong-adt.py" \
             --output "$ADT" --dram-size 0x10000000 --owned-memory-size 0x10000000 \
             --cpu-regs 0 --psci-method smc \
             ${ROOT_UUID:+--root-match-volume-uuid "$ROOT_UUID"} \
-            ${TC:+--trust-cache}
+            ${TC:+--trust-cache} $POLICIES_ARG
           rm -f /tmp/adt-before.bin /tmp/adt-after.bin
           mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-before.bin || true
           mcopy -o -i "$PAY" "$ADT" ::/EFI/UniXNU/Payloads/kernel.macho.adt
