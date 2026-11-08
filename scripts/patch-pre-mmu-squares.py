@@ -22,23 +22,25 @@ CAVE_BASE = 0xFFFFFFF00B4F9700
 CAVE_STRIDE = 0x80           # 18 instructions per cave, so 0x80 is enough
 COLOURS = [0xFFFFFFFF, 0xFFFF0000, 0xFF0000FF]
 SITES = [
+    # -- prologue (kernel entry -> bootstrap pool zeroed) --
     0xFFFFFFF00AD8305C,   # msr oslar_el1 (very first instruction)
     0xFFFFFFF00AD83060,   # msr daifset
     0xFFFFFFF00AD83064,   # mov x20, x0 (boot_args PA)
-    0xFFFFFFF00AD8306C,   # adrp for the early VBAR
+    0xFFFFFFF00AD83070,   # add x0,x0,#0 (after adrp of the early VBAR)
     0xFFFFFFF00AD83074,   # msr vbar_el1 (physical vectors)
     0xFFFFFFF00AD83078,   # ldr x22 = VirtualBase
     0xFFFFFFF00AD83080,   # ldr x24 = MemorySize
-    0xFFFFFFF00AD83084,   # adrp x25 = bootstrap pool
+    0xFFFFFFF00AD8308C,   # msr tpidrro_el0 (after adrp x25 = bootstrap pool)
     0xFFFFFFF00AD83088,   # ldr x26 = [args+0x470]
-    0xFFFFFFF00AD83094,   # adrp for the IRQ stack
+    0xFFFFFFF00AD83098,   # add x0,x0,#0 (after adrp of the IRQ stack)
     0xFFFFFFF00AD830A4,   # msr spsel, #1
-    0xFFFFFFF00AD830AC,   # adrp for the FIQ stack
+    0xFFFFFFF00AD830B0,   # add x0,x0,#0 (after adrp of the FIQ stack)
     0xFFFFFFF00AD830BC,   # msr spsel, #0
-    0xFFFFFFF00AD830C4,   # adrp x30 = _arm_init trampoline return
+    0xFFFFFFF00AD830C8,   # add x30,x30,#0x8d0 (after adrp of _arm_init)
     0xFFFFFFF00AD830D4,   # pool zero setup
     0xFFFFFFF00AD830E4,   # pool zero loop
-    0xFFFFFFF00AD830F0,   # pool zeroed
+    0xFFFFFFF00AD830F4,   # add x0,x0,#0 (after adrp of the collection header)
+    # -- relocation + page-table build --
     0xFFFFFFF00AD83128,   # relocation applied (x18)
     0xFFFFFFF00AD83144,   # L1/L2 loop setup
     0xFFFFFFF00AD83164,   # one L2 page per iteration
@@ -46,10 +48,11 @@ SITES = [
     0xFFFFFFF00AD831EC,   # second window phase
     0xFFFFFFF00AD83238,   # second phase block fill
     0xFFFFFFF00AD83290,   # dsb ish before TCR
+    # -- control registers --
     0xFFFFFFF00AD832A4,   # movk x1, T0SZ
     0xFFFFFFF00AD832A8,   # msr tcr_el1
-    0xFFFFFFF00AD832B4,   # bl _set_mmu_ttb (installs TTBR0)
-    0xFFFFFFF00AD832BC,   # returned from _set_mmu_ttb
+    0xFFFFFFF00AD832B8,   # returned from _set_mmu_ttb (TTBR0 installed)
+    0xFFFFFFF00AD832BC,   # add x0 = KVA root page
     0xFFFFFFF00AD832CC,   # MAIR attribute build
     0xFFFFFFF00AD8330C,   # msr mair_el1
     0xFFFFFFF00AD83314,   # tlbi vmalle1
@@ -60,7 +63,8 @@ SITES = [
     0xFFFFFFF00AD833C8,   # PAC key load
     0xFFFFFFF00AD833CC,   # msr apiakeylo_el1
     0xFFFFFFF00AD83404,   # isb after the key writes
-    0xFFFFFFF00AD83418,   # branch into 0xAD81560
+    0xFFFFFFF00AD83414,   # movk x0 = SCTLR value (right before the branch)
+    # -- MMU switch and the white band painter --
     0xFFFFFFF00AD81560,   # entry of the band-2 white painter
     0xFFFFFFF00AD81598,   # white band-2 loop finished (args/FB writes were fine)
     0xFFFFFFF00AD8159C,   # msr sctlr_el1 -- the MMU switch itself
