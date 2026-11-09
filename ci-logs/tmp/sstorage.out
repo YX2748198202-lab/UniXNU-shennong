@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/device/scripts/scan-prelink-storage.py", line 443, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/device/scripts/scan-prelink-storage.py", line 292, in main
+    names = vtable_names(np, compile_reference(tree, scratch))
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/device/scripts/scan-prelink-storage.py", line 212, in vtable_names
+    image = np.macho(obj)
+  File "/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/kits/NativePrelink/native_prelink.py", line 19, in macho
+    raise ValueError('Only ordinary little-endian ARM64 is supported')
+ValueError: Only ordinary little-endian ARM64 is supported
