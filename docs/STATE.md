@@ -294,3 +294,35 @@ subtype 必须为 0，arm64e（subtype=2）走不通 —— 但那是 **native p
 需要的输入（都在 CI 的 kernel 构建产物里，本地没有）：
 - `build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf`
 - `build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf`
+
+### 2026-11-09 22:12 — payload 构建失败的真实原因（已修）
+```
+unixnu: the native UFS root kernel lacks the linked sheng PMGR integration
+```
+`board.toml:92` 的内核参数常驻 `sheng-pmgr=2`，但 `configs/shennong_defconfig` 里是
+`CONFIG_XNU_SHENG_PMGR=n`，两者矛盾，payload 构建拒绝出包。
+
+参考设备记录 `docs/.vitepress/device-records/sheng-gkxqh.toml:256` 原文：
+> CONFIG_XNU_SHENG_PMGR=y; sheng-pmgr=2 selects the board integration.
+
+已改为 `CONFIG_XNU_SHENG_PMGR=y`。
+
+### 2026-11-09 22:10 — 本轮构建的重要结果（run 42620400698）
+| 步骤 | 结果 |
+|---|---|
+| 10 Build kernel | **success**（`source` 引导修好后第一次链接成功）|
+| 14 Build prelink | **success** |
+| 19 Build payload | failure（上面的 PMGR 矛盾）|
+
+prelink 日志：
+```
+wrote .../kernel/.prelink-rg_2fcam/kernel.macho (94552064 bytes)
+unresolved closure references: 18; stubbed functions: 170; runtime qualification: pending
+```
+产物 `kernel/kernel.macho`：94,552,064 字节，cputype 0x100000c，**subtype 0xc0000002（arm64e）**，
+filetype 12（MH_FILESET），sha256 `6b22f986b7e69f8cfa3150c1da947487f52d03e6215300c3db88a38aa75d1725`。
+
+**注意**：prelink **不把 fileset 转成 MH_EXECUTE**，而是把 kext 绑定进 fileset 后仍是 MH_FILESET。
+所以之前「固件只接受 MH_EXECUTE」的判断需要重新验证 —— 11-08 那颗
+（sha256 `5aae1fb39c9e4e15ea1bd48bef1b6a7305105f0f2a58c854cd8e1743ee7d93e0`）与这颗**内容不同**，
+说明现在是真正的 prelinked 产物，还没上过机。
