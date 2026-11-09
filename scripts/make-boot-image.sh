@@ -17,6 +17,15 @@
 
 set -euo pipefail
 
+ALLOW_NO_TCR=0
+ARGS_OVERRIDE=""
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --allow-missing-tcr) ALLOW_NO_TCR=1; shift;;
+    --args) ARGS_OVERRIDE="$2"; shift 2;;
+    *) break;;
+  esac
+done
 ZIP="${1:?需要产物 zip}"
 HEADER_SRC="${2:?需要一个已有镜像作为 ANDROID! 头来源}"
 OUT="${3:-/tmp/Mu-final.img}"
@@ -25,11 +34,13 @@ WORK=$(mktemp -d /tmp/mkimg.XXXXXX)
 
 echo "== 1/6 解包产物 =="
 unzip -q -o "$ZIP" -d "$WORK"
-PAYLOAD=$(find "$WORK" -name 'payload*.img' -type f | head -1)
+PAYLOAD=$(find "$WORK" -name 'payload-xpu.img' -type f | head -1)
+[ -n "$PAYLOAD" ] || PAYLOAD=$(find "$WORK" -name 'payload.img' -type f | head -1)
 [ -n "$PAYLOAD" ] || { echo "产物里找不到 payload.img"; exit 1; }
 echo "payload: $PAYLOAD ($(stat -c%s "$PAYLOAD") 字节)"
 
 echo "== 2/6 打 TCR 补丁 =="
+export ALLOW_NO_TCR
 python3 - "$PAYLOAD" <<'PY'
 import struct, sys
 p = bytearray(open(sys.argv[1], 'rb').read())
@@ -40,7 +51,10 @@ if n == 0:
     if p.count(new):
         print('TCR 已处于 T0SZ=27，无需修改')
     else:
-        sys.exit('找不到 TCR 常量，拒绝继续（可能内核结构变了，需要人工确认）')
+        if __import__('os').environ.get('ALLOW_NO_TCR') == '1':
+            print('警告：找不到 TCR 常量，按 --allow-missing-tcr 继续（该内核可能已经正确或结构不同）')
+        else:
+            sys.exit('找不到 TCR 常量，拒绝继续（可能内核结构变了；确认无误可加 --allow-missing-tcr）')
 else:
     off = p.find(old)
     p[off] = 0x1B
@@ -52,15 +66,18 @@ PY
 echo "== 3/6 改 cmdline =="
 TOML="$WORK/unixnu.toml"
 mcopy -o -i "$PAYLOAD" ::/EFI/UniXNU/unixnu.toml "$TOML"
-python3 - "$TOML" <<'PY'
-import re, sys
-p = sys.argv[1]; s = open(p).read()
+python3 - "$TOML" "$ARGS_OVERRIDE" <<'PY'
+import os, re, sys
+p = sys.argv[1]; override = sys.argv[2]; s = open(p).read()
 m = re.search(r'^args\s*=\s*"(.*)"', s, re.M)
-args = [a for a in m.group(1).split() if a != 'cs_enforcement_disable=1']
-for need in ('native-ufs-root=1', 'offline-apfs-load=1', '-apfs_shared_datavolume'):
-    if need not in args:
-        args.append(need)
-new = ' '.join(args)
+if override:
+    new = override          # 显式指定：原样使用，不做任何增删
+else:
+    args = [a for a in m.group(1).split() if a != 'cs_enforcement_disable=1']
+    for need in ('amfi_get_out_of_my_way=1', 'native-ufs-root=1', 'offline-apfs-load=1', '-apfs_shared_datavolume'):
+        if need not in args:
+            args.append(need)
+    new = ' '.join(args)
 s = s[:m.start(1)] + new + s[m.end(1):]
 open(p, 'w').write(s)
 print('args:', new)
