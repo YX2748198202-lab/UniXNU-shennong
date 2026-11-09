@@ -1,0 +1,3 @@
+Restored 0 omitted public headers from Apple; blob hashes verified
+PASS: minimal stage-marker diagnostic built against the source kernel ABI
+build-xnu-4k-baseline.sh: line 785: test -f "$PMGR_ARCHIVE" failed
