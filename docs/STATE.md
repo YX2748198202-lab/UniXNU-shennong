@@ -166,3 +166,42 @@ adb pull /tmp/uefi_a.img
 - `kernel` 区（page 4096，offset 4096，size 2,393,623）是 gzip 流，解开得 3,145,920 字节
 - 其中 FV 起始于解压后 0xc0，长度 0x300000（正好 3 MB）
 - 该固件卷内 `DarwinBoot` 0 次 → 加载内核走的是 UniXNU 内置的 `RunXnu`
+
+## 2026-11-09 21:40 — 固件加载器模块本地编译成功
+
+不再依赖整平台编译：`UniXNUPkg` 与 `DarwinBootPkg` 都是平台无关的 EFI 模块，
+用 EDK2 单独编即可。已实测通过。
+
+### 环境
+- EDK2：`microsoft/mu_basecore` @ cfb9372（`uefi-sheng` 的子模块，release/202608）
+- 本机：`aarch64-linux-gnu-gcc` 13.3.0
+- 依赖子模块：`BaseFdtLib/libfdt`、`MipiSysTLib/mipisyst`、`BaseTools/Source/C/BrotliCompress/brotli`
+- BaseTools C 工具已编出：`GenFfs GenFv GenFw GenSec GenCrc32 EfiRom VfrCompile`
+
+### 编译命令（UniXNU 包）
+```
+cd /home/yoox/UniXNU-framework/package
+UNIXNU_EDK2=<edk2> UNIXNU_BUILD_DIR=<out> ./build.sh -b DEBUG -t GCC
+```
+产物（8 秒）：
+```
+Build/Out/AARCH64-DEBUG/UniXNU.efi            102,400
+Build/Out/AARCH64-DEBUG/UniXNUDxe.efi          20,480   ← gUniXNULoaderProtocolGuid 提供者
+Build/Out/AARCH64-DEBUG/UniXNURamDiskDxe.efi   24,576
+```
+
+### 模块 FILE_GUID（用于在固件卷里定位/替换）
+```
+DarwinBoot            1B64AF87-8415-4B57-9B16-680D70913B9F
+UniXNU                9B665204-A133-47A2-9396-9E2B370A4E25
+UniXNUDxe             29B950CF-586D-49EA-9D71-F88645CCDAF6
+UniXNURamDiskDxe      75CA63AD-FBAE-4A06-92A0-F937C671251D
+```
+
+### 已确认的事实
+- 整个 `uefi-sheng` 里只有 `Platforms/Xiaomi/shengPkg` 接了 DarwinBoot 与 UniXNU
+  （`sheng.dsc:112-122`、`Include/DXE.inc:47-50`）；没有 SM8650（Pineapple）SoC 包，
+  所以不可能从零编一整套 shennong 固件。
+- `Mu-amfi.img` 的固件卷（3 MB）顶层只有 2 个 FFS：一个 PEI 核（65,464 B）和一个
+  嵌套 FV 镜像（1,122,917 B，GUID-defined LZMA 段，data_off=24, attr=0x1）。
+  四个 UniXNU 模块的 GUID 在该 3 MB 里**不出现**，说明它们在 LZMA 压缩段内部。
