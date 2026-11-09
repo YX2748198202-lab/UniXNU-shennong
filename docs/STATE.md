@@ -268,3 +268,29 @@ DataOffset=24，Attributes=0x1。段数据 1,122,865 字节。
 
 下一步：读 `<unixnu>/kits/XnuPrelink/emit_prelink.py` 与 workflow 里 “Build prelink” 的真实失败输出，
 确认拒绝到底发生在哪一步。（`kits/XnuPrelink/*.py` 不在 framework 仓库，在 CI 检出的 unixnu 目录里。）
+
+### 23:30 — prelink 路线已查清：配置本来就是给 arm64e fileset 的
+`board.toml:59-65` 的 prelink 段：
+```
+tool        = kits/XnuPrelink/emit_prelink.py
+kernel      = build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf
+extra_args  = --fileset-reference build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf --allow-missing
+slide       = -0x1000000
+roots       = 30 个 kext
+```
+`--fileset-reference` + `--allow-missing` 说明这本来就是给 **MH_FILESET（arm64e）** 用的路径。
+
+被拒绝的是**另一条路**：`native_prelink.py:18`
+```python
+if (magic, cpu, subtype) != (0xfeedfacf, 0x100000c, 0):
+    raise ValueError('Only ordinary little-endian ARM64 is supported')
+```
+subtype 必须为 0，arm64e（subtype=2）走不通 —— 但那是 **native prelink**，不是 fileset emitter。
+（`test_native_prelink.py:132 test_refuse_arm64e` 就是在测这个拒绝。）
+
+结论：工作流里 “XnuPrelink reader rejects arm64e kernels” 这句话指的是 native 路径，
+**fileset 路径理论上可用**，所以 CI 里 `Build prelink` 失败的真实原因还没拿到 —— 那是下一步唯一要做的事。
+
+需要的输入（都在 CI 的 kernel 构建产物里，本地没有）：
+- `build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf`
+- `build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf`
