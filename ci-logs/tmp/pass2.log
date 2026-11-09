@@ -1,0 +1,12 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+== kernel: prepare XNU ac9718fb1af6
++ git clone --quiet --shared --no-checkout /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/feeds/xnu-3199e8bc /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work
+== kernel: patch apple-only-cpu-tunables.patch
+== kernel: patch armvirt-platform-personality.patch
+== kernel: patch cxx-flag-dependencies.patch
+== kernel: patch disabled-deferred-reclaim.patch
+unixnu: XNU patch /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/patches/xnu/disabled-deferred-reclaim.patch: git failed (1): error: patch failed: osfmk/vm/vm_user.c:4503
+error: osfmk/vm/vm_user.c: patch does not apply
