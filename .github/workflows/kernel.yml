@@ -111,16 +111,34 @@ jobs:
           # start.s, so drop it from the series for this pass and say so in the log.
           # The patch set is discovered by scanning the directory, not by a series
           # file, so the arm64e-only timer patch has to be renamed away entirely.
-          # Locate every series file under the workspace and drop the arm64e-only
-          # timer entry from each one, using absolute paths so the step's working
-          # directory can never make the glob miss (three earlier attempts did).
-          for S in $(find "$GITHUB_WORKSPACE" -path '*patches/xnu/series' -type f 2>/dev/null); do
-            if grep -q 'architectural-timer-entry' "$S"; then
-              grep -v 'architectural-timer-entry' "$S" > "$S.tmp" && mv "$S.tmp" "$S"
-              echo "arm64: removed architectural-timer-entry from $S"
-            fi
-          done
-          echo "arm64 series still listing it: $(grep -rl 'architectural-timer-entry' "$GITHUB_WORKSPACE" --include=series 2>/dev/null | wc -l | tr -d ' ')"
+          # Diagnose the loader's silent EFI_UNSUPPORTED returns: tag each entry so a
+          # single boot says which check fired (the serial log is unusable on this board,
+          # so the tags have to reach the visible console through Print).
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('drivers/DarwinBoot/DarwinBootPkg/Driver/DarwinBoot.c')
+          if not path.is_file():
+              print('::warning::loader tags: driver not at expected path')
+          else:
+              text = path.read_text()
+              edits = [
+                  ('  if ((Header > Size) || (Size - Header < 32) ||',
+                   '  if ((Header > Size) || (Size - Header < 32) ||'),
+                  ('    return EFI_UNSUPPORTED;\n  }\n  if (U32 (Data + Header + 20) > Size - Header - 32)',
+                   '    Print (L"DARWINBOOT-TAG: kernel header refused\\n");\n    return EFI_UNSUPPORTED;\n  }\n  if (U32 (Data + Header + 20) > Size - Header - 32)'),
+                  ('  } else if (RamdiskOffset != MAX_UINTN) {\n    Status = EFI_UNSUPPORTED;',
+                   '  } else if (RamdiskOffset != MAX_UINTN) {\n    Print (L"DARWINBOOT-TAG: adt declares a ramdisk\\n");\n    Status = EFI_UNSUPPORTED;'),
+              ]
+              for old, new in edits:
+                  if new in text:
+                      continue
+                  if old in text:
+                      text = text.replace(old, new, 1)
+                      print('loader tag: applied')
+                  else:
+                      print('::warning::loader tag: pattern not found')
+              path.write_text(text)
+          PY
           # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load

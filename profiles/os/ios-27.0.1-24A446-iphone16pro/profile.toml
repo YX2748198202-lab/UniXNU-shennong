@@ -1,6 +1,6 @@
 ["os"]
 "name" = "ios-27.0.1-24A446-iphone16pro"
-"arch" = "arm64"
+"arch" = "arm64e"
 "darwin" = "25.5.0"
 # No Darwin 26 XNU source is published yet. 24A446 runs on the xnu-12377 kernel with the Darwin 26
 # system calls added (patches/xnu/series); move to the Darwin 26 tag when Apple publishes it.
