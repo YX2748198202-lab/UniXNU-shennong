@@ -33,6 +33,40 @@
 - 构建触发方式：**workflow_dispatch 手动触发**（推送不会自动构建）
 - workflow id `398420499`，本轮 run `42540875453`，监视日志 `/tmp/ci-watch.log`
 
+
+## 2026-11-09 关键发现（MH_FILESET）
+
+**加载器拒绝 kernels 的直接证据**：启动时菜单返回 `'shennong XNU native UFS' returned: Unsupported`。
+比对 Mach-O 头：
+
+| | 11-05 内核（能加载） | 11-08 内核（被拒） |
+|---|---|---|
+| cpusubtype | 0x0 | 0xc0000002 |
+| filetype | 2 = MH_EXECUTE | 12 = MH_FILESET |
+| 大小 | 52,068,352 | 94,552,064 |
+
+根因链：`profiles/os/ios-27.0.1-24A446-iphone16pro/profile.toml` 里 `"arch" = "arm64e"`
+→ arm64e 构建产出 MH_FILESET → UniXNU xnu 加载器只认 MH_EXECUTE → `Unsupported`。
+11-05 能跑是因为那时用旧的 iPadOS 17.7.11 profile（arm64）。
+
+**已做的改动（未验证）**：提交 `c88d25d` 把该 profile 的 `arch` 改为 `arm64`，
+触发构建 run `42560655968`，期望拿回 MH_EXECUTE 内核。
+
+## 尚未定论的事
+
+昨晚日志停在 `IONVRAMCHRPHandler.cpp:unserializeImage:479`。**注意不要当成定论**：
+同一份日志里有两条 `debug_log_init: Error: gPanicBase is still not initialized`，
+说明日志系统本身没完全起来 —— 所以「没有后续输出」既可能是内核停住，
+也可能只是**日志出不来了**。要等新内核上机后对比才知道。
+
+## 2026-11-09 踩过的坑（避免重犯）
+
+1. 照抄 11-08 payload 自带的 `unixnu.toml` 做镜像，丢了 `rd=md0-shennong`、多了四条调试参数
+   → 复现 AMFI panic。**正确参数见上「最新镜像」一节的 good args。**
+2. 早上改的两行 defconfig（`prelinked` 加密、nx769j 的两个 archive）让内核**链接失败**，
+   未定义符号 `_source_corecrypto14_*` 与 `_native_verified_block_*`。已回退（提交 `c5c8422`）。
+3. 组装脚本已加 `--args` 显式覆盖，不要再信任 payload 自带 toml。
+
 ## 待办（按优先级）
 
 1. 解决当前 rebase 冲突并推送，触发 CI 重建（带 storage archive 修复）
