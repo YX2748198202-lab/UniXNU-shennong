@@ -109,11 +109,12 @@ jobs:
           echo "fileset-off markers: $(grep -c 'SEPARATE_KEXT_FILESET=0' "$SRC_SCRIPT" || true)"
           # arm64 rebuild: architectural-timer-entry.patch only applies to the arm64e
           # start.s, so drop it from the series for this pass and say so in the log.
-          SERIES=patches/xnu/series
-          if [ -f "$SERIES" ] && grep -q 'architectural-timer-entry' "$SERIES"; then
-            grep -v 'architectural-timer-entry' "$SERIES" > "$SERIES.tmp" && mv "$SERIES.tmp" "$SERIES"
-            echo "arm64 series: dropped architectural-timer-entry ($(wc -l < "$SERIES") entries left)"
-          fi
+          for SERIES in unixnu/patches/xnu/series patches/xnu/series; do
+            if [ -f "$SERIES" ] && grep -q 'architectural-timer-entry' "$SERIES"; then
+              grep -v 'architectural-timer-entry' "$SERIES" > "$SERIES.tmp" && mv "$SERIES.tmp" "$SERIES"
+              echo "arm64 series: dropped architectural-timer-entry from $SERIES ($(wc -l < "$SERIES") entries left)"
+            fi
+          done
           # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
