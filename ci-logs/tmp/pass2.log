@@ -1,0 +1,10 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+== kernel: prepare XNU ac9718fb1af6
++ git clone --quiet --shared --no-checkout /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/feeds/xnu-3199e8bc /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work
+== kernel: patch apple-only-cpu-tunables.patch
+== kernel: patch architectural-timer-entry.patch
+unixnu: XNU patch /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/patches/xnu/architectural-timer-entry.patch: git failed (1): error: patch failed: osfmk/arm64/start.s:697
+error: osfmk/arm64/start.s: patch does not apply
