@@ -20,3 +20,4 @@ backups/
 
 # The root signing private key never enters the repository.
 *.rsa
+.work/
