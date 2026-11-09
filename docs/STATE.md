@@ -236,3 +236,17 @@ DataOffset=24，Attributes=0x1。段数据 1,122,865 字节。
 - 手机在 fastboot（序列号 9f72e95c），可随时长按电源 12 秒关机
 - TWRP 3.7.1 已刷在 recovery 分区，需要时 `fastboot reboot recovery` 进入
 - userdata 里仍是 iPadOS 17.7.11 根卷（用户已确认可格式化重做）
+
+### 22:30 — DXE 段解码仍无解，记录已排除的方式
+试过并失败：`lzma.FORMAT_ALONE`、`lzma.FORMAT_RAW`（props 取自 payload[0]/[1]/[5]，skip 5/13）、
+`xz -d --format=lzma`（skip 0/5/13）、EDK2 `LzmaCompress -d -e`（只做了编码）。
+段内结构（1,122,865 字节）：
+```
+01 08 20 6c 00 00 00 00 00 00 02 00 32 73 03 2a 98 84 36 fd fb ec ff db
+```
+既不是标准 LZMA_ALONE 头，也不是 (size+props) 或 (props+size) 的常见排布。
+
+### 关于时间线的实话
+阶段 C→F（用户态）在同设备参考移植里用了数周。今晚/明天能达成的**最有价值的里程碑**是：
+**让 arm64e 内核第一次真正被加载并跑起来（越过 Unsupported）**，然后才有 bsd_init / 根卷 / launchd。
+不应该承诺 1-2 天内到 SpringBoard。
