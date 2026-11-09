@@ -141,3 +141,28 @@ payload 里的 `Payloads/DarwinBoot.efi` **不会被固件派发**，因此实�
 3. APRIORI 第一块加入 DarwinBoot；fdf 保留 DarwinBoot、不内嵌 toml
 4. `Resources/Configs/shennong.toml` 定 FD base/size（3 MB，勿放大）
 5. CI 增加固件构建步骤，产出 `SILICIUM_UEFI.fd` → 打包 boot image → fastboot boot
+
+## 2026-11-09 20:34 — 原厂 UEFI 分区已导出（TWRP 只读，未写分区）
+
+用 TWRP 3.7.1_16-Xiaomi_14_Pro-A15 临时启动（`fastboot reboot recovery`，不写任何分区）读出：
+
+```
+adb shell dd if=/dev/block/sde1 of=/tmp/uefi_a.img bs=1M
+adb pull /tmp/uefi_a.img
+```
+
+产物：`.work/uefi_a/uefi_a.img`，5,242,880 字节，md5 `237b02b052137cea7c75ec57c8a9625e`
+
+结构（实测）：
+- 头部是 ELF（`7f454c46`，ABL 引导程序）
+- 偏移 0x1000 处是一个 FV，长度 0x2cd000（2.80 MB），HeaderLength 0x48
+- FV 内含 `QcomPkg` / `UFS` / `Display` / `Usb` 等 ASCII 字样
+- `UniXNU`、`DarwinBoot`、`BootShim` 均 0 次（原厂固件不含这些）
+
+用途：这是 Mu-Silicium `Binaries/shennong`（高通底层 UEFI 驱动）的来源，
+也是自己编 `shennongPkg` 固件的前置输入。
+
+### 对照：现在用的 Mu-amfi.img 里的固件卷
+- `kernel` 区（page 4096，offset 4096，size 2,393,623）是 gzip 流，解开得 3,145,920 字节
+- 其中 FV 起始于解压后 0xc0，长度 0x300000（正好 3 MB）
+- 该固件卷内 `DarwinBoot` 0 次 → 加载内核走的是 UniXNU 内置的 `RunXnu`
