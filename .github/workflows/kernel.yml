@@ -82,6 +82,31 @@ jobs:
             sed -i '' '/^     \[ "\${XNU_SOURCE_CORECRYPTO14:-0}" != 1 \]; then$/d' "$SRC_SCRIPT" || true
             echo "boot-progress gate patched: $(grep -c 'if false; then' "$SRC_SCRIPT" || true)"
           fi
+          # The UniXNU xnu loader only accepts an MH_EXECUTE image. XNU 12377 links
+          # arm64e kernels as MH_FILESET by default, and the boot menu then reports
+          # "'shennong XNU native UFS' returned: Unsupported" (payload kernel
+          # filetype 12 = MH_FILESET vs the working 11-05 kernel filetype 2 =
+          # MH_EXECUTE). Force the classic single executable layout.
+          if ! grep -q 'SEPARATE_KEXT_FILESET' "$SRC_SCRIPT"; then
+            python3 - "$SRC_SCRIPT" <<'PY'
+          import sys
+          from pathlib import Path
+          path = Path(sys.argv[1])
+          text = path.read_text()
+          anchor = 'EXTRA_MAKE_ARGS+=("XNU_KERNEL_CHAINED_FIXUPS='
+          if anchor in text:
+              text = text.replace(
+                  anchor,
+                  'EXTRA_MAKE_ARGS+=("SEPARATE_KEXT_FILESET=0")\n' + anchor,
+                  1,
+              )
+              path.write_text(text)
+              print('fileset off: applied')
+          else:
+              print('::warning::fileset off: anchor not found')
+          PY
+          fi
+          echo "fileset-off markers: $(grep -c 'SEPARATE_KEXT_FILESET=0' "$SRC_SCRIPT" || true)"
           # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
