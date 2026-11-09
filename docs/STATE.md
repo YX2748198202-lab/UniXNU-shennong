@@ -111,3 +111,33 @@
 
 - 设备 `9f72e95c`，无 Android 可启动（userdata 已是 iOS 根卷），只能长按电源 12 秒 → 音量下+电源进 fastboot
 - panic 会画在屏幕上（`panic_screen` 生效），拍照即可读日志
+
+## 2026-11-09 20:30 — 根因定案（有外部参考佐证）
+
+### 结论
+payload 里的 `Payloads/DarwinBoot.efi` **不会被固件派发**，因此实际运行的是**固件内置的旧 DarwinBoot**。
+旧版不支持 arm64e fileset 内核（94 MB / filetype 12），对 11-08 内核返回 `EFI_UNSUPPORTED`；
+11-05 的 donor kernelcache 是原厂 arm64 MH_EXECUTE（52 MB），旧版能接受，所以能跑到 IONVRAM。
+这一条同时解释了今天所有现象（A–H），并解释了「改了 DarwinBoot.c 却没有反应」。
+
+### 外部证据
+- https://github.com/lee-kenneth/unixnu-nabu  HANDOVER.md「坑 6」：
+  `LocateProtocol(gUniXNULoaderProtocolGuid)` 返回 Not Found，`Boot()` 一行都不执行，
+  「所有 DarwinBoot 补丁『加了没反应』的元凶」。
+- https://github.com/lee-kenneth/unixnu-nabu/blob/main/docs/firmware-patches.md：
+  必须把 `INF DarwinBootPkg/Driver/DarwinBoot.inf` 并入**第一个** `APRIORI DXE {}` 块；
+  单独新开块会 `GenFv ERROR 2000`。fdf 里不要内嵌 `unixnu.toml`（`Config->Volume` 恒 NULL）。
+
+### 排除项（今日已用实测/编译验证）
+- `ParseKernel` 接受两个内核（本机 gcc 编译真实源码，均返回 SUCCESS）
+- `AdtNode` 在两个 ADT 上均成功，`ramdisk = 无节点`，窗口 256 MB
+- 两镜像 payload 的非内核文件 md5 全一致；内核大小不是因素（补零到 94 MB 仍可启动）
+- `CRYPTO_BOOTSTRAP="prelinked"` 在本树无法链接（缺 `_source_corecrypto14_original` /
+  `_source_corecrypto14_start_once`，由 `OSKext::start` 引用），已回退为 `"source"`
+
+### 待办（按顺序）
+1. 从设备 `uefi_a` 分区导出原厂 UEFI 二进制（需要一次进 Android + adb root）
+2. 以 `uefi-sheng/Platforms/Xiaomi/nuwaPkg` 为模板建 `shennongPkg`
+3. APRIORI 第一块加入 DarwinBoot；fdf 保留 DarwinBoot、不内嵌 toml
+4. `Resources/Configs/shennong.toml` 定 FD base/size（3 MB，勿放大）
+5. CI 增加固件构建步骤，产出 `SILICIUM_UEFI.fd` → 打包 boot image → fastboot boot
