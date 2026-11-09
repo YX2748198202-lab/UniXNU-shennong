@@ -139,6 +139,24 @@ jobs:
                       print('::warning::loader tag: pattern not found')
               path.write_text(text)
           PY
+          # The menu hands the loader the firmware FDT on this board, and the loader
+          # refuses to boot whenever DeviceTree is non-NULL. Darwin boot on shennong
+          # takes its tree from kernel.macho.adt instead, so drop that condition: the
+          # parse path below never reads Request->DeviceTree.
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('drivers/DarwinBoot/DarwinBootPkg/Driver/DarwinBoot.c')
+          text = path.read_text()
+          old = "if ((Request->KextCount != 0) || (Request->DeviceTree != NULL) || (Request->DeviceTreeSize != 0) ||\n      (DarwinCurrentEl () != 4)) {"
+          new = "if ((Request->KextCount != 0) || (DarwinCurrentEl () != 4)) {"
+          if new in text:
+              print('fdt guard: already relaxed')
+          elif old in text:
+              path.write_text(text.replace(old, new, 1))
+              print('fdt guard: relaxed')
+          else:
+              print('::warning::fdt guard: pattern not found')
+          PY
           # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
