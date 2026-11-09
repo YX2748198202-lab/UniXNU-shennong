@@ -111,16 +111,16 @@ jobs:
           # start.s, so drop it from the series for this pass and say so in the log.
           # The patch set is discovered by scanning the directory, not by a series
           # file, so the arm64e-only timer patch has to be renamed away entirely.
-          # The arch layer keeps its own series at profiles/arch/<arch>/patches/xnu/series
-          # (proved by the build log: "profiles/arch/arm64/patches/xnu/series:2: patch
-          # missing"). Drop the arm64e-only timer entry from every series that lists it.
-          for S in unixnu/profiles/arch/*/patches/xnu/series unixnu/patches/xnu/series patches/xnu/series; do
-            if [ -f "$S" ] && grep -q 'architectural-timer-entry' "$S"; then
+          # Locate every series file under the workspace and drop the arm64e-only
+          # timer entry from each one, using absolute paths so the step's working
+          # directory can never make the glob miss (three earlier attempts did).
+          for S in $(find "$GITHUB_WORKSPACE" -path '*patches/xnu/series' -type f 2>/dev/null); do
+            if grep -q 'architectural-timer-entry' "$S"; then
               grep -v 'architectural-timer-entry' "$S" > "$S.tmp" && mv "$S.tmp" "$S"
               echo "arm64: removed architectural-timer-entry from $S"
             fi
           done
-          echo "arm64 series touched: $(grep -rl 'architectural-timer-entry' unixnu/profiles/arch 2>/dev/null | wc -l | tr -d ' ') remaining"
+          echo "arm64 series still listing it: $(grep -rl 'architectural-timer-entry' "$GITHUB_WORKSPACE" --include=series 2>/dev/null | wc -l | tr -d ' ')"
           # The UFS driver's inherited IOStorageFamily slots and the VerifiedRoot
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
