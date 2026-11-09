@@ -205,3 +205,34 @@ UniXNURamDiskDxe      75CA63AD-FBAE-4A06-92A0-F937C671251D
 - `Mu-amfi.img` 的固件卷（3 MB）顶层只有 2 个 FFS：一个 PEI 核（65,464 B）和一个
   嵌套 FV 镜像（1,122,917 B，GUID-defined LZMA 段，data_off=24, attr=0x1）。
   四个 UniXNU 模块的 GUID 在该 3 MB 里**不出现**，说明它们在 LZMA 压缩段内部。
+
+### 21:55 — DarwinBoot.efi 也编出来了
+```
+build/build/DarwinBoot/DEBUG_CLANGPDB/AARCH64/DarwinBoot.efi
+```
+关键：Mu 的 EDK2 用 **CLANGPDB** 工具链，不是 GCC5（`tools_def.template` 里没有 GCC5_AARCH64）。
+`GCC5` 只适用于 `package/build.sh`（它内部自己设了 `GCC_AARCH64_PREFIX`）。
+
+### 22:10 — 剩下的唯一障碍：固件卷里的 DXE 段解不开
+顶层 FV 的第 2 个 FFS 是嵌套 FV 镜像，节类型 0x02，GUID =
+`ee4e5898-3914-4259-9d6e-dc7bd79403cf`（**EFI_LZMA_CUSTOM_DECOMPRESS**），
+DataOffset=24，Attributes=0x1。段数据 1,122,865 字节。
+
+试过且失败的解码方式：
+- `lzma.FORMAT_ALONE`（按 5+8 头）
+- `lzma.FORMAT_RAW` + 从 payload[0]/[1]/[5] 取 props，skip 13/5
+- 按 BigEndian 解读长度
+
+段内前 24 字节：`01 08 20 6c 00 00 00 00 00 00 02 00 32 73 03 2a 98 84 36 fd fb ec ff db`
+
+下一步（下次继续时从这里做）：
+1. 用 EDK2 自己的解压实现（`Mu_Basecore/BaseTools/Source/C/Common/Decompress.c` +
+   LZMA-SDK）编一个小 CLI，让它来解这段 —— 这是权威实现，格式细节以它为准。
+2. 解开后应得到 DXE FV，再用四个 GUID 定位模块（见上表），替换成刚编出来的 .efi，
+   重新压缩 + 修 section/FV 校验和。
+3. 打包回 boot image（`scripts/repack-v0-bootimg.py`），`fastboot boot` 验证。
+
+### 当前设备状态
+- 手机在 fastboot（序列号 9f72e95c），可随时长按电源 12 秒关机
+- TWRP 3.7.1 已刷在 recovery 分区，需要时 `fastboot reboot recovery` 进入
+- userdata 里仍是 iPadOS 17.7.11 根卷（用户已确认可格式化重做）
