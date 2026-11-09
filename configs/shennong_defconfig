@@ -5,14 +5,14 @@ CONFIG_XNU_ARM_DT_PLATFORM=y
 CONFIG_XNU_BOOT_PROGRESS=y
 CONFIG_XNU_SOURCE_STORAGE_TABLES="userdata"
 CONFIG_XNU_BUILD_ARCHIVES=y
-CONFIG_XNU_CRYPTO_BOOTSTRAP="source"
+CONFIG_XNU_CRYPTO_BOOTSTRAP="prelinked"
 CONFIG_XNU_DT_PANIC_REGION=y
 # The native kernel replaces com.apple.kernel inside a collection: link it
 # with -Wl,-add_split_seg_info/-Wl,-kernel so it carries chained fixups and
 # split-segment records, which the prelink kit rewrites. The sheng reference
 # build (sheng_ipados26_defconfig) sets the same switch.
 CONFIG_XNU_KERNEL_CHAINED_FIXUPS=y
-CONFIG_XNU_EXTRA_LD_ARCHIVES=""
+CONFIG_XNU_EXTRA_LD_ARCHIVES="-Wl,-force_load,{tree}/build/io-storage-family/libStorageBindings.a -Wl,-force_load,{tree}/build/verified-root/libVerifiedRoot.a"
 CONFIG_XNU_NATIVE_ADRENO=n
 CONFIG_XNU_NATIVE_AES=n
 CONFIG_XNU_NATIVE_ARCH_TIMER=y
