@@ -250,3 +250,21 @@ DataOffset=24，Attributes=0x1。段数据 1,122,865 字节。
 阶段 C→F（用户态）在同设备参考移植里用了数周。今晚/明天能达成的**最有价值的里程碑**是：
 **让 arm64e 内核第一次真正被加载并跑起来（越过 Unsupported）**，然后才有 bsd_init / 根卷 / launchd。
 不应该承诺 1-2 天内到 SpringBoard。
+
+### 22:58 — 新线索：prelink 可能本来就支持 arm64e
+`UniXNU-framework/docs/drivers/xnu-prelink.md` 第 11-14 行原文：
+
+> For arm64e fileset kernel collections, `emit_prelink.py` selects the fileset
+> emitter and generates a function/data map.
+
+也就是说 **`emit_prelink.py` 明确支持 arm64e fileset**。那么工作流里那句
+“its XnuPrelink reader rejects arm64e kernels” 指的应该是**另一个组件**
+（很可能是 regression policy 的 reader / check_prelink_regressions），而不是 prelink 本身。
+
+如果这一条成立，路径会比改固件短得多：
+1. 让 `./unixnu build prelink` 在 arm64e 上真正跑通，产出 MH_EXECUTE 形态的 kernelcache
+2. 现有固件的加载器**接受 MH_EXECUTE**（11-05 的 52 MB 原厂内核已实测能启动到 IONVRAM）
+3. 完全不需要碰固件、不需要改加载器
+
+下一步：读 `<unixnu>/kits/XnuPrelink/emit_prelink.py` 与 workflow 里 “Build prelink” 的真实失败输出，
+确认拒绝到底发生在哪一步。（`kits/XnuPrelink/*.py` 不在 framework 仓库，在 CI 检出的 unixnu 目录里。）
