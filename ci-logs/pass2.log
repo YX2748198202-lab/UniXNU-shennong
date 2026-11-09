@@ -1,0 +1,5 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+unixnu: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/profiles/arch/arm64/patches/xnu/series:2: patch missing: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/patches/xnu/architectural-timer-entry.patch
