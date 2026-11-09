@@ -27,6 +27,12 @@
 - 组装方法：`Mu-*.img = 2400256 字节 ANDROID! 头 + payload.img`；改参数用 mcopy 取 `::/EFI/UniXNU/unixnu.toml`
 - 自动引导：`/tmp/cycle-t0sz.sh`（日志 `/tmp/cycle-slot.log`），手机进入 fastboot 即自动 `fastboot boot`
 
+## CI 构建（进行中）
+
+- 分支 `stage-c-verified`（基于 origin/main，含本次全部改动），推送提交 `2b56b29`
+- 构建触发方式：**workflow_dispatch 手动触发**（推送不会自动构建）
+- workflow id `398420499`，本轮 run `42540875453`，监视日志 `/tmp/ci-watch.log`
+
 ## 待办（按优先级）
 
 1. 解决当前 rebase 冲突并推送，触发 CI 重建（带 storage archive 修复）
