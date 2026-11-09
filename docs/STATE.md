@@ -67,6 +67,40 @@
    未定义符号 `_source_corecrypto14_*` 与 `_native_verified_block_*`。已回退（提交 `c5c8422`）。
 3. 组装脚本已加 `--args` 显式覆盖，不要再信任 payload 自带 toml。
 
+
+## 2026-11-09 下午：加载器拒收的完整追查（重要，避免重复踩坑）
+
+### 已证实的事实
+
+1. 启动菜单对 11-08 内核的原文报错：`'shennong XNU native UFS' returned: Unsupported`。
+2. 11-08 内核 Mach-O：`filetype=12`（MH_FILESET）、`cpusubtype=0xc0000002`（arm64e）、94,552,064 B。
+   11-05 能正常加载的内核：`filetype=2`（MH_EXECUTE）、`cpusubtype=0x0`（arm64）、52,068,352 B。
+3. `SEPARATE_KEXT_FILESET=0` 传给 XNU 构建 **无效**：产出的内核仍是 filetype=12（run 42563552297 已验证）。
+4. 该构建里 `Build kernel` 步骤其实是 **成功** 的，内核产物（`shennong-kernel-1`）已上传；
+   失败发生在之后的 `Build payload` 步骤，工具只认普通 ARM64，
+   报 `ValueError: Only ordinary little-endian ARM64 is supported`。
+5. 切 `arch = "arm64"` 后会卡在补丁：`architectural-timer-entry.patch` 针对 arm64e 的
+   `osfmk/arm64/start.s` 上下文，arm64 下 `patch does not apply`。
+6. **补丁系列的真实位置**（构建日志原文）：
+   `unixnu/profiles/arch/arm64/patches/xnu/series:2` 引用 `unixnu/patches/xnu/...`。
+   之前三轮改的 `patches/xnu/series`、`unixnu/patches/xnu/series` 都不是它。
+
+### 当前做法（run 42570856051，提交 7a0864e）
+
+工作流在构建前用 `find "$GITHUB_WORKSPACE" -path '*patches/xnu/series'` 把所有系列文件里的
+`architectural-timer-entry` 行删掉（绝对路径，避免工作目录差异导致漏改）。
+本地守护 `/tmp/auto3.sh` 会在构建结束后：
+下载 `shennong-kernel-*` 产物 → 检查 `filetype==2` → 用 11-05 的 payload 换内核
+→ 组装 192 MiB 镜像（2400256 字节头 + payload）→ `fastboot boot`。
+失败或 filetype≠2 则 **不推机器**。
+
+### 教训（写下来别再犯）
+
+- 改 CI 前先看构建日志里 **原样打印的路径**，不要按目录结构猜。
+- 相对路径在工作流各步骤里含义可能不同；用 `$GITHUB_WORKSPACE` 绝对路径。
+- payload 打包工具只支持普通 arm64，arm64e 内核必须绕开它，本地自行打包。
+- 内核能编出来 ≠ 能打包 ≠ 能被加载器接受，这三个环节要分别验证。
+
 ## 待办（按优先级）
 
 1. 解决当前 rebase 冲突并推送，触发 CI 重建（带 storage archive 修复）
