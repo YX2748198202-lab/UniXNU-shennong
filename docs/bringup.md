@@ -901,3 +901,41 @@ BT gop fb FC400000 res 1440x3200
   sha256 前缀 `fb7e6f77`；23:26:05 起由 `autoloop.sh` 自动下发。
 - 预期：菜单里出现 "shennong XNU native UFS" 一项，`timeout = 0` 不会自己倒计时；
   选中即进入 XNU 引导（阶段 C 的第一现场）。
+
+### fd25：让「payload 有没有被认出来」变成一张照片的事
+fd24 的判读是歧义的（照片上 `== fd23 ==` 是代码里写死的字面量，fd24 只换了 payload 没重编 FD）：
+`start 8000000000000015 exit 0`（`0x15` = EFI_ABORTED）既可能是「payload 没认出来 → 内建配置 10 秒倒计时
+落到 Return to firmware」，也可能是「payload 认出来了 → toml 的 `timeout = 0` 立刻引导 xnu」，
+两条路都会以 ABORTED 收场。**这是观测设计问题，不是设备问题。**
+
+fd25 三处改动：
+
+1. **内建配置停住菜单**（`Library/UniXNULib/Config.c:35`）
+   `timeout = 10` → `timeout = -1`，新增 `fallback_timeout = 3600`。
+   依据 `Menu.c:115-120`：无输入设备时 `timeout < 0` 走 `FallbackTimeout`，
+   设成一小时即菜单停在屏上；本机 `CountInputDevices()` 为 0，状态栏本来就会打
+   `No input device`。
+2. **payload 里的 toml 也停住**（`payload/payload-fd25.img`，原件 `payload-fd3.img` 不动）
+   `timeout = 0` → `timeout = -1`，加 `fallback_timeout = 3600`；
+   条目与内核参数一字未改（`shennong XNU native UFS` / `Payloads/kernel.macho`）。
+   用 `mcopy -o -i … ::/EFI/UniXNU/unixnu.toml` 写回，`mdir` 回读确认
+   `torch 599 字节`、`kernel.macho 52,068,352 B` 仍在。
+3. **横幅与证据字段**（`Driver/BootTraceDxe/BootTraceDxe.c`）
+   - 新增 PCD `PcdUniXNUBuildTag`（DEC 默认 `"dev"`，`shennong.dsc:62` 覆盖为 `"fd25"`），
+     横幅与结论行都从 PCD 取，**再也不会出现"横幅和实际版本不符"**
+   - 结论行加 `vols <n>`：`CountVolumes()` 在 StartImage 前后各数一次
+     `SimpleFileSystem` 句柄数，用来区分「卷没绑上」和「卷在但文件没找到」
+   - 复位只在 `StartImage` **返回**后发生；应用停在菜单里就不复位
+
+构建与下发（已验证）：`FD ok: 3145728 bytes`；内层 FV 解压后含 `fd25` ×1、
+`fallback_timeout = 3600` ×1、`timeout = -1` ×1、`BootTraceDxe` ×4；
+镜像 `Mu-shennong-fd25.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `855419d0`；
+**23:31:44 autoloop 自动下发**（`device-runs/2026-11-10/autoloop.log`）。
+
+判读表：
+
+| 照片 | 结论 | 下一步 |
+|---|---|---|
+| `1 shennong XNU native UFS  xnu` | payload 链路通 | fd26：toml 改 `timeout = 5` 自动引导 xnu，进阶段 C |
+| `no boot entry found` + `vols 0` | RamDisk→DiskIo→FAT 没接上 | 修 `UniXNURamDiskDxe`：补 DiskIo/分区发现或自建 SimpleFileSystem |
+| `no boot entry found` + `vols > 0` | 路径/大小写不符 | 对照 `mdir -i payload-fd25.img ::/EFI/UniXNU` 与 `PcdUniXNUConfigPath` |
