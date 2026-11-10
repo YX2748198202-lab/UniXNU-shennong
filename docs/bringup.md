@@ -738,3 +738,56 @@ Data abort: Translation fault, second level
 - 构建 fd20：预检 0 failure，`Mu-shennong-fd20.img` sha256 前缀 `80f379b6`。
 - 真机：22:57:55 下发成功；随后 30 秒内设备**没有再出现在 fastboot**，
   与"停车循环把机器按住了"一致（推断，待照片确认）。
+
+### fd20 真机照片：屏幕通了，应用却加载不了
+照片存 `artifacts/UniXNU-shennong/device-runs/2026-11-10/photos/fd20-{a,b,c}*.jpg`。
+**这一版最大的收获是"能看了"**：字模 48×96，整屏可读，而且 `BT tick 14…23`
+说明画面持续了 20 秒以上——"黑屏、来不及拍"这个障碍已经清除。
+
+屏上原文（逐行抄录，验证）：
+
+```
+UNIXNURAMDISK: device tree at 0xB7DFE000, 1243235 bytes
+UNIXNURAMDISK: no initrd in /chosen
+Loading driver at 0x000CFA7100 EntryPoint=0x000CFA72B8C DarwinBoot.efi
+Loading driver at 0x000CFA6800 EntryPoint=0x000CFA69AEC BootGraphicsResourceTableDxe.efi
+BT START
+BT fv count 2
+BT fv 1 app 0 dxe 0
+BT app path ok
+BT app load 800000000000000E          ← EFI_NOT_FOUND
+BT gop present
+BT app load 800000000000000F          ← EFI_ACCESS_DENIED
+BT gop fb FC400000 res 1440x3200
+BT init done 0
+Loading driver at 0x000CFA8700 EntryPoint=0x000CFA88AEC UniXNUDxe.efi
+UX entry
+UX found app
+UX image 8000000000000003              ← EFI_UNSUPPORTED
+...
+BT tick 8 … 23 mod 7
+Error: Image at 000CF855000 start failed: Not Found
+[Bds] Image was deferred but not loaded: FvFile(9B665204-A133-47A2-9396-9E2B370A4E25).
+[Bds]Booting USB Storage
+（最后停在 Failed to Find an Operating System 的感叹号画面）
+```
+
+结论（按证据强弱）：
+1. **已验证**：GOP 正常（`fb FC400000 res 1440x3200`），帧缓冲控制台正常，画面能长时间保持。
+2. **已验证**：应用文件**在** FV 里——`Fv->ReadFile` 对该 GUID 返回成功（`BT fv 1 app 0 dxe 0`，
+   `0` 即 EFI_SUCCESS），`FVMAIN.Fv` 解压后也能在 `0x4C1C48` 找到
+   `type=0x09`(APPLICATION) 的 FFS。
+3. **已验证**：用**设备路径**加载失败——`LoadImage(path)` 返回 `EFI_NOT_FOUND`(0x0E)；
+   再带 SourceBuffer 调一次返回 `EFI_ACCESS_DENIED`(0x0F)。BDS 侧同样
+   "deferred but not loaded" 后 "start failed: Not Found"。
+4. **推断**：失败点在设备路径解析（嵌套压缩 FV 的 FV 节点与 `MEDIA_FW_VOL_FILEPATH`
+   不匹配），与文件本身无关。修法不依赖这个推断：改成**从缓冲区加载**。
+
+### fd21：绕开设备路径，直接从 FV 缓冲区 LoadImage
+- `BootTraceDxe.c` 新增 `LoadAppFromFv()`：`Fv->ReadFile` 两段式拿尺寸再取数据，
+  然后 `gBS->LoadImage (FALSE, mParent, NULL, Buffer, Size, &Image)`；
+  打印 `BT app buf <addr> size <n> type <t>` 与 `BT app load buf <st>`。
+- `BOOTTRACE_START_APP` 改回 **1**，应用真的被启动。
+- 启动前 `SetTimer (mTickTimer, TimerCancel)` 并关掉 tick：
+  应用和我们的控制台画同一块帧缓冲，不停 tick 会把菜单写花。
+- 构建：预检 0 failure，`Mu-shennong-fd21.img` sha256 前缀 `23399295`。
