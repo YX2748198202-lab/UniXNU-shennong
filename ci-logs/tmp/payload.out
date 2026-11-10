@@ -1,0 +1,9 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: drivers/DarwinBoot has local changes, not updated
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== payload
+== kernel args: -v serial=3 debug=0x14e cpus=1 kt_fixed_zones=120 -no_slto_panic armcpu-diagnostics=1 boot-progress=2 sheng-pmgr=2 native-ufs-probe=3 native-source-storage=1 sheng-log=1
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/patch-xnu-entry-probe.py /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/payload/stage/EFI/UniXNU/Payloads/kernel.macho --panic-screen --no-reset
+panic screen is 0xa47 bytes at 0xfffffff00ad815c0, the padding ends at 0xfffffff00ad81ff0
+unixnu: python3 failed (1); full log: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/logs/payload-patch.log
