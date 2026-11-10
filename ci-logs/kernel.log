@@ -1,0 +1,158 @@
+Restored 0 omitted public headers from Apple; blob hashes verified
+PASS: minimal stage-marker diagnostic built against the source kernel ABI
+             CC pe_kprintf.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+     LDFILELIST pexpert
+             CC arm_init.o
+             CC sleh.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+In file included from /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm/arm_init.c:216:
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/mach/dyld_kernel_fixups.h:367:12: warning: variable 'cnt' set but not used [-Wunused-but-set-variable]
+  367 |                 uint32_t cnt = 0;
+      |                          ^
+             CC bsd_init.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm64/sleh.c:1516:39: warning: implicit conversion loses integer precision: 'uint64_t' (aka 'unsigned long long') to 'unsigned int' [-Wshorten-64-to-32]
+ 1516 |         boot_progress_user_breakpoint(state, esr);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        ^~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/arm64/sleh.c:2084:34: warning: implicit conversion loses integer precision: 'uint64_t' (aka 'unsigned long long') to 'unsigned int' [-Wshorten-64-to-32]
+ 2084 |         boot_progress_user_abort(state, esr, fault_addr);
+      |         ~~~~~~~~~~~~~~~~~~~~~~~~        ^~~
+1 warning generated.
+             CC kern_exec.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+2 warnings generated.
+             CC startup.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:1932:27: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 1932 |         struct uthread          *uthread;
+      |                                  ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:4345:19: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 4345 |         struct uthread  *uthread = 0;   /* compiler complains if not set to 0*/
+      |                          ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:6038:19: warning: variable 'uthread' set but not used [-Wunused-but-set-variable]
+ 6038 |         struct uthread  *uthread = NULL;
+      |                          ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:7017:19: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 7017 |         uint64_t entropy[limit];
+      |                          ^~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:7367:25: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 7367 |                 char hardened_runtime[HR_STRING_SIZE];
+      |                                       ^~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9519:27: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9519 | cdhash_to_string(char str[CS_CDHASH_STRING_SIZE], uint8_t const * const cdhash)
+      |                           ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9825:24: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9825 |                                 char cdhash_string[CS_CDHASH_STRING_SIZE];
+      |                                                    ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exec.c:9868:23: warning: variable length array folded to constant array as an extension [-Wgnu-folding-constant]
+ 9868 |                         char cdhash_string[CS_CDHASH_STRING_SIZE];
+      |                                            ^~~~~~~~~~~~~~~~~~~~~
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:492:1: warning: no previous prototype for function 'native_apfs_probe_checkpoint' [-Wmissing-prototypes]
+  492 | native_apfs_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:491:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  491 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:520:1: warning: no previous prototype for function 'native_iogpu_probe_checkpoint' [-Wmissing-prototypes]
+  520 | native_iogpu_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:519:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  519 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:539:1: warning: no previous prototype for function 'native_mobile_graphics_probe_checkpoint' [-Wmissing-prototypes]
+  539 | native_mobile_graphics_probe_checkpoint(void)
+      | ^
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/bsd_init.c:538:27: note: declare 'static' if the function is not intended to be used outside of this translation unit
+  538 | __attribute__((noinline)) void
+      |                           ^
+      |                           static 
+             CC serial_console.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+3 warnings generated.
+             CC kern_exit.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+             CC video_console.o
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk/usr/local/include/iBoot' [-Wmissing-include-dirs]
+clang: warning: no such include directory: '/Applications/Xcode_26.6.app/Contents/Developer/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.5.sdk//System/Library/Frameworks/Kernel.framework/Versions/A/PrivateHeaders/AppleFeatures' [-Wmissing-include-dirs]
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/bsd/kern/kern_exit.c:1647:18: warning: variable 'ut' set but not used [-Wunused-but-set-variable]
+ 1647 |         struct uthread *ut;
+      |                         ^
+8 warnings generated.
+/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/xnu-work/osfmk/console/video_console.c:1773:52: warning: variable 'rowscanline' set but not used [-Wunused-but-set-variable]
+ 1773 |         uint32_t *from, *to, linelongs, i, line, rowline, rowscanline;
+      |                                                           ^
+1 warning generated.
+     LDFILELIST bsd
+1 warning generated.
+     LDFILELIST osfmk
+             LD mach.development.bcm2837.unstripped.noctf
+ld: warning: search path '/Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/.cache/fakeroot/usr/local/lib/kernel/platform' not found
+ld: warning: -segment_order should list all segments, __PRELINK_TEXT is missing
+ld: warning: -segment_order should list all segments, __PRELINK_INFO is missing
+ld: warning: -segment_order should list all segments, __PLK_TEXT_EXEC is missing
+ld: warning: -segment_order should list all segments, __PRELINK_DATA is missing
+ld: warning: -segment_order should list all segments, __PLK_DATA_CONST is missing
+ld: warning: -segment_order should list all segments, __PLK_LLVM_COV is missing
+ld: warning: -segment_order should list all segments, __PLK_LINKEDIT is missing
+ld: warning: -segment_order should list all segments, __LINKINFO is missing
+ld: warning: -segment_order of __LINKEDIT is ignored, the segment must be ordered last
+       DSYMUTIL mach.development.bcm2837.dSYM
+          STRIP mach.development.bcm2837
+        LIBTOOL mach.development.bcm2837.a
+built kernel at /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837//mach.development.bcm2837
+libtool: warning: 'exclaves_aoe.o' has no symbols
+libtool: warning: 'exclaves_conclave.o' has no symbols
+libtool: warning: 'exclaves_driverkit.o' has no symbols
+libtool: warning: 'exclaves_frame_mint.o' has no symbols
+libtool: warning: 'exclaves_inspection.o' has no symbols
+libtool: warning: 'exclaves_log.o' has no symbols
+libtool: warning: 'exclaves_memory.o' has no symbols
+libtool: warning: 'exclaves_panic.o' has no symbols
+libtool: warning: 'exclaves_resource.o' has no symbols
+libtool: warning: 'exclaves_shared_memory.o' has no symbols
+libtool: warning: 'exclaves_storage.o' has no symbols
+libtool: warning: 'exclaves_tests.o' has no symbols
+libtool: warning: 'exclaves_xnuproxy.o' has no symbols
+libtool: warning: 'sched_amp.o' has no symbols
+libtool: warning: 'sched_amp_common.o' has no symbols
+libtool: warning: 'bcopy_test.o' has no symbols
+libtool: warning: 'vm_memtag.o' has no symbols
+libtool: warning: 'vm_mteinfo.o' has no symbols
+libtool: warning: 'vm_mte_tests.o' has no symbols
+libtool: warning: 'pmap_cs.o' has no symbols
+libtool: warning: 'pmap_iommu.o' has no symbols
+libtool: warning: 'iofilter_asm.o' has no symbols
+libtool: warning: 'iofilter.o' has no symbols
+libtool: warning: 'gxf_exceptions.o' has no symbols
+libtool: warning: 'pinst.o' has no symbols
+libtool: warning: 'mte.o' has no symbols
+libtool: warning: 'vm_mte_compress.o' has no symbols
+libtool: warning: 'ecc_init.o' has no symbols
+libtool: warning: 'net_stubs.o' has no symbols
+libtool: warning: 'classq_util.o' has no symbols
+libtool: warning: 'key_debug.o' has no symbols
+libtool: warning: 'txm.o' has no symbols
+libtool: warning: 'ppl.o' has no symbols
+libtool: warning: 'sysv_shm.o' has no symbols
+libtool: warning: 'sysv_sem.o' has no symbols
+libtool: warning: 'sysv_msg.o' has no symbols
+libtool: warning: 'readonly_proc_tests_sysctl.o' has no symbols
+libtool: warning: 'skywalk_stubs.o' has no symbols
+libtool: warning: 'cpu_copy_in_cksum_gen.o' has no symbols
+libtool: warning: 'ctrr_test_sysctl.o' has no symbols
+libtool: warning: 'IOCommandQueue.cpo' has no symbols
+libtool: warning: 'TestIODeviceMemoryRosetta.cpo' has no symbols
+libtool: warning: 'AppleARMSMP.cpo' has no symbols
+Source kernel POST integrity field populated; runtime selftests are still required
