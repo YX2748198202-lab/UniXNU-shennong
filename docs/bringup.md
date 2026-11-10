@@ -692,3 +692,20 @@ Data abort: Translation fault, second level
 - `APRIORI.inc:47`、`DXE.inc:71` 的 `SdccDxe.inf` 注释掉（我们从这个 boot image
   自带的 payload 起，不需要 SD 卡）。
 - 预检 0 failure，`Mu-shennong-fd17.img` sha256 前缀 `67eb4f44`，22:16 下发。
+
+### fd18：给应用装行级进度打印（黑屏可见化）
+- 现象（用户口述，fd17）：出现小米 logo 后**整屏黑**，连异常转储都没有。
+- 判断（推断）：不是死机，而是有人把帧缓冲清空后什么都没画上去——
+  `Ui.c:719` 文本路径会 `ConOut->ClearScreen()`，图形路径会 `FillRect(0,0,W,H)`，
+  两者都在"绘制前"把屏幕刷掉；若随后卡住，看到的就是纯黑。
+- 改动：
+  1. `UniXNULib` 新增 `UniXNUStage()`，用 **`SerialPortWrite()`**（= 帧缓冲控制台）
+     直接写 `APP <阶段>`，绕开 `DebugLib` 掩码与尚未就绪的 `SerialIo`；
+     `UniXNURun()` 沿途打 `enter/connect all/connected/config load/config done/
+     inject drivers/acpi done/ui probe/ui ready`，`Ui.c` 在清屏与填充后各打一行。
+  2. `FrameBufferSerialPortLib.GetFbPositions()` 增加游标纠偏：游标存在帧缓冲最后
+     8 字节里，任何一次清屏/改模式都会把它变成噪声，**此后所有输出都画到屏幕外**，
+     表面就是"黑屏但机器还活着"。现在越界即整屏清空并从左上角重来。
+  3. `BootTraceDxe` 增加 `BT app start begin`，区分"没启动"与"启动了但没画"。
+- 构建 fd18：预检 0 failure，`Mu-shennong-fd18.img` sha256 前缀 `8460f710`，22:55 下发
+  （下发前确认设备在 fastboot，`fastboot devices` 有 `9f72e95c`，未变砖）。
