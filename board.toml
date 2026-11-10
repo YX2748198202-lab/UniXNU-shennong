@@ -89,7 +89,12 @@
 "panic_screen" = true
 "timeout" = 0
 "root_policies" = "{tree}/build/sheng-source-storage/root-policies.bin"
-"kernel_args" = ["-v", "serial=3", "debug=0x14e", "cpus=1", "kt_fixed_zones=120", "-no_slto_panic", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3", "native-source-storage=1"]
+# sheng-log=1 starts the persistent log writer (package/SourceStorage.cpp:131 and
+# package/BootLog.c:1926 are the only two places that parse it; nothing in this tree
+# parses a "sheng-log-reserve", the window geometry comes back from the driver's
+# native_ufs_log_open()). Read the result with scripts/read-sheng-log.py --device;
+# the window lives in the last part of userdata, so it survives a fastboot boot.
+"kernel_args" = ["-v", "serial=3", "debug=0x14e", "cpus=1", "kt_fixed_zones=120", "-no_slto_panic", "armcpu-diagnostics=1", "boot-progress=2", "sheng-pmgr=2", "native-ufs-probe=3", "native-source-storage=1", "sheng-log=1"]
 ["payload"."adt"]
 "tool" = "scripts/make-shennong-adt.py"
 "owned_memory_size" = "0x10000000"

@@ -3,15 +3,15 @@ schema_version = 1
 [device]
 name = "shennong"
 soc = "SM8650"
-os_profile = "ipados-17.7.11-21H461"
-summary = "Xiaomi 14 Pro (23116PN5BC)。UEFI 菜单稳定、XNU 走到 vfs_mountroot；UFS 控制器/SMMU/GPT/SHNGROOT 根卷已在真机验证，卡在根窗口发布所需的 owner 签名策略。"
+os_profile = "ios-27.0.1-24A446-iphone16pro"
+summary = "Xiaomi 14 Pro (23116PN5BC)。UEFI 菜单稳定（v6）；iPadOS 17.7.11 供体上 XNU 走到 vfs_mountroot、UFS/SMMU/GPT/SHNGROOT 根卷已真机验证。当前供体 iPhone17,1 iOS 27.0.1（arm64e，XNU 12377.121.6）卡在开 MMU 之前的 trampoline 窗口，持久日志与实机镜像重建见 docs/agent-progress.md。"
 
 [[area]]
 id = "configuration"
 status = "host-verified"
 components = ["ArmDTPlatform", "XnuPrelink"]
 paths = ["board.toml", "configs/**", "feeds.toml", "dts/**", "scripts/make-shennong-adt.py", "scripts/apply-prelink-slide.py", "scripts/prelink-storage-bindings.json"]
-inputs = ["SM8650 / shennong 的 board.toml 身份字段：name=shennong、soc=SM8650、os_profile=ipados-17.7.11-21H461", "SoC feed 固定为 UniXNU-sm8550-common 的 pin（SM8650 与 SM8550 的 UFS GCC 偏移完全一致）", "板级 ADT 由 scripts/make-shennong-adt.py 生成，只含 cpu0 与必要属性"]
+inputs = ["SM8650 / shennong 的 board.toml 身份字段：name=shennong、soc=SM8650、os_profile=ios-27.0.1-24A446-iphone16pro", "SoC feed 固定为 UniXNU-sm8550-common 的 pin（SM8650 与 SM8550 的 UFS GCC 偏移完全一致）", "板级 ADT 由 scripts/make-shennong-adt.py 生成，只含 cpu0 与必要属性"]
 configuration = ["board.toml：schema_version=2；[kernel].archives 使用 component: 语法；[kernel.prelink].slide=-0x1000000", "defconfig：CONFIG_XNU_NATIVE_UFS=y、CONFIG_XNU_BOOT_PROGRESS=y、CONFIG_XNU_ARM_DT_PLATFORM=y、CONFIG_XNU_SOURCE_MOCKFS=y、CONFIG_XNU_SOURCE_CORECRYPTO14=y", "payload 的 ADT 在 CI 中被板级树覆盖（mcopy 覆盖 kernel.macho.adt 并回读 sha256 校验）"]
 procedure = ["Actions → kernel → Run workflow；job 内先跑第一遍 bootstrap，再打补丁、重建归档，跑第二遍正式 kernel", "量取 IOStorageFamily 绑定：scripts/scan-prelink-storage.py --ipsw <IPSW> --device-class j120ap --tree <TREE> --output scripts/prelink-storage-bindings.json", "按 slide 平移并提交：scripts/apply-prelink-slide.py --bindings … --board board.toml"]
 findings = ["schema_version 升到 2 后，payload 的 ADT 改由 IPSW 设备树派生，会带回 iPad 的 /cpus，导致 AppleARMCPU 认领失败并 panic；必须用板级 ADT 覆盖", "绑定表量自原厂 kernelcache，而 prelink 会把每个组件平移 [kernel.prelink] slide；不平移时绑定的构造函数落在零字节上", "量出来的 pin 必须提交回仓库：构建消费的是仓库里的 pin，流水线只在构建后才测量"]

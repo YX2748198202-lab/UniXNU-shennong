@@ -129,7 +129,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('kernel', type=Path)
     parser.add_argument('--probe-tool', type=Path,
-                        default=Path('/tmp/probe/patch-xnu-entry-probe.py'))
+                        default=Path(__file__).with_name('patch-xnu-entry-probe.py'))
     parser.add_argument('--markers', type=int, default=20)
     parser.add_argument('--pre-sites', default='',
                         help='comma separated value@address markers placed before _arm_init')

@@ -1,2 +1,12 @@
 # Board patch paths, one per line in application order.
+#
+# NOT WIRED: board.toml's patch_series lists only the arch/soc/os layers, and the
+# framework applies exactly the layers it is given (scripts/unixnu/patches.py), so
+# nothing in this file reaches the kernel build today.
+#
+# Do not add "device:patches/xnu/series" to patch_series before fixing the patch:
+# on 2026-11-10 zzzz-diag-marks.patch failed to apply to startup.c of
+# xnu-12377.121.6 both on the pristine file and after the arch-layer
+# zzz-boot-progress.patch. Evidence and the plan are in
+# docs/handoff/UPSTREAM-DELTA.md section 3.1.
 zzzz-diag-marks.patch

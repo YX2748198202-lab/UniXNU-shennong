@@ -13,7 +13,7 @@ CAVE_VA = 0xFFFFFFF00B4FA400   # free zero padding tail of __TEXT_EXEC
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('kernel', type=Path)
-    ap.add_argument('--probe-tool', type=Path, default=Path('/tmp/probe/patch-xnu-entry-probe.py'))
+    ap.add_argument('--probe-tool', type=Path, default=Path(__file__).with_name('patch-xnu-entry-probe.py'))
     ap.add_argument('--src', type=Path, default=Path('/tmp/probe/fault'))
     ap.add_argument('--va', type=lambda s: int(s, 0), default=CAVE_VA)
     ap.add_argument('--mode', choices=('paint', 'reset'), default='paint',

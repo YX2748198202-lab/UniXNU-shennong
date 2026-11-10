@@ -61,7 +61,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('kernel', type=Path)
     parser.add_argument('--probe-tool', type=Path,
-                        default=Path('/tmp/probe/patch-xnu-entry-probe.py'))
+                        default=Path(__file__).with_name('patch-xnu-entry-probe.py'))
     parser.add_argument('--from-call', type=int, default=1)
     parser.add_argument('--calls', type=int, default=12)
     parser.add_argument('--no-entry', action='store_true')
