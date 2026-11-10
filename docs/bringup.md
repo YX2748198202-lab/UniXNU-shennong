@@ -1433,3 +1433,38 @@ args 去掉 `native-ufs-probe=12`，只留 `native-ufs-root=1`：
 
 预期：不再出现 media report 自陷；要么出现 `NATIVE_UFS root check/root windows` 相关输出，
 要么回到 `@IOKitBSDInit.cpp:984`（说明 probe 等级也门控根卷路径，下一轮用 probe=10 + root=1）。
+
+### fd38 判读：根卷路径跑了，但 vfs_mountroot 一个都没选中
+屏显仍是 `Failed to mount root device @IOKitBSDInit.cpp:984`，frames 与 fd35 完全相同；
+但 `free` 不同（fd35 `0xb3a0`，fd37/fd38 `0x6cfe`）→ 去掉 probe 之后驱动照样跑完
+adopt+read 并分配了约 72 MB，说明**发布发生了、挂载没发生**。
+
+**根因（已验证）**：`board.toml` 注释自己写明了机制——
+`IOFindBSDRoot` 用 ADT 里的 `root-matching` 属性去匹配已发布的 IOMedia，
+匹配不上就「windows are published but vfs_mountroot never selects one」。实测三份数据：
+
+| 来源 | 值 |
+|---|---|
+| payload 内 ADT（fd38 实测） | `IOPropertyMatch → UUID = C3A4D926-411E-4365-9855-1B66A5CE0263` |
+| `board.toml [root].os_volume_uuid` | `C3A4D926-…`（同一值） |
+| 设备上 11-05 根卷的 OS 策略 UUID | `04769D26-2CA0-4825-B443-E2E5F88300F2` |
+
+设备上根本不存在 `C3A4D926-…` 这个媒体，所以一个都选不中。
+
+补充事实：仓库 `policies/*.policy`（`c3a4d926…` / `ecfe851c…`，image 10,236,198,912 B / 6,023,020,544 B）
+对应的是**另一份根卷**，不是设备上那份（6,077,580,800 B / 3,303,014,400 B）。
+设备上的 UUID 权威值取自 `scripts/policies/ipados-17.7.11-21H461/OS/verification.json`
+与 `UniXNU/profiles/os/ipados-17.7.11-21H461/profile.toml:112`，两处一致为 `…-4825-…`；
+照片里我先前读成 `4B25` 是 48×96 字体下 8/B 误读，以仓库数据为准。
+
+### fd39：只换 ADT 的 root-matching UUID（不需要重编内核）
+- 用 `scripts/make-shennong-adt.py --root-match-volume-uuid 04769D26-2CA0-4825-B443-E2E5F88300F2`
+  生成 10,416 B 的 ADT
+- `mcopy` 覆盖 payload 内 `::/EFI/UniXNU/Payloads/kernel.macho.adt`，并**回读校验**
+  （sha256 `d66f1b8701726b96`，读回的 `root-matching` 与新值逐字一致）
+- payload 里没有 `kernel.macho.vroot`，所以不传 `--root-policies`（保持与原 ADT 同构）
+
+镜像 `Mu-shennong-fd39.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `6870f07a`。
+
+预期：`IOFindBSDRoot` 能匹配上 OS 媒体 → 越过 `IOKitBSDInit.cpp:984`，进入 APFS 挂载；
+失败则是另一条信息（例如 owner-root 认证失败，会给出与「找不到设备」不同的字样）。
