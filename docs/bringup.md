@@ -1181,3 +1181,37 @@ payload 侧不需要改动：`payload-fd25.img` 里的 `unixnu.toml` 已是
 
 预期：菜单出现 → 立刻自动选 `shennong XNU native UFS` → 内核开始加载 → 90 秒结论屏给出
 `fd32 start <status> exit <status>`。这就是阶段 C 的入口。
+
+### fd32 判读：菜单读到了 payload 的配置（阶段 A 完成后的实质突破）
+屏幕原文：
+
+```
+config: \EFI\UniXNU\unixnu.toml
+ 1  shennong XNU native...   xnu      ← 高亮
+ 2  Restart      action
+ 3  Power off    action
+Select an entry
+config error: driver \EFI\UniXNU\Payloads\DarwinBoot.ef…
+drivers 0 loaded / 1 failed    kits 0
+```
+
+已验证：
+1. 菜单这次显示的配置来源是 **`\EFI\UniXNU\unixnu.toml`**，不再是 `built-in configuration`
+   —— 说明 payload 卷 → FAT → 配置文件整条链路在**应用侧**也成立了
+2. 条目 0 就是 `shennong XNU native UFS`（`xnu`），高亮正确
+3. 两个遗留问题：
+   - `Select an entry` 停留：toml 里 `timeout = 0` 在这台无输入设备的机器上等于"永远等"
+   - `config error: driver …DarwinBoot.ef…`，`drivers 0 loaded / 1 failed`
+
+### fd33：让菜单自己走，并把驱动失败的原因显示出来
+- `payload-fd33.img`（`payload-fd25.img` 的副本）：toml `timeout = 0` → **`timeout = 5`**，
+  5 秒后自动选条目 0 启动 xnu。原件 `payload-fd3.img` 仍未改动
+- `Inject.c: NoteDriverFailure()`：错误串从整条路径改成 **文件名 + 原因 + 状态码**
+  （`drv DarwinBoot.efi load failed 8000000000000002` 这种形式），
+  之前整条 `\EFI\UniXNU\Payloads\DarwinBoot.efi` 把真正的原因挤出了屏幕
+
+构建：`FD ok`；内层 FV 里 `fd33`×1、`drv %s %a %r`×1；
+镜像 `Mu-shennong-fd33.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `b8362d4c`。
+
+预期：菜单 5 秒倒计时 → 启动 `shennong XNU native UFS` → 内核加载 → 90 秒结论屏
+`fd33 start <status> exit <status>`；同时红字会显示 DarwinBoot.efi 的确切失败原因。
