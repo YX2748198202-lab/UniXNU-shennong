@@ -815,3 +815,35 @@ machine=`0xAA64`、PE32+（magic `0x20B`）、subsystem=10（EFI_APPLICATION）�
 
 新增 `scripts/autoloop.sh`：常驻循环，设备每次出现在 fastboot 就自动把 `boot/`
 下最新的镜像发下去，日志写 `device-runs/2026-11-10/autoloop.log`。
+
+### fd22 真机结论：`load 8000000000000003` = EFI_UNSUPPORTED
+照片（`photos/fd23-*` 待补，证据为此前 fd22 屏）：每秒重画的结论行稳定显示
+
+```
+== fd22 ==
+fv 1 size 19E18 type 9 load 8000000000000003      ← EFI_UNSUPPORTED
+BT gop fb FC400000 res 1440x3200
+```
+
+**为什么 unsupported（本地解析已验证）**：把 `FVMAIN_COMPACT.Fv` 解压后看 FFS 内容，
+`type=0x09` 的文件里是 **section 列表**：
+
+```
+section type=0x15 size=0x12      (EFI_SECTION_USER_INTERFACE "UniXNU")
+section type=0x10 size=0x19E04   (EFI_SECTION_PE32, 载荷以 MZ 开头, e_lfanew=0x78, 'PE\0\0')
+```
+
+`Fv->ReadFile()` 返回的是**整条 section 流**（带 section 头），不是裸 PE；
+把它交给 `LoadImage`，加载器自然判为"不是我能加载的镜像" → `EFI_UNSUPPORTED`。
+这解释了 fd21/fd22 两次 buffer 加载都失败，与设备路径那次 NOT_FOUND 是**两个不同原因**。
+
+### fd23：改用 ReadSection 取裸 PE，并让设备自己复位继续跑
+- `LoadAppFromFv()`：`Fv->ReadSection (Fv, Guid, EFI_SECTION_PE32, 0, &Buffer, &Size, &Auth)`
+  （实例号 0 = 第一个，与 `PiSmmCore/Dispatcher.c:384` 的用法一致）。
+- 结论行改成 `fd23 fv <n> pe <size> load <st>`。
+- `HoldVerdict()` 重画 **90 秒后** `gRT->ResetSystem (EfiResetCold)`：
+  冷复位回到 fastboot，`autoloop.sh` 自动把下一版发下去——**闭环不再需要人按电源键**。
+  镜像是 `fastboot boot` 的 RAM 镜像，复位不写任何分区。
+- `autoloop.sh` 增加去重：用 `.autoloop-last` 记住已启动镜像的 sha256，
+  同一个镜像不会被反复刷。
+- 构建：预检 0 failure，`Mu-shennong-fd23.img` sha256 前缀 `a0b61d12`。
