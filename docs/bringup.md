@@ -1498,3 +1498,46 @@ make-shennong-adt.py --dram-size 0x10000000 --owned-memory-size 0x10000000 \
 `mcopy` 写入后回读 sha256 `be0d6c0235f61311` 一致。
 
 镜像 `Mu-shennong-fd40.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `5c9644d2`。
+
+### fd40 判读：**根卷挂载成功**，卡在根卷认证（阶段 E 最后一道门）
+屏幕原文：
+```
+rootvp not authenticated after mounting @bsd_init.c:1100
+frames ffffffff0079e16fc ffffffff0076b4b14 ffffffff0079993dc ffffffff0073f64a4
+pages=0x0000000000000bb1d  free=0x00000000000006d00
+```
+
+- `@bsd_init.c:1100` 出现 = `vfs_mountroot` 已经成功、`bsd_init` 已进入
+  （此前一直是 `Failed to mount root device @IOKitBSDInit.cpp:984`）
+- 失败点来自 `patches/xnu-12377/offline-owner-root-binding-audit.patch`：
+  ```
+  if (autherr && !owner_authorized) panic("rootvp not authenticated after mounting");
+  ```
+  其中 `owner_authorized = readonly && device_vnode && native_verified_block_root_authorized(device)`，
+  需要内核内嵌的 VerifiedRoot 策略能验证**当前挂载的那个设备**
+
+**根因（已验证，两条独立证据）**：
+
+1. `board.toml:41` 的 source-storage 构建用的是
+   `--policy-dir scripts/policies/ipados-27.0.1-24A446`，其策略 UUID 为
+   `c3a4d926-…` / `ecfe851c-…`，镜像 10,236,198,912 / 6,023,020,544 B；
+2. 设备上根卷（11-05 写入）对应的是 `scripts/policies/ipados-17.7.11-21H461`，
+   UUID `04769d26-2ca0-4825-…` / `8846fe78-…`，镜像 6,077,580,800 / 3,301,014,400 B；
+3. 逐字节验证：本地 CI 产物 `k8.zip`（2026-11-06 00:47）的内核里
+   `04769d26`×1、`8846fe78`×1、`c3a4d926`×0；而当前 payload 的内核正好相反。
+
+→ 内核嵌的策略与设备根卷不匹配，`native_verified_block_root_authorized()` 必然返回 0。
+
+### 已做：board.toml 对齐设备真实根卷
+- `[root]` UUID 与镜像摘要改成 17.7.11 那份（与 `scripts/policies/ipados-17.7.11-21H461/*/verification.json` 逐字段一致）
+- `archives` 里 `--policy-dir` 改为 `scripts/policies/ipados-17.7.11-21H461`
+- `[payload.adt].root_match_volume_uuid` 改为 `04769D26-2CA0-4825-B443-E2E5F88300F2`
+（这些改动要生效需要一次 CI 构建；本地无法重编内核）
+
+### fd41：先用现成内核验证「策略对齐」这个结论（不需要 CI）
+- 取 `k8.zip` 的 payload 作为基座（内核内嵌 17.7.11 策略，与其 trustcache 配套）
+- 换上我们这份正确的 ADT（`TrustCache` 在 + root-matching = `04769D26-…-4825-…`）
+- args 用 `native-ufs-root=1` 这一套
+- 复核：ADT 10,468 B / TrustCache 在 / UUID 命中；内核 `04769d26`×1、`8846fe78`×1、`c3a4d926`×0
+
+镜像 `Mu-shennong-fd41.img` 203,722,752 B（payload 192 MiB），预检 `0 failure(s)`，sha256 前缀 `138ec9a9`。
