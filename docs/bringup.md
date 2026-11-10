@@ -791,3 +791,27 @@ Error: Image at 000CF855000 start failed: Not Found
 - 启动前 `SetTimer (mTickTimer, TimerCancel)` 并关掉 tick：
   应用和我们的控制台画同一块帧缓冲，不停 tick 会把菜单写花。
 - 构建：预检 0 failure，`Mu-shennong-fd21.img` sha256 前缀 `23399295`。
+
+### fd22：把结论钉在屏幕上，一次启动就出答案
+问题不是屏幕不给看，而是**结论会被滚动冲掉**：fd21 的 `BT app buf / BT app load buf`
+两行被之后 20 秒的 `BT tick` 挤出屏幕顶部，照片里根本看不到。
+
+改动（只动 `BootTraceDxe.c`）：
+- 新增 `mVerdict[160]` 与 `HoldVerdict()`：把加载/启动结果格式化成一行，
+  **每秒重画** `== fd22 ==` + 结论行 + GOP 信息。
+- `LoadAppFromFv()` 在每个体积上记录 `fv <idx> size <n> type <t> load <st>`；
+  一个体积都没命中时记录 `no fv carries the app (<n> volumes)`。
+- 入口处加载失败 → 直接 `HoldVerdict()`；启动成功后才离开循环，
+  `StartImage` 返回后再把 `start <st> exit <ex>` 钉成新的一屏。
+- `BOOTTRACE_START_APP` 仍为 1；启动前已 `SetTimer(TimerCancel)` 停掉 tick。
+
+构建：预检 0 failure，`Mu-shennong-fd22.img` sha256 前缀 `d0f8cf68`；
+23:17:12 下发。随后 30 秒内 `fastboot devices` 全部为空，与"停在结论屏"一致。
+
+顺带核对应用 PE（本地静态检查，已验证）：
+machine=`0xAA64`、PE32+（magic `0x20B`）、subsystem=10（EFI_APPLICATION）、
+5 个节（`.text/.rdata/.data/.pdata/.reloc`），`.reloc` 存在——PE 本身是可加载的，
+这排除了"镜像格式不对"这一类原因。
+
+新增 `scripts/autoloop.sh`：常驻循环，设备每次出现在 fastboot 就自动把 `boot/`
+下最新的镜像发下去，日志写 `device-runs/2026-11-10/autoloop.log`。
