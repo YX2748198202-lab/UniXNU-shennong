@@ -22,6 +22,7 @@ Usage:
 """
 import argparse
 import gzip
+import zlib
 import hashlib
 import struct
 import subprocess
@@ -84,7 +85,7 @@ def read_template(path: Path):
     return tmpl
 
 
-def build(image: Path):
+def build(image: Path, allow_missing_dtb=False):
     data = image.read_bytes()
     if len(data) < PAGE_SIZE or data[:8] != b"ANDROID!":
         sys.exit("%s is not an Android boot image" % image)
@@ -102,10 +103,13 @@ def build(image: Path):
     if second_size or second_addr:
         problems.append("second stage present (%d bytes @ %#x)" % (second_size, second_addr))
     kernel = data[PAGE_SIZE:PAGE_SIZE + kernel_size]
+    trailing = b""
     if not kernel.startswith(b"\x1f\x8b"):
         problems.append("kernel section is not gzip")
     else:
-        raw = gzip.decompress(kernel)
+        inflater = zlib.decompressobj(31)
+        raw = inflater.decompress(kernel) + inflater.flush()
+        trailing = inflater.unused_data
         if len(raw) < FD_SIZE:
             problems.append("decompressed kernel %d bytes, shorter than the firmware volume" % len(raw))
         else:
@@ -117,6 +121,12 @@ def build(image: Path):
             if base != FD_BASE or size != len(raw):
                 problems.append("shim header %#x/%d does not describe %#x/%d"
                                 % (base, size, FD_BASE, len(raw)))
+        if trailing:
+            if trailing[:4] != b"\xd0\x0d\xfe\xed":
+                problems.append("%d trailing bytes after the gzip member are not a DTB" % len(trailing))
+        elif not allow_missing_dtb:
+            problems.append("no DTB appended to the kernel; ABL answers such an image with "
+                            "\"Failed to load/authenticate boot image: Load Error\" (2026-11-10 实测)")
     payload_start = PAGE_SIZE + align(kernel_size)
     payload = data[payload_start:payload_start + ramdisk_size]
     if ramdisk_size and len(payload) != ramdisk_size:
@@ -124,7 +134,7 @@ def build(image: Path):
     if len(data) != payload_start + align(ramdisk_size):
         problems.append("file is %d bytes, layout says %d"
                         % (len(data), payload_start + align(ramdisk_size)))
-    return problems, dict(kernel_size=kernel_size, ramdisk_size=ramdisk_size,
+    return problems, dict(kernel_size=kernel_size, ramdisk_size=ramdisk_size, dtb_size=len(trailing),
                           total=len(data), payload_offset=payload_start, os_version=os_version)
 
 
@@ -134,6 +144,10 @@ def main():
     ap.add_argument("--fd", required=True)
     ap.add_argument("--payload", help="payload FAT volume; omit for an empty ramdisk section")
     ap.add_argument("--template", help="known-good v0 image whose header is copied and checked")
+    ap.add_argument("--append-dtb", type=Path,
+                    help="DTB appended after the gzip kernel stream; required by ABL for fastboot boot")
+    ap.add_argument("--allow-missing-dtb", action="store_true",
+                    help="verify: accept an image without an appended DTB (historical images)")
     ap.add_argument("--out", required=True)
     ap.add_argument("--verify", action="store_true", help="re-read the output and check its layout")
     args = ap.parse_args()
@@ -154,6 +168,15 @@ def main():
         shim = compile_shim(Path(args.uefi), Path(tmp))
     raw = shim + fd
     kernel = gzip.compress(raw, 9, mtime=0)
+    dtb = b""
+    if args.append_dtb:
+        if not args.append_dtb.is_file():
+            sys.exit("DTB %s does not exist; compile it (dtc) or point --append-dtb elsewhere"
+                     % args.append_dtb)
+        dtb = args.append_dtb.read_bytes()
+        if dtb[:4] != b"\xd0\x0d\xfe\xed":
+            sys.exit("%s does not start with the flattened device tree magic" % args.append_dtb)
+        kernel += dtb
 
     header = bytearray(PAGE_SIZE)
     header[0:8] = b"ANDROID!"
@@ -168,19 +191,20 @@ def main():
 
     out = bytes(header) + kernel + bytes(align(len(kernel)) - len(kernel)) + payload
     Path(args.out).write_bytes(out)
-    print("shim %d bytes, firmware %d bytes, kernel %d bytes (gzip), payload %d bytes"
-          % (len(shim), len(fd), len(kernel), len(payload)))
+    print("shim %d bytes, firmware %d bytes, kernel %d bytes (gzip %d + dtb %d), payload %d bytes"
+          % (len(shim), len(fd), len(kernel), len(kernel) - len(dtb), len(dtb), len(payload)))
     print("written %s (%d bytes)" % (args.out, len(out)))
     print("sha256 %s" % hashlib.sha256(out).hexdigest())
 
     if args.verify:
-        problems, info = build(Path(args.out))
+        problems, info = build(Path(args.out), allow_missing_dtb=args.allow_missing_dtb)
         if problems:
             for problem in problems:
                 print("verify: %s" % problem, file=sys.stderr)
             sys.exit("verification failed")
-        print("verify: ok (kernel %d, ramdisk %d, payload at %#x, total %d)"
-              % (info["kernel_size"], info["ramdisk_size"], info["payload_offset"], info["total"]))
+        print("verify: ok (kernel %d incl. dtb %d, ramdisk %d, payload at %#x, total %d)"
+              % (info["kernel_size"], info["dtb_size"], info["ramdisk_size"],
+                 info["payload_offset"], info["total"]))
 
 
 if __name__ == "__main__":

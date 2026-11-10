@@ -112,6 +112,12 @@
 # UFS windows are published but vfs_mountroot never selects one.
 "root_match_volume_uuid" = "C3A4D926-411E-4365-9855-1B66A5CE0263"
 ["bootimg"]
+# ABL 在 `fastboot boot` 路径上要求内核流末尾带设备树，缺了就回
+# "Failed to load/authenticate boot image: Load Error"，设备 0.3 秒内回到 fastboot。
+# 2026-11-10 实测：不带 DTB 的镜像三次全部被拒；同一份 FD 加上 shennong.dtb 之后
+# 固件真的跑起来了（屏幕出现 ArmCpuDxe 的异常转储）。等价于 Mu-Silicium 的
+# [boot_image_kernel] append_dtb = true。
+"append_dtb" = "Resources/DTBs/shennong.dtb"
 "dtb_node" = [{ "path" = "/reserved-memory/splash_region", "props" = [{ "name" = "label", "type" = "s", "value" = "cont_splash_region" }, { "name" = "reg", "type" = "x", "value" = ["0x0", "0xFC400000", "0x0", "0x2B00000"] }] }]
 ["device_tree"]
 "source" = "device:dts/shennong.dts"

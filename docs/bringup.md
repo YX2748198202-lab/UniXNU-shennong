@@ -477,3 +477,58 @@ trampoline 在装好 SCTLR 之后的代码是这样的：
 | `0xFFFFFFF00AD7BA50` | `0x5B0` |
 
 现在 `patch-pre-mmu-squares.py` 用 `0xB4F9700`（39 个 cave × 0x100 = 0x2700，正好落在 `0xB4F9688+0x2978 = 0xB4FC000` 之前，并带断言），`patch-progress-slot.py` 的读出 cave 用 `0xAD815A4`、标记 cave 用 `0xB4F9700`。
+
+---
+
+## 2026-11-10 20:09–20:20：fastboot boot 破局（append_dtb）+ 第一个真机 UEFI 异常
+
+### 事实（设备侧，逐条可复核）
+
+| 时间 | 动作 | 结果 |
+|---|---|---|
+| 20:09:39 | `fastboot boot Mu-shennong-fd1.img`（无 DTB） | `Booting OKAY`，但 USB 0.32 s 后回到 fastboot |
+| 20:09:44–20:17 | 反复重试 fd1 / fd3 | 全部 `FAILED (remote: 'Failed to load/authenticate boot image: Load Error')` |
+| 20:09:39 起 | 屏幕 | 全黑（多次 `fastboot reboot-bootloader` 才恢复 fastboot 界面） |
+| 20:16:06 | `fastboot boot` **append_dtb 变体**（`gzip(shim+FD)+shennong.dtb`） | `Booting OKAY`，**USB 不再回来**，持续 5 分钟以上 |
+| 20:17 | 屏幕 | **UEFI 异常转储**（见下） |
+
+判别手段：0.3 s 粒度的 `fastboot devices` 轮询。不带 DTB 的镜像 0.3 s 内回到 fastboot；带 DTB 的镜像永远不回来 —— 说明 ABL 真的把控制权交出去了。
+
+### 关键发现 1：ABL 要求内核流末尾带 DTB
+
+`ASSERT` 之前的失败信息是 `Failed to load/authenticate boot image: Load Error`，与 Mu-Silicium
+`Resources/Configs/*.toml` 的 `[boot_image_kernel] append_dtb = true` 完全对应。我们的
+`firmware/make-boot-image.py` 之前只压 `shim+FD`，没带 DTB，所以每次都被拒。
+
+已落地修复：
+- `firmware/make-boot-image.py` 新增 `--append-dtb PATH`（`build()` 用 `zlib.decompressobj(31)`
+  判 `unused_data`，缺 DTB 直接判失败，除非显式 `--allow-missing-dtb`）；
+- `board.toml ["bootimg"] append_dtb = "Resources/DTBs/shennong.dtb"`；
+- `scripts/verify-boot-package.py` 新增 `image append_dtb` 检查（旧 fd1/fd2/fd3 现在会 FAIL）。
+
+### 关键发现 2：固件跑起来了，但死在 AOP cmd-db 的翻译错误上
+
+屏幕原文（照片 `device-runs/2026-11-10/uefi-exception-2016.jpg`）：
+
+```
+ASSERT [ArmCpuDxe] CpuExceptionHandlerLib.c(438): ((BOOLEAN)(0==1))
+X0 = 0x0000000081C60000            FAR  = 0x0000000081C60000
+ESR : EC 0x25 IL 0x1 ISS 0x00000007
+Data abort: Translation fault, third level
+```
+
+（`ArmCpuDxe` 是异常向量表的所有者，不是肇事模块。）
+
+`0x81C60000` 在设备树里是 `aop_cmd_db_region`（`compatible = "qcom,cmd-db"`, size 0x20000）。
+`MemoryMapLib.c` 之前只描述 xbl_config 的粗粒度区间，`0x81C00000–0x81CF4000` 整段没有映射，
+所以 `CmdDbDxe`（继承自 giulia 的 `Binaries/giulia/QcomPkg/Drivers/CmdDbDxe`）一写就缺页。
+
+修复：`scripts/make-shennong-uefi-pkg.py` 现在同时读 `dts/shennong.dts` 的 `reserved-memory`，
+把 xbl 区间未覆盖的节点补进 `MemoryMapLib`（`AddMem, SYS_MEM, SYS_MEM_CAP, Reserv, WRITE_BACK_XN`），
+本次补 17 条（gunyah_hyp / cpusys_vm / xbl_aop_image / **aop_cmd_db** / aop_tme_uefi / chipinfo /
+adsp_mhi / global_sync / tz_stat / qdss / mpss_dsm / xbl_ramdump / tz_merged / hwfence-shmem /
+trust_ui_vm / llcc_lpi…）。ramoops 因已被 UEFI_FD 三行并集覆盖而跳过。
+
+新固件：`SILICIUM_UEFI-shennong-DEBUG.fd` sha256 `646bcfc39f429b9241977c5351f120c88f285d4299f670a8471d8ecdc1fcfc8f`，
+新镜像：`boot/Mu-shennong-fd4.img` 2,523,136 B sha256 `7ba626e299ca0d52172c54b5e0d2271d720aee4fc9382a1f8f0c2922dea1e4ba`，
+预检 15 项全过（含 `image append_dtb` 1,238,463 B）。

@@ -21,7 +21,6 @@ Usage:
     verify-boot-package.py --fd FD --payload payload.img --image Mu-*.img [--json report.json]
 """
 import argparse
-import gzip
 import hashlib
 import json
 import struct
@@ -29,6 +28,7 @@ import subprocess
 import sys
 import tempfile
 import tomllib
+import zlib
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -318,15 +318,25 @@ def check_image(image_path, payload_data, report):
 
     # gzip(BootShim + FD)
     stream = data[page_size:page_size + kernel_size]
+    inflater = zlib.decompressobj(31)
     try:
-        inner = gzip.decompress(stream)
-    except OSError as error:
+        inner = inflater.decompress(stream) + inflater.flush()
+    except zlib.error as error:
         report.fail("image kernel stream", f"gzip failed: {error}")
         return
+    trailing = inflater.unused_data
     if inner[56:60] != b"ARM\x64":
         report.fail("image BootShim", f"no ARM64 header magic at 56 (got {inner[56:60]!r})")
     else:
         report.ok("image BootShim", f"{len(inner)} bytes decompressed, ARM64 header at 56")
+
+    # ABL only boots this image when a device tree follows the gzip member; without it the
+    # phone answers "Failed to load/authenticate boot image: Load Error" (2026-11-10).
+    if trailing[:4] == b"\xd0\x0d\xfe\xed":
+        report.ok("image append_dtb", f"{len(trailing)} bytes of device tree after the gzip member")
+    else:
+        report.fail("image append_dtb",
+                    f"{len(trailing)} trailing bytes, no DTB magic; ABL refuses such an image")
     signature = inner.find(FV_SIGNATURE)
     if signature > 40:
         fd_base = signature - 40

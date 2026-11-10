@@ -89,12 +89,15 @@ def main():
         payload = build_payload(tmp, trust)
         fd = build_fake_fd(tmp / "fake.fd")
         boot = tmp / "boot.img"
+        # A real image needs an appended DTB: ABL refuses one without it (Load Error).
+        dtb = tmp / "fake.dtb"
+        dtb.write_bytes(b"\xd0\x0d\xfe\xed" + b"\x00" * 60)
         uefi = Path(os.environ.get("UEFI_TREE", "/home/yoox/android/sources/uefi-sheng"))
         if not (uefi / "BootShim/BootShim.S").is_file():
             print(f"note: {uefi} has no BootShim/BootShim.S; skipping the boot-image checks")
             return 0
         result = run([str(MAKE_IMAGE), "--uefi", str(uefi), "--fd", str(fd),
-                      "--payload", str(payload), "--out", str(boot)])
+                      "--payload", str(payload), "--append-dtb", str(dtb), "--out", str(boot)])
         if result.returncode != 0:
             sys.exit(f"boot image build failed: {result.stderr.strip()}")
 
@@ -105,7 +108,7 @@ def main():
         result = run([str(VERIFY), "--board", str(good_board), *common])
         check(result.returncode == 0, f"clean package failed:\n{result.stdout}{result.stderr}")
         for line in ("payload files", "trust cache", "ADT parse", "menu config",
-                     "image payload bytes"):
+                     "image append_dtb", "image payload bytes"):
             check(f"OK   {line}" in result.stdout, f"clean package did not report OK for {line}")
         check("TrustCache" in result.stdout, "ADT slots line does not mention TrustCache")
 
@@ -129,7 +132,18 @@ def main():
         check(result.returncode != 0, "an unaccepted trust cache was accepted")
         check("FAIL trust cache" in result.stdout, f"trust cache not reported:\n{result.stdout}")
 
-        # 4) A menu that lost its kernel path must be caught.
+        # 4) An image without the appended DTB must be caught: that is what "Load Error" was.
+        no_dtb = tmp / "boot-no-dtb.img"
+        result = run([str(MAKE_IMAGE), "--uefi", str(uefi), "--fd", str(fd),
+                      "--payload", str(payload), "--out", str(no_dtb)])
+        check(result.returncode == 0, f"image build without a DTB failed: {result.stderr.strip()}")
+        result = run([str(VERIFY), "--board", str(good_board), "--payload", str(payload),
+                      "--image", str(no_dtb)])
+        check(result.returncode != 0, "an image without an appended DTB was accepted")
+        check("FAIL image append_dtb" in result.stdout,
+              f"missing DTB not reported:\n{result.stdout}")
+
+        # 5) A menu that lost its kernel path must be caught.
         bad_payload = tmp / "payload-bad-menu.img"
         bad_payload.write_bytes(payload.read_bytes())
         env = dict(os.environ, MTOOLS_SKIP_CHECK="1", TZ="UTC")

@@ -77,6 +77,8 @@ POLICY = {
     "IMEM": ("NoHob", "MMAP_IO", "INITIALIZED", "Conv", "NS_DEVICE"),
     "IMEM_Cookie_Base": ("AddDev", "MMAP_IO", "INITIALIZED", "Conv", "NS_DEVICE"),
 }
+DTB_CARVE_OUT = ("AddMem", "SYS_MEM", "SYS_MEM_CAP", "Reserv", "WRITE_BACK_XN")
+
 DEFAULT_POLICY_DDR = ("AddMem", "MEM_RES", "UNCACHEABLE", "Reserv", "UNCACHED_UNBUFFERED_XN")
 DEFAULT_POLICY_IO = ("AddDev", "MMAP_IO", "UNCACHEABLE", "MmIO", "NS_DEVICE")
 SPAN_REGIONS = {"DDR", "NOMAP"}
@@ -121,7 +123,53 @@ def write(path, text, force):
     path.write_text(text)
 
 
-def render_memory_map(regions, fd_base, fd_size):
+def parse_dts_reserved_memory(path):
+    """Reserved-memory carve-outs from the phone's own DTS.
+
+    xbl_config only registers coarse spans; the device tree splits the same physical
+    memory into finer `no-map` regions (AOP command DB, xbl_aop image, chipinfo, ...).
+    The stock firmware maps them, so its drivers can write to them. Ours faulted with
+    "Data abort: Translation fault, third level" at FAR=0x81C60000 — the AOP cmd-db —
+    because MemoryMapLib described only the xbl spans (2026-11-10, device photo).
+    """
+    text = Path(path).read_text(errors="replace")
+    start = text.find("\treserved-memory {")
+    if start < 0:
+        return []
+    depth, index = 0, start
+    while index < len(text):
+        if text[index] == "{":
+            depth += 1
+        elif text[index] == "}":
+            depth -= 1
+            if depth == 0:
+                break
+        index += 1
+    block = text[start:index + 1]
+
+    carve_outs = []
+    for match in re.finditer(r"\n\t\t([A-Za-z0-9_,\.\-@]+) \{", block):
+        name = match.group(1)
+        node_depth, cursor = 1, match.end()
+        while cursor < len(block) and node_depth:
+            if block[cursor] == "{":
+                node_depth += 1
+            elif block[cursor] == "}":
+                node_depth -= 1
+            cursor += 1
+        body = block[match.end():cursor]
+        reg = re.search(r"reg = <0x([0-9a-fA-F]+) 0x([0-9a-fA-F]+) 0x([0-9a-fA-F]+) 0x([0-9a-fA-F]+)>", body)
+        if reg is None:
+            continue
+        high, low, size_high, size_low = (int(part, 16) for part in reg.groups())
+        base = (high << 32) | low
+        size = (size_high << 32) | size_low
+        if size:
+            carve_outs.append((name.split("@")[0], base, size))
+    return carve_outs
+
+
+def render_memory_map(regions, fd_base, fd_size, carve_outs=()):
     """Turn the xbl_config regions into MemoryMapLib rows."""
     rows = []
     explicit = {region["name"] for region in regions}
@@ -150,6 +198,26 @@ def render_memory_map(regions, fd_base, fd_size):
             policy = DEFAULT_POLICY_DDR if ram else DEFAULT_POLICY_IO
             note(f"no policy for xbl region {name}; default {'DDR' if ram else 'IO'} row")
         rows.append((name, base, size, policy, "xbl_config"))
+
+    # Regions the device tree reserves that the xbl spans do not cover: they must still be
+    # mapped, otherwise the first driver that touches them faults on a translation miss.
+    def covered_by_union(start, length):
+        cursor = start
+        for row_base, row_size in sorted((row[1], row[2]) for row in rows):
+            if row_base <= cursor < row_base + row_size:
+                cursor = row_base + row_size
+                if cursor >= start + length:
+                    return True
+        return cursor >= start + length
+
+    added = 0
+    for name, base, size in carve_outs:
+        if covered_by_union(base, size):
+            continue
+        rows.append((name, base, size, DTB_CARVE_OUT, "dtb reserved-memory"))
+        added += 1
+    if added:
+        note(f"{added} device-tree reserved-memory region(s) added to the memory map")
 
     width = max(len(row[0]) for row in rows) + 3
     body = ""
@@ -374,6 +442,8 @@ def main():
     parser.add_argument("--uefi", type=Path, required=True, help="Mu-Silicium (or uefi-sheng) checkout")
     parser.add_argument("--template", default="Platforms/OnePlus/giuliaPkg", help="SM8650 platform package to derive from")
     parser.add_argument("--memory-map", type=Path, default=REPO / "firmware/shennong-memory-map.toml")
+    parser.add_argument("--dts", type=Path, default=REPO / "dts/shennong.dts",
+                        help="device tree whose reserved-memory carve-outs must also be mapped")
     parser.add_argument("--vendor-binaries", default="shennong",
                         help="Binaries/<name> directory the platform pulls its prebuilt QcomPkg drivers from")
     parser.add_argument("--fd-base", type=lambda value: int(value, 0), default=0xA7100000)
@@ -407,7 +477,10 @@ def main():
     print(f"shennongPkg -> {pkg_dir}")
 
     regions = tomllib.loads(args.memory_map.read_text())["region"]
-    rows, body = render_memory_map(regions, args.fd_base, args.fd_size)
+    carve_outs = parse_dts_reserved_memory(args.dts) if args.dts.is_file() else []
+    if not carve_outs:
+        note(f"no reserved-memory carve-outs read from {args.dts}; memory map stays xbl-only")
+    rows, body = render_memory_map(regions, args.fd_base, args.fd_size, carve_outs)
     print(f"  memory map: {len(rows)} descriptors from {args.memory_map.name}")
 
     if args.dry_run:
