@@ -464,3 +464,40 @@ bundle: 94884 B sha256 a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116
 `a2a2566f…`；workflow 的 `Build the trust bundle` 改为调用本仓库脚本，
 `Build payload` 与 ADT 步骤的取值 glob 增加 `build/target-static-system-trust/`。
 `scripts/test-verify-boot-package.py` 复跑：`all checks passed`。
+
+### 27.6 第三个真修复：payload 步骤的符号解析在 fileset 内核上必崩
+
+新 run `42890124268`（sha `3b2bfff`）的结果：
+
+```
+step 18  Build the trust bundle → success
+         trust bundle: bundle: 94884 B sha256 a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c
+         trust bundle: board pin matches            ← CI 复算结果与本地完全一致
+step 19  Build payload → failure
+```
+
+失败点是 `kernel_symbols()`：
+
+```
+scripts/patch-xnu-entry-probe.py:153  table.setdefault(int(parts[0], 16), parts[2])
+ValueError: invalid literal for int() with base 16: 'Symbols'
+```
+
+`llvm-nm -n` 在 fileset 内核上会输出 `Symbols:` 这类非符号行，旧代码假定“三个字段的首字段一定是十六进制地址”。
+根因不是这一行，而是**打补丁的时机**：
+
+```
+probe symbols: patched scripts/patch-xnu-entry-probe.py      ← 只改了仓库副本
+##[error]== tree out/shennong/.../tree                        ← 之后 unixnu 才物化 tree
+##[error]  tree/scripts/patch-xnu-entry-probe.py:153 崩        ← tree 副本仍是旧代码
+```
+
+workflow 里的运行期补丁只覆盖得到已经存在的文件；tree 是在 payload 步骤里才生成的，所以补丁落空。
+修法是把容错直接写进仓库源文件（`scripts/patch-xnu-entry-probe.py` 的 `kernel_symbols()`：跳过解析失败的行、
+不再依赖 nm 的退出码、表为空时打印 nm 的原始输出）。用桩 nm（输出 `Symbols:` + 两行真符号）本地验证解析正常，
+得到 `{0xfffffff0073f45c0: '_panic_kernel', 0xfffffff007279520: '_cmn_funnel'}`。
+
+顺带记录一个不阻塞的观察：`shennong-kext-exports-probe.py` 读 iOS 27 的 `kernelcache.decompressed` 时报
+`ValueError: Only ordinary little-endian ARM64 is supported`（`kits/XnuPrelink/native_prelink.py:19` 只接受
+cpusubtype 0；iPhone17,1 的内核是 `0xc0000002`，即 arm64e + ptrauth ABI）。该步骤失败时 `exit 0`，属诊断信息，
+不影响打包。

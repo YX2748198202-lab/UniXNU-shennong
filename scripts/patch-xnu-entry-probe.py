@@ -147,10 +147,22 @@ def kernel_symbols(kernel):
     """Address -> name for the kernel's symbols, from llvm-nm."""
     nm = shutil.which('llvm-nm') or '/opt/homebrew/opt/llvm/bin/llvm-nm'
     table = {}
-    for line in subprocess.run([nm, '-n', kernel], capture_output=True, text=True, check=True).stdout.splitlines():
+    # A fileset kernel makes llvm-nm emit lines that are not symbols at all
+    # ("Symbols:", section headers), and its exit status is not a usable signal:
+    # skip anything that does not parse instead of dying with
+    # ValueError: invalid literal for int() with base 16: 'Symbols'
+    result = subprocess.run([nm, '-n', kernel], capture_output=True, text=True)
+    for line in result.stdout.splitlines():
         parts = line.split()
-        if len(parts) == 3:
-            table.setdefault(int(parts[0], 16), parts[2])
+        if len(parts) != 3:
+            continue
+        try:
+            address = int(parts[0], 16)
+        except ValueError:
+            continue
+        table.setdefault(address, parts[2])
+    if not table:
+        print(f'kernel_symbols: nm rc={result.returncode} out={result.stdout[:300]!r} err={result.stderr[:300]!r}')
     return table
 
 
