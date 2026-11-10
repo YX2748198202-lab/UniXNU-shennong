@@ -847,3 +847,57 @@ section type=0x10 size=0x19E04   (EFI_SECTION_PE32, 载荷以 MZ 开头, e_lfane
 - `autoloop.sh` 增加去重：用 `.autoloop-last` 记住已启动镜像的 sha256，
   同一个镜像不会被反复刷。
 - 构建：预检 0 failure，`Mu-shennong-fd23.img` sha256 前缀 `a0b61d12`。
+
+## 阶段 A 达成：UniXNU 菜单出现在屏幕上（fd23，已验证）
+
+照片：`artifacts/UniXNU-shennong/device-runs/2026-11-10/photos/fd23-menu.jpg`、
+`fd23-start-aborted.jpg`。下发时间 23:22:48（`autoloop.log`），镜像 `Mu-shennong-fd23.img`
+sha256 前缀 `a0b61d12`。
+
+屏幕内容（逐行抄录）：
+
+```
+（Apple 轮廓 + UniXNU 标志）
+version 0.1.0
+built-in configuration
+ 1  Return to firmware   action      ← 高亮
+ 2  Restart              action
+ 3  Power off            action
+ 4  Tools                action
+Booting Return to firmware in 9 s
+Up/Down: select    Enter: boot
+1-9: boot entry    Esc: stop timer
+no boot entry found                  ← 红字
+drivers 0 loaded / 0 failed    kits 0
+acpi 0
+```
+
+随后应用按 9 秒倒计时执行了唯一一项 `Return to firmware`，从入口返回：
+
+```
+Error: Image at 000CFA54000 start failed: Aborted
+BT app start 8000000000000015 exit 0        ← 0x15 = EFI_ABORTED
+== fd23 ==
+start 8000000000000015 exit 0
+BT gop fb FC400000 res 1440x3200
+```
+
+结论：
+1. **已验证**：`Fv->ReadSection (EFI_SECTION_PE32)` + `LoadImage` 之后 `StartImage` 成功，
+   应用真的跑起来并接管屏幕画出了菜单 —— **阶段 A 的验收条件满足**。
+2. **已验证**：`EFI_ABORTED` 不是崩溃，是应用自己"返回固件"的正常退出路径
+   （`UniXNU.c:42` 注释即说明从固件引导项返回时要报失败）。
+3. 菜单里 `no boot entry found` 说明当前启动镜像**没有 payload 卷**——
+   `make-boot-image.py` 之前的输出一直是 `ramdisk 0`，应用扫描不到任何可引导项。
+
+## fd24：把 payload 卷接回去，让菜单里有真引导项
+- 用现成资产 `payload/payload-fd3.img`（96 MiB，`SHENNONGESP` FAT32）：
+  内含 `EFI/UniXNU/unixnu.toml`、`Payloads/kernel.macho`（52,068,352 B）、
+  `kernel.macho.adt`、`kernel.macho.trustcache`、`Payloads/DarwinBoot.efi`。
+- `unixnu.toml` 里 `[boot] timeout = 0`、`default = "xnu"`，
+  唯一真引导项 `title = "shennong XNU native UFS"`、`type = "xnu"`、
+  `path = "Payloads/kernel.macho"`，并带内核参数。
+- 镜像：`Mu-shennong-fd24.img`，103,059,456 B（含 96 MiB payload），预检 `0 failure(s)`，
+  sha256 前缀 `fb7e6f77`；23:26:05 起由 `autoloop.sh` 自动下发。
+- 预期：菜单里出现 "shennong XNU native UFS" 一项，`timeout = 0` 不会自己倒计时；
+  选中即进入 XNU 引导（阶段 C 的第一现场）。
