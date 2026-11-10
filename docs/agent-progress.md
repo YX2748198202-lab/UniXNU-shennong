@@ -317,3 +317,37 @@ muyu 70/79/8.9 MB（SM8635，不同族）；差异集中在 `Oplus*` 私有驱�
 | `kernel.macho.trustcache` | 无信任缓存，AMFI 会在早期拒绝 |
 | `kernel.macho.vroot`（root policies） | `native-source-storage=1` 的根卷策略缺失 |
 | 真机 | `Mu-shennong-fd2.img` 一次都没 `fastboot boot` |
+
+## 24. 追加：找回 trust cache + 修掉 panic screen 补丁链（同一轮）
+
+在 `legacy-ipados17/out/.../payload/payload.img`（旧框架产物，201 MB）里找到了三样关键输入，
+已用 mtools 抽到 `legacy-ipados17/payload-extracted/`：
+
+- `kernel.macho.trustcache` 61,356 B `sha256 7416ca4f…` —— **与 `board.toml [payload] trust_cache_sha256` 一致**
+- `kernel.macho`（已打补丁）52,068,352 B `sha256 0fb4ddd2…` —— 与旧 `payload.json` 的 `payload_kernel_sha256` 一致，
+  说明旧 payload 的内核是**打过 panic screen/入口探针**的
+- `kernel.macho.adt` 10,468 B（旧参数版本）
+
+**修掉一个仓库级 bug**：`scripts/patch-xnu-entry-probe.py --panic-screen` 要编译
+`scripts/xnu-panic-screen.c`，设备仓库里没有这个文件（只有框架 `UniXNU-pin/scripts/` 有）。
+把框架那份（302 行）复制进来后补丁成功：
+
+```
+stage 1 blue bar, stage 2 magenta bar, no reset probe,
+panic screen (0xa2f bytes at 0xfffffff0073f45c0; common funnel at 0xfffffff007279520)
+```
+
+结果 `sha256 fa362e24…`，与旧 payload 的 `0fb4ddd2…` 不逐字节相同（旧产物参数不可反推），
+但大小不变、只有 2,316 字节不同，集中在 common funnel（文件偏移 `0x275520` 的 4 字节 BL）
+与 `0x3F04xx`–`0x3F45xx` 的 cave 区，符合补丁语义。
+
+## 25. fd3 镜像（当前最好的可上机产物）
+
+| 产物 | 大小 | sha256 |
+|---|---|---|
+| `payload/payload-fd3.img` | 100,663,296（96 MiB） | `f1e47d3289db747a3f3f54b0b77844fd8d081be38f13b931618cd7a17a19034f` |
+| `boot/Mu-shennong-fd3.img` | 101,945,344 | `e167a901df59d39ca2bda923d9009d7b48c9897a1ba96bb6a194d0f49360fb86` |
+
+卷内（从镜像 `0x139000` 读回、sha256 逐个比对通过）：`DarwinBoot.efi` 33,792 / `kernel.macho`
+（panic screen 版）52,068,352 / `kernel.macho.adt` 10,468（带 trust cache 槽位）/
+`kernel.macho.trustcache` 61,356（与 board 允许值一致）/ `unixnu.toml` 549。

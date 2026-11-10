@@ -85,3 +85,74 @@ python3 firmware/make-boot-image.py --uefi sources/uefi-sheng \
 | 真机验证 | 一次都没 `fastboot boot` | 等你在场 |
 
 `--trust-cache` / `--vroot` 参数已经就位，拿到文件直接加参数重跑即可。
+
+---
+
+# 追加（同一轮）：找回 trust cache 与补丁内核，产出 fd3 镜像
+
+## 找到的东西
+
+`artifacts/UniXNU-shennong/legacy-ipados17/out/shennong/ipados-17.7.11-21H461/shennong/payload/payload.img`
+（201 MB，2026-11-05 由框架产出）里还留着三样关键输入，已用 mtools 抽到
+`legacy-ipados17/payload-extracted/`：
+
+| 文件 | 大小 | sha256 | 与 board.toml 的关系 |
+|---|---|---|---|
+| `kernel.macho.trustcache` | 61,356 | `7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7` | **与 `[payload] trust_cache_sha256` 完全一致** |
+| `kernel.macho.adt` | 10,468 | `d944136d…`（旧版本，内核参数是旧的那一套） | — |
+| `kernel.macho`（已打补丁） | 52,068,352 | `0fb4ddd2abb27bafe7d9efeff9bb154a12e7383c15a25894212a0c922a03e7a3` | 与 `payload.json` 记录的 `payload_kernel_sha256` 一致 |
+
+也就是说：旧 payload 里的内核是**打过 panic screen/入口探针补丁的**，不是原始内核。
+
+## 补回一个仓库级 bug
+
+`scripts/patch-xnu-entry-probe.py` 在 `--panic-screen` 分支里编译 `scripts/xnu-panic-screen.c`，
+但**这个文件在设备仓库里不存在**（框架 `UniXNU-pin/scripts/xnu-panic-screen.c` 才有）。
+所以在这台机器上重打补丁一定失败：
+
+```
+clang: error: no such file or directory: 'scripts/xnu-panic-screen.c'
+```
+
+已把框架那份（302 行，用 `VINFO`/`MAX_MEM`/`PAGE_TOTAL`/`PAGE_FREE` 宏）复制进
+`scripts/xnu-panic-screen.c`。重打补丁即可成功：
+
+```
+UNIXNU_UEFI=/home/yoox/android/sources/uefi-sheng \
+  python3 scripts/patch-xnu-entry-probe.py <kernel> --panic-screen --no-reset
+→ stage 1 blue bar, stage 2 magenta bar, no reset probe,
+  panic screen (0xa2f bytes at 0xfffffff0073f45c0; common funnel at 0xfffffff007279520)
+```
+
+结果与旧 payload 里的内核**不逐字节相同**（`fa362e24…` vs `0fb4ddd2…`）：旧产物是 11-05 用当时的
+参数与当时的脚本打的，无法反推全部参数。可核实的是补丁本身是自洽的——大小不变
+（52,068,352），只有 2,316 字节不同，集中在两处：文件偏移 `0x275520`（common funnel 的 4 字节
+BL 改写）与 `0x3F04xx`–`0x3F45xx` 的 cave 区。
+
+## fd3：目前最好的镜像
+
+```sh
+python3 firmware/make-payload-image.py \
+  --kernel artifacts/UniXNU-shennong/legacy-ipados17/kernel/kernel-panoscreen.macho \
+  --trust-cache artifacts/UniXNU-shennong/legacy-ipados17/payload-extracted/kernel.macho.trustcache \
+  --darwinboot sources/uefi-sheng/Build/shennongPkg/DEBUG_CLANGPDB/AARCH64/DarwinBoot.efi \
+  --out artifacts/UniXNU-shennong/payload/payload-fd3.img --size-mib 96 \
+  --json artifacts/UniXNU-shennong/payload/payload-fd3.json --verify
+```
+
+| 产物 | 大小 | sha256 |
+|---|---|---|
+| `payload/payload-fd3.img` | 100,663,296（96 MiB） | `f1e47d3289db747a3f3f54b0b77844fd8d081be38f13b931618cd7a17a19034f` |
+| `boot/Mu-shennong-fd3.img` | 101,945,344 | `e167a901df59d39ca2bda923d9009d7b48c9897a1ba96bb6a194d0f49360fb86` |
+
+卷内（从镜像 `0x139000` 处读回，sha256 与源文件逐个相同）：
+
+```
+DarwinBoot.efi              33,792   7463bf2d046f14cd
+kernel.macho            52,068,352   fa362e24b3cb327b
+kernel.macho.adt            10,468   457de8638b546705   ← 带 trust cache 槽位
+kernel.macho.trustcache     61,356   7416ca4f83771466   ← 与 board.toml 允许值一致
+unixnu.toml                    549   6a4e345e9b9996fd
+```
+
+仍未验证：一次都没 `fastboot boot`。
