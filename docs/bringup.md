@@ -1468,3 +1468,33 @@ adopt+read 并分配了约 72 MB，说明**发布发生了、挂载没发生**�
 
 预期：`IOFindBSDRoot` 能匹配上 OS 媒体 → 越过 `IOKitBSDInit.cpp:984`，进入 APFS 挂载；
 失败则是另一条信息（例如 owner-root 认证失败，会给出与「找不到设备」不同的字样）。
+
+### fd39 判读：`Compromised Data` —— ADT 丢了 TrustCache 槽位
+屏显回到菜单并给出：
+```
+'shennong XNU native UFS' returned: Compromised Data
+```
+即 `EFI_COMPROMISED_DATA`。
+
+**根因（已验证，靠两份 ADT 逐字节对比得出）**：
+
+| 项 | 原版 ADT（payload-fd38） | fd39 生成的 ADT |
+|---|---|---|
+| `TrustCache` 属性 | **有** | **没有** |
+| root-matching UUID | `C3A4D926-…` | `04769D26-2CA0-4825-…`（改对了） |
+| 大小 | 10,468 B | 10,416 B（正好少 52 B） |
+
+payload 里有 `Payloads/kernel.macho.trustcache`，DarwinBoot 需要 ADT 内的 TrustCache 槽位；
+fd39 只换了 UUID、没带 `--trust-cache`，于是被判定为 `EFI_COMPROMISED_DATA`。
+这与工作流里的注释同源（缺槽位 → `EFI_COMPROMISED_DATA`）。
+
+### fd40：UUID 对 + TrustCache 带上
+```
+make-shennong-adt.py --dram-size 0x10000000 --owned-memory-size 0x10000000 \
+  --cpu-regs 0 --psci-method smc --trust-cache \
+  --root-match-volume-uuid 04769D26-2CA0-4825-B443-E2E5F88300F2
+```
+结果 10,468 B（与原版同尺寸），`TrustCache` 存在，`root-matching` 为新 UUID；
+`mcopy` 写入后回读 sha256 `be0d6c0235f61311` 一致。
+
+镜像 `Mu-shennong-fd40.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `5c9644d2`。
