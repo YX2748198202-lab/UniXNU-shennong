@@ -1404,3 +1404,32 @@ pages=0x0000000000000bb1c  free=0x00000000000006cff
 - 去掉 `native-ufs-diagnostics=1`（报告线程不再自陷）
 - 加 `native-ufs-root=1`，让驱动走根卷路径
 - 保留 `native-ufs-probe=12`
+
+### fd37 判读：报告线程自陷与 diagnostics 无关
+屏显与 fd36 完全相同（`published=2 reads=142 failures=0 media=7` + `@NativeUfs.cpp:2145`），
+但两次启动的页数不同（fd36 `pages=0xbb1c free=0x6cff`，fd37 `pages=0xbb1b free=0x6cfe`），
+所以确实是 fd37 的新一次启动。
+
+**结论（已验证）**：`@NativeUfs.cpp:2145` 自陷**不由 `native-ufs-diagnostics` 控制**，
+只要 `native-ufs-probe=12` 就会发生；`native-ufs-root=1` 加进去也改变不了它，
+因为自陷发生在报告线程里、挂载尝试之前。
+
+内核字符串给出结构：
+```
+NATIVE_UFS media report: published=%u reads=%llu failures=%llu media=%u
+NATIVE_UFS media report: cannot start the report thread
+NATIVE_UFS media report: root start failed (blocks=%u)
+NATIVE_UFS root check / NATIVE_UFS root windows
+native-ufs-stats-delay
+```
+`media report`（报告）与 `root windows`（根卷发布）是两条独立路径。
+
+### fd38：只走根卷路径
+args 去掉 `native-ufs-probe=12`，只留 `native-ufs-root=1`：
+```
+-v serial=3 debug=0x14e cpus=1 kt_fixed_zones=120 -no_slto_panic armcpu-diagnostics=1 boot-progress=2 sheng-pmgr=2 native-ufs-root=1 sheng-log=1
+```
+镜像 `Mu-shennong-fd38.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `063b433b`。
+
+预期：不再出现 media report 自陷；要么出现 `NATIVE_UFS root check/root windows` 相关输出，
+要么回到 `@IOKitBSDInit.cpp:984`（说明 probe 等级也门控根卷路径，下一轮用 probe=10 + root=1）。
