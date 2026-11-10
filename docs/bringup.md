@@ -709,3 +709,18 @@ Data abort: Translation fault, second level
   3. `BootTraceDxe` 增加 `BT app start begin`，区分"没启动"与"启动了但没画"。
 - 构建 fd18：预检 0 failure，`Mu-shennong-fd18.img` sha256 前缀 `8460f710`，22:55 下发
   （下发前确认设备在 fastboot，`fastboot devices` 有 `9f72e95c`，未变砖）。
+
+### fd19：用"主动停车"换掉"拼手速拍照"
+- 事实：fd17、fd18 两次都是「小米 logo → 秒级黑屏」，人工来不及拍；
+  继续赌手速不是工程方法。
+- 改动：`BootTraceDxe.c` 增加 `#define BOOTTRACE_START_APP 0`，
+  在 `LoadImage` 成功后打印
+  `BT park: app loaded, not started (A/B)` 并 `CpuDeadLoop()`。
+  屏幕从此定格，什么时候拍都行；把宏改回 1 即恢复 fd18 行为。
+- 构建 fd19：预检 0 failure，`Mu-shennong-fd19.img` sha256 前缀 `68b8dac6`。
+- 下发受阻：22:21 时设备**不在 fastboot**（`fastboot devices` 超时），
+  说明上一版黑屏后设备最终离开了 fastboot（很可能自行回到 fastboot 后又掉电/息屏）。
+  已放后台脚本 `scripts/wait-and-boot.sh`：一旦 `fastboot devices` 出现设备，
+  自动把 fd19 发下去，日志写 `device-runs/2026-11-10/wait-and-boot.log`。
+- 判读：屏幕停在 `BT ...` ⇒ 黑屏由 `StartImage(app)` 引起；
+  仍是 logo→黑 ⇒ 黑屏在我们之前（显示驱动/BDS）。
