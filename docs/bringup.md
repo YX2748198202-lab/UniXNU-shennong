@@ -665,3 +665,30 @@ Data abort: Translation fault, second level
 - 结论：改一个 PCD 就能把可见行数放大三倍，转储与我们自己的日志首次可以同屏——
   这比继续盲改代码有价值得多。fd16 已按 `PcdFrameBufferFontScale|1` +
   `PcdFrameBufferDelay|30000` 构建下发。
+
+### fd16：真凶浮出水面——`SdccDxe.dll`（证据：真机照片 ×4）
+- 改动：`PcdFrameBufferFontScale|1` + `PcdFrameBufferDelay|30000`，
+  `BootTraceDxe` 增加 `BT app image <base> size` 与 `BT gop fb <addr> res WxH` 打印。
+- 结果：控制台行数放大三倍后，转储**第一次带上了模块归属表**，直接点名：
+
+  ```
+  Synchronous Exception at 0x00000000D208C1E4
+  PC 0x0000D208C1E4 (0x0000D2084000+0x000081E4) [0] SdccDxe.dll
+  PC 0x0000D2090A98 (0x0000D2084000+0x0000C9B8) [0] SdccDxe.dll
+  PC 0x0000D208D05C (0x0000D2084000+0x0000905C) [0] SdccDxe.dll
+  ...
+  ESR : EC 0x25 IL 0x1 ISS 0x00000046 -> Data abort: Translation fault, second level
+  FAR 0x00000000880402C
+  ```
+
+  即崩溃发生在这个厂商 SD 卡控制器驱动的 `+0x81E4`，对 `0x0880402C` 做**写**，
+  该地址没有二级页表映射。与我们的 `UniXNU.efi` 无关；此前把 `0xD208B1E4`
+  当成应用自身，是被"驱动基址都在 0xCF9/0xCFA 段"的旧假设带偏了——**SdccDxe
+  就装在 0xD2084000**，说明 giulia 那批二进制驱动被装载到另一段地址。
+- 结论（已验证）：从 fd10 起挡住 BDS 的"无名写异常"就是 SdccDxe；它也是最可能
+  让 `UniXNUDxe` 一直没被 dispatch 的原因（同步异常把 CPU 停在了 CpuDeadLoop）。
+
+### fd17：摘掉 SDCC 整条卡栈
+- `APRIORI.inc:47`、`DXE.inc:71` 的 `SdccDxe.inf` 注释掉（我们从这个 boot image
+  自带的 payload 起，不需要 SD 卡）。
+- 预检 0 failure，`Mu-shennong-fd17.img` sha256 前缀 `67eb4f44`，22:16 下发。
