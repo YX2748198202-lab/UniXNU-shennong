@@ -1003,3 +1003,38 @@ acpi 0
 | `UXRD <a> <n> scan` + `fs ≥1 cfg 0` | 卷与配置都到了应用手里 | fd27 关掉 diag → 菜单出现 `shennong XNU native UFS` → 阶段 C |
 | `UXRD ok` + `fs 0` | 有块设备、没有文件系统 → Partition/FAT 没绑上 | payload 加 MBR 分区表重建 |
 | `UXRD none hint …` | payload 没进内存 | 改走 FD 内嵌 RAW 卷方案（缩到 ≤48 MiB） |
+
+### fd26 判读：`UXRD no-driver | fs 0 cfg n/a`
+屏幕原文（照片不存档）：
+
+```
+== fd26 ==
+fd26 UXRD no-driver | fs 0 cfg n/a
+BT gop fb FC400000 res 1440x3200
+```
+
+两条硬事实：
+1. **`no-driver`** = `BootTraceDxe` 的 `LocateProtocol(gUniXNURamDiskInfoProtocolGuid)` 失败
+   → `UniXNURamDiskDxe` **从来没装过那个协议**
+2. **`fs 0`** = 一个 `SimpleFileSystem` 句柄都没有（没有块设备，FAT 自然绑不上）
+
+对代码就一眼看出原因：fd26 的入口有两处**早退在装协议之前**——
+`GET_GUID_HOB_DATA_SIZE` 不足时 `return EFI_COMPROMISED_DATA`，
+DTB 校验失败时 `return EFI_SUCCESS`。而 fd26 把 hint/扫描兜底写在了 DTB 校验**之后**，
+所以 x0 只要不是一个合法 FDT，整条兜底路径根本走不到，协议也不会被安装。
+
+### fd27：把顺序倒过来
+`UniXNURamDiskDxe.c` 的入口重写成单出口：
+1. **第一件事**就装 `gUniXNURamDiskInfoProtocolGuid`，Note 初始为 `UXRD started`
+2. 然后才看 HOB / x0；HOB 缺失 → `UXRD none no-hob`，HOB 过短 → `UXRD none short-hob`
+3. FDT 合法就试 `/chosen`（成功即 `UXRD <start> <size> fdt`）
+4. **无论 FDT 成不成功**，接着试 hint（`0x01000000`）→ `hint`，再试内存扫描 → `scan`
+5. 全不成 → `UXRD none x0 <值> hint <值>`——把 x0 原样打出来，下次就能判断 x0 到底是不是 DTB
+
+`BootTraceDxe.c` 诊断行同时报块设备数：
+`fd27 UXRD … | fs <n> bio <n> cfg <st>`，
+`bio` 是这个固件里 `BlockIo` 句柄数——用来区分「驱动没发布」和「发布了但 FAT 没绑上」。
+
+构建：`FD ok`；镜像 `Mu-shennong-fd27.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `3ed17e71`；
+**23:45:17 由 autoloop 自动下发**（fd26 诊断屏 90 秒后自行冷复位，autoloop 接上了 fd27），
+这次不需要人按键。
