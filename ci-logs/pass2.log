@@ -1,0 +1,11 @@
+== submodules /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu
+== submodules: kits/XnuPrelink has local changes, not updated
+== tree /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree
+== kernel: XNU
+== kernel: prepare storage headers
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/prepare-storage-headers.py
+== kernel: archive-01-build-corecrypto-14
++ python3 /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/tree/scripts/build-corecrypto-14.py
+529 kernel C sources; 0 failures
+No XNU symbol names: run a kernel pass first (it writes link.filelist)
+unixnu: python3 failed (1); full log: /Users/runner/work/UniXNU-shennong/UniXNU-shennong/unixnu/out/shennong/ios-27.0.1-24A446-iphone16pro/shennong/logs/archive-01-build-corecrypto-14.log
