@@ -724,3 +724,17 @@ Data abort: Translation fault, second level
   自动把 fd19 发下去，日志写 `device-runs/2026-11-10/wait-and-boot.log`。
 - 判读：屏幕停在 `BT ...` ⇒ 黑屏由 `StartImage(app)` 引起；
   仍是 logo→黑 ⇒ 黑屏在我们之前（显示驱动/BDS）。
+
+### fd20：把字放大到巴掌大，并且每 2 秒重画
+- 复盘：fd19 **确实下发过**（`wait-and-boot.log` 22:52:12 `boot issued, exit 0`），
+  所以"停车版没生效"不成立。真正的问题是两件事叠在一起：
+  1) 字号太小——fd16 为塞下 70 行转储把 `PcdFrameBufferFontScale` 设成 1，
+     按 `Font.h` 的 `FONT_WIDTH=5 / FONT_HEIGHT=16`，字模只有 6×12 像素，手机相机必须对焦；
+  2) 屏幕随后被抹掉，来不及对上焦就黑了。
+- 改动：
+  - `shennong.dsc`：`PcdFrameBufferFontScale|1` → **`|8`**（字模 48×96，约 30 列 × 33 行）；
+  - `BootTraceDxe.c` 的 park 分支：`CpuDeadLoop()` → 每 2 秒（`gBS->Stall(2000000)`）
+    重画 `BT PARK fd20` / `BT app loaded, not started` / GOP 信息。被抹掉也会自己回来。
+- 构建 fd20：预检 0 failure，`Mu-shennong-fd20.img` sha256 前缀 `80f379b6`。
+- 真机：22:57:55 下发成功；随后 30 秒内设备**没有再出现在 fastboot**，
+  与"停车循环把机器按住了"一致（推断，待照片确认）。
