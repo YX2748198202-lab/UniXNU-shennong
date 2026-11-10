@@ -156,3 +156,45 @@ unixnu.toml                    549   6a4e345e9b9996fd
 ```
 
 仍未验证：一次都没 `fastboot boot`。
+
+---
+
+# 上机前预检：`scripts/verify-boot-package.py`
+
+一次 `fastboot boot` 失败就是黑屏加手动复位，所以把启动链第一秒会检查的东西全部提前离线查一遍：
+
+```sh
+python3 scripts/verify-boot-package.py \
+  --fd artifacts/UniXNU-shennong/firmware/SILICIUM_UEFI-shennong-DEBUG.fd \
+  --payload artifacts/UniXNU-shennong/payload/payload-fd3.img \
+  --image artifacts/UniXNU-shennong/boot/Mu-shennong-fd3.img
+```
+
+fd3 全部 17 项通过（实测输出）：
+
+```
+OK   board firmware          FD_BASE=0xa7100000 FD_SIZE=0x300000 dsc=Platforms/Xiaomi/shennongPkg/shennong.dsc
+OK   board payload           volume=SHENNONGESP size_mib=192 loader=payload
+OK   firmware size           3145728 bytes, board says 3145728
+OK   firmware volume length  0x300000 matches file size
+OK   compacted volume        FFS at 0x10000, 1246699 bytes
+OK   module list             106 modules incl. UniXNU, DarwinBoot, UniXNUDxe, UniXNURamDiskDxe, BdsDxe
+OK   payload label           SHENNONGESP (100663296 bytes)
+OK   payload files           kernel.macho 52068352B, kernel.macho.adt 10468B, DarwinBoot.efi 33792B, unixnu.toml 549B
+OK   kernel Mach-O           arm64, 52068352 bytes, sha256 fa362e24b3cb327b
+OK   trust cache             61356 bytes, digest accepted by board.toml
+OK   ADT parse               device-tree, 10468 bytes, memory-map slots: TrustCache
+OK   menu config             549 bytes, args match board.toml
+OK   image header            v0, page 4096, kernel 1277940, ramdisk 100663296
+OK   image BootShim          3145920 bytes decompressed, ARM64 header at 56
+OK   image payload pointer   BootShim 192 bytes, FD starts at 192 in the stream
+OK   image payload bytes     identical to the input payload at 0x139000
+OK   image length            101945344 bytes
+```
+
+它查的是**前后不一致**，不是「文件存在」：payload 改过但镜像没重打、trust cache 不在
+board 允许列表里、菜单指向不存在的内核、ADT 里没有 TrustCache 槽位却有 trust cache 文件、
+FD 大小与 `board.toml FD_SIZE` 不符、镜像尾部长度与头部声明不符——每一条都对应一次真实的黑屏。
+
+`scripts/test-verify-boot-package.py` 用迷你包（假内核 + 真 ADT + 真 FAT 卷 + 真 boot image）
+把这些失败模式逐个造出来，断言每一种都会 FAIL。

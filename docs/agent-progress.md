@@ -351,3 +351,12 @@ panic screen (0xa2f bytes at 0xfffffff0073f45c0; common funnel at 0xfffffff00727
 卷内（从镜像 `0x139000` 读回、sha256 逐个比对通过）：`DarwinBoot.efi` 33,792 / `kernel.macho`
 （panic screen 版）52,068,352 / `kernel.macho.adt` 10,468（带 trust cache 槽位）/
 `kernel.macho.trustcache` 61,356（与 board 允许值一致）/ `unixnu.toml` 549。
+
+## 26. 上机前预检脚本
+
+`scripts/verify-boot-package.py`（+ `scripts/test-verify-boot-package.py`）：17 项检查全部
+对 fd3 实测通过，覆盖 FD 大小/卷结构/模块清单（走 lzma-decode 解开的 106 个模块）、
+payload 文件与 trust cache 摘要（对 board.toml 允许列表）、ADT 解析与 memory-map 槽位、
+菜单参数、boot image 头常量、gzip 流、BootShim 的 ARM64 头、`_Payload` 指向的 FV、
+内嵌 payload 与输入逐字节一致、镜像总长。测试把这五类真实失败模式逐个造出来并断言会 FAIL：
+payload 改过镜像没重打、trust cache 不被 board 接受、菜单指向不存在的内核。
