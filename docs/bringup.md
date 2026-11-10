@@ -1142,3 +1142,42 @@ fd30 UXRD no-driver | fs 0 bio 129 cfg 800000000000000E | ram 55D 10796M 81A4000
 | `pay found end <addr>` | payload 其实在内存里（ABL 用了自己的地址） | fd32 直接按这个地址发布块设备 |
 | `pay none` + `UXRD none x0 …` | payload 没进内存 | fd32 把 `make-boot-image.py:38` 的 `RAMDISK_ADDR` 改到 DRAM 内（如 `0xA7600000`，避开 FD 窗口 0xA7100000+3MiB） |
 | `UXRD <a> <n>` + `fs ≥1` + `cfg 0` | 全通 | 关诊断，进阶段 C |
+
+### fd31 判读：链路全通（阶段 A 之后最重要的一次）
+屏幕原文：
+
+```
+== fd31 ==
+fd31 UXRD B1FFF000 6000000 fdt | fs 7 bio 130 cfg 0 | ram 61D 10796M 81A40000-B00000000 | pay found end AA6249000
+BT gop fb FC400000 res 1440x3200
+BT tick 15 mod 8
+```
+
+| 读数 | 结论（已验证） |
+|---|---|
+| `UXRD B1FFF000 6000000 fdt` | payload 卷发布成功：起点 **0xB1FFF000**、大小 **0x6000000 = 100,663,296 B**，与 `payload-fd25.img` 完全一致；来源是 **fdt**——ABL 自己往 `/chosen` 写了 `linux,initrd-start/end` |
+| `fs 7` | FAT 挂出 **7 个** SimpleFileSystem 卷（fd30 是 0） |
+| `cfg 0` | `\EFI\UniXNU\unixnu.toml` 读取成功（fd30 是 `0xE` NOT_FOUND） |
+| `bio 130` | 块设备 130 个（比 fd30 多 1，就是我们的 payload 卷） |
+| 中间的 `Failed to Find an Operating System!` | BDS 自己画的——说明 DXE 调度这次**完整跑到底**了，正是把面板交给定时器的结果 |
+
+至此「payload → 块设备 → FAT → 配置文件」全链路打通，且**全部由屏上数字可核**。
+
+### fd32：让应用在卷存在之后再启动，进阶段 C
+之前 fd23/fd25 菜单显示 `no boot entry found`，根因和 fd30 的 `no-driver` 是同一个：
+`StartApp()` 在 GOP 通知回调里直接调用，此时 payload 驱动还没被 dispatch，应用自然看不见卷。
+
+`BootTraceDxe.c` 改动：
+- 新增 `ScheduleAppStart (Seconds)` + `OnStartTimer()`：用一次性定时器把启动推迟 **3 秒**，
+  期间调度器继续 dispatch；到点才 `StartApp ()`
+- 两处 `StartApp ()` 调用点（入口里 GOP 已存在、GOP 通知回调）都改成 `ScheduleAppStart (3)`
+- `PcdUniXNUBootDiag` 置 **FALSE**，诊断面板这条路关闭
+
+payload 侧不需要改动：`payload-fd25.img` 里的 `unixnu.toml` 已是
+`timeout = 0` / `default = "xnu"`，条目 0 就是 `shennong XNU native UFS` → 启动即选中 xnu。
+
+构建：`FD ok`；内层 FV 里 `fd32`×1、`BT start in %u s`×1、`BT start now`×1；
+镜像 `Mu-shennong-fd32.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `06479c42`。
+
+预期：菜单出现 → 立刻自动选 `shennong XNU native UFS` → 内核开始加载 → 90 秒结论屏给出
+`fd32 start <status> exit <status>`。这就是阶段 C 的入口。
