@@ -93,6 +93,26 @@ SCTLR 位的差别（这就是两个供体"同一个窗口、不同行为"的可
 已按 pin `c740efb5` 原样 vendor 进来（只加了一段来源说明），并配了
 `scripts/test-entry-probe.py` 的契约测试（针对真实 `kernel.macho` 全绿）。
 
+## 3.9 方格站点表的跨内核校验（本轮完成）
+
+`scripts/patch-pre-mmu-squares.py` 的 42 个地址是给 2026-11-08 那个 payload 写的
+（入口 `0xAD8305C`）。本轮用**同版本**的旧供体内核做锚点反推校验
+（`scripts/verify-ladder-vs-kernel.py`）：
+
+```
+delta = 0xAD8305C - 0x73F605C = 0x398D000
+```
+
+结果（42 个站点）：
+
+| 区间 | 站点 | 校验结果 |
+|---|---|---|
+| `#00`–`#34` | 入口序言到 `movk` 拼 SCTLR 常量 | **全部落在旧内核的 `_start_first_cpu`/`common_start` 内**，指令类别与脚本注释一一对上（`0x73F605C msr OSLAR`、`0x73F6074 msr VBAR`、`0x73F60A4 msr SPSel,#1`、`0x73F60E4` 清池循环、`0x73F6128` 加 slide、`0x73F62A8 bl set_mmu_ttb`、`0x73F62B8 msr TTBR1`、`0x73F6314 ic iallu`、`0x73F6348 movk #0x3454`）|
+| `#35`–`#38` | PAC 密钥段 + SCTLR 前最后一条 `movk` | 旧内核（arm64，无 PAC）里超出 `common_start` → **只能在真正的 arm64e payload 上验证**，本轮无法判定 |
+| `#39`–`#41` | band-2 注入 cave | 对**旧 payload 内嵌内核**校验：`0x73F4560 ldr x1,[x20,#0x28]`、`0x73F4598 dsb sy`、`0x73F459C msr SCTLR_EL1, x0` —— 与注释完全对上，说明 cave 相对入口的偏移（-0x1AFC）两代构建一致 |
+
+脚本注释里 "band-2 white" 的说法已按实测改为 magenta（`0xffff00ff`）。
+
 ## 4. 判据矩阵（下一张照片怎么读）
 
 镜像 `Mu-sq3.img`（`scripts/patch-pre-mmu-squares.py`，39 个 60×60 方块）：

@@ -64,9 +64,14 @@ SITES = [
     0xFFFFFFF00AD833CC,   # msr apiakeylo_el1
     0xFFFFFFF00AD83404,   # isb after the key writes
     0xFFFFFFF00AD83414,   # movk x0 = SCTLR value (right before the branch)
-    # -- MMU switch and the white band painter --
-    0xFFFFFFF00AD81560,   # entry of the band-2 white painter
-    0xFFFFFFF00AD81598,   # white band-2 loop finished (args/FB writes were fine)
+    # -- MMU switch and the injected band painter --
+    # These three are inside the cave that scripts/patch-xnu-entry-probe.py
+    # injects (stage 2 fills the band 0xffff00ff, magenta, not white) and sit at
+    # a fixed -0x1AFC from the kernel entry; verified against the 2026-11-05
+    # payload kernel, where they decode to ldr x1,[x20,#0x28] / dsb sy /
+    # msr sctlr_el1.
+    0xFFFFFFF00AD81560,   # entry of the band-2 painter (ldr x1,[x20,#0x28])
+    0xFFFFFFF00AD81598,   # band-2 fill loop finished (dsb sy)
     0xFFFFFFF00AD8159C,   # msr sctlr_el1 -- the MMU switch itself
 ]
 
