@@ -508,7 +508,7 @@ trampoline 在装好 SCTLR 之后的代码是这样的：
 
 ### 关键发现 2：固件跑起来了，但死在 AOP cmd-db 的翻译错误上
 
-屏幕原文（照片 `device-runs/2026-11-10/uefi-exception-2016.jpg`）：
+屏幕原文（照片不再存档，判读结论按原样抄在这里）：
 
 ```
 ASSERT [ArmCpuDxe] CpuExceptionHandlerLib.c(438): ((BOOLEAN)(0==1))
@@ -535,7 +535,7 @@ trust_ui_vm / llcc_lpi…）。ramoops 因已被 UEFI_FD 三行并集覆盖而�
 
 ### 关键发现 3：fd4 时代码跑到 MMU 初始化，屏幕自己打出内存映射错误
 
-照片 `device-runs/2026-11-10/fd4-console-2026.jpg`：
+屏幕原文（照片不再存档）：
 
 ```
 Project Silicium for Xiaomi Xiaomi 14 Pro
@@ -558,7 +558,7 @@ MMU: 53 regions
 
 ### 关键发现 4：fd6 的新异常（0x088E2000，二级翻译故障）
 
-照片 `device-runs/2026-11-10/fd6-exception-2028.jpg`（20:28 拍摄）：
+屏幕原文（20:28 拍摄，照片不再存档）：
 
 ```
 ASSERT [ArmCpuDxe] CpuExceptionHandlerLib.c(438)
@@ -740,7 +740,7 @@ Data abort: Translation fault, second level
   与"停车循环把机器按住了"一致（推断，待照片确认）。
 
 ### fd20 真机照片：屏幕通了，应用却加载不了
-照片存 `artifacts/UniXNU-shennong/device-runs/2026-11-10/photos/fd20-{a,b,c}*.jpg`。
+（照片不再存档；判读结论见正文。）
 **这一版最大的收获是"能看了"**：字模 48×96，整屏可读，而且 `BT tick 14…23`
 说明画面持续了 20 秒以上——"黑屏、来不及拍"这个障碍已经清除。
 
@@ -817,7 +817,7 @@ machine=`0xAA64`、PE32+（magic `0x20B`）、subsystem=10（EFI_APPLICATION）�
 下最新的镜像发下去，日志写 `device-runs/2026-11-10/autoloop.log`。
 
 ### fd22 真机结论：`load 8000000000000003` = EFI_UNSUPPORTED
-照片（`photos/fd23-*` 待补，证据为此前 fd22 屏）：每秒重画的结论行稳定显示
+屏幕原文（照片不再存档）：每秒重画的结论行稳定显示
 
 ```
 == fd22 ==
@@ -850,8 +850,7 @@ section type=0x10 size=0x19E04   (EFI_SECTION_PE32, 载荷以 MZ 开头, e_lfane
 
 ## 阶段 A 达成：UniXNU 菜单出现在屏幕上（fd23，已验证）
 
-照片：`artifacts/UniXNU-shennong/device-runs/2026-11-10/photos/fd23-menu.jpg`、
-`fd23-start-aborted.jpg`。下发时间 23:22:48（`autoloop.log`），镜像 `Mu-shennong-fd23.img`
+证据为屏幕原文，见下方逐行抄录（照片不再存档）。下发时间 23:22:48（`autoloop.log`），镜像 `Mu-shennong-fd23.img`
 sha256 前缀 `a0b61d12`。
 
 屏幕内容（逐行抄录）：
@@ -939,3 +938,68 @@ fd25 三处改动：
 | `1 shennong XNU native UFS  xnu` | payload 链路通 | fd26：toml 改 `timeout = 5` 自动引导 xnu，进阶段 C |
 | `no boot entry found` + `vols 0` | RamDisk→DiskIo→FAT 没接上 | 修 `UniXNURamDiskDxe`：补 DiskIo/分区发现或自建 SimpleFileSystem |
 | `no boot entry found` + `vols > 0` | 路径/大小写不符 | 对照 `mdir -i payload-fd25.img ::/EFI/UniXNU` 与 `PcdUniXNUConfigPath` |
+
+### 照片只留里程碑；fd25 的判读（文字即证据）
+按要求，已存照片全部删除，`docs/` 与 `device-runs/` 下不再引用任何 `.jpg`；
+判读一律把屏幕内容原样抄进文档，只在阶段里程碑（阶段 A、阶段 C）各留一张。
+
+fd25 屏幕原文：
+
+```
+Apple 轮廓 + UniXNU 标志
+version 0.1.0
+built-in configuration
+ 1  Return to firmware   action   ← 高亮
+ 2  Restart              action
+ 3  Power off            action
+ 4  Tools                action
+Select an entry
+Up/Down: select    Enter: boot
+1-9: boot entry    Esc: stop timer
+no boot entry found                       ← 红字
+drivers 0 loaded / 0 failed    kits 0
+acpi 0
+```
+
+两件事：
+1. **菜单停住了**（`Select an entry` 取代了 `Booting … in 9 s`）——`timeout = -1` + `fallback_timeout = 3600` 生效，证明 fd25 的改动是对的。
+2. 仍然是 `built-in configuration` + `no boot entry found`：应用**一个卷都没看见**，payload 根本没被发布出来。
+
+### payload 为什么没被看见（源码已验证，非推测）
+1. `Driver/UniXNURamDiskDxe/UniXNURamDiskDxe.c:PublishInitrd()` 只从 FDT 的 `/chosen`
+   读 `linux,initrd-start` / `linux,initrd-end`，读不到就直接返回，**不发布任何 BlockIo**
+2. 我们镜像附带的 `Resources/DTBs/shennong.dtb`（1,238,463 B）里这两个属性出现次数
+   **都是 0**（`chosen` 只有节点名）
+3. 全树唯一会写这两个属性的函数 `AndroidBootImgLib.c:AndroidBootImgUpdateFdt()`
+   （第 570 / 580 行）**没有任何调用者**
+4. `BootShim/BootShim.S` 只有 192 B：拷 FD、清 cache、跳转，不碰 DTB
+
+即：这道题只有 ABL 会做，我们的通路里没人做 → 驱动空转 → 应用扫 `SimpleFileSystem`
+扫到 0 个卷 → `no boot entry found`。同时 `EnhancedFatDxe` / `PartitionDxe` / `DiskIoDxe`
+都在 FD 内，排除"缺驱动"。
+
+### fd26：不依赖 FDT 自己找 payload，并把结论钉在屏上
+- `UniXNURamDiskDxe.c`
+  - 新增 `PayloadAt()`：认 FAT32 启动扇区——`0x47` 处 11 字节卷标 `SHENNONGESP`、
+    `0x0B` 的 `BytsPerSec`、`0x20` 的 `TotSec32`，**容量由卷自己算**（196608 × 512 = 100,663,296）
+  - 新增 `ScanForPayload()`：先试 PCD `PcdUniXNURamDiskHint`（`0x01000000`，与
+    `make-boot-image.py:38` 的 `RAMDISK_ADDR` 一致），不中则在 hint±128 MiB 内按 4 KiB 步长扫卷标，
+    **只走 UEFI 内存映射里标注为 RAM 的区域**，不会摸到未映射地址
+  - FDT 通 → 记 `fdt`；hint 通 → `hint`；扫描通 → `scan`；都不通 → `UXRD none hint <v>`
+  - 结果经新协议 `gUniXNURamDiskInfoProtocolGuid`（`Include/Protocol/UniXNURamDiskInfo.h`）暴露
+- `BootTraceDxe.c`：新增 PCD `PcdUniXNUBootDiag`；为 TRUE 时**不启动应用**，改进入诊断停车屏，
+  每秒重画 `fd26 UXRD … | fs <n> cfg <st>`
+  - `fs <n>` = `SimpleFileSystem` 句柄数；`cfg 0` = 配置真的读到了
+- `.dsc`：`PcdUniXNUBuildTag "fd26"`、`PcdUniXNUBootDiag TRUE`、`PcdUniXNURamDiskHint 0x01000000`
+
+构建已验证：`FD ok: 3145728 bytes`；内层 FV 解压后含 `fd26` ×1、`UXRD` ×5、
+`SHENNONGESP` ×1、`fs %u cfg %lx` ×1；镜像 `Mu-shennong-fd26.img` 103,059,456 B，
+预检 `0 failure(s)`，sha256 前缀 `6699e610`。
+
+判读表：
+
+| 屏上 | 结论 | 下一步 |
+|---|---|---|
+| `UXRD <a> <n> scan` + `fs ≥1 cfg 0` | 卷与配置都到了应用手里 | fd27 关掉 diag → 菜单出现 `shennong XNU native UFS` → 阶段 C |
+| `UXRD ok` + `fs 0` | 有块设备、没有文件系统 → Partition/FAT 没绑上 | payload 加 MBR 分区表重建 |
+| `UXRD none hint …` | payload 没进内存 | 改走 FD 内嵌 RAW 卷方案（缩到 ≤48 MiB） |
