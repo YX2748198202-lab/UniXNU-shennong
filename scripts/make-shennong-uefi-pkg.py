@@ -201,23 +201,77 @@ def render_memory_map(regions, fd_base, fd_size, carve_outs=()):
 
     # Regions the device tree reserves that the xbl spans do not cover: they must still be
     # mapped, otherwise the first driver that touches them faults on a translation miss.
-    def covered_by_union(start, length):
-        cursor = start
+    def fragments_of(start, length):
+        """The parts of [start, start+length) that no existing row claims.
+
+        Vendor data overlaps itself: the device tree's aop_tme_uefi_merged_region
+        (0x81C80000+0x74000) runs into xbl's UEFI_Log window (0x81CE4000+0x10000).
+        ArmCpuDxe refuses overlapping descriptors ("Overlap!"), so carve-outs are
+        trimmed instead of added whole — xbl's own map wins.
+        """
+        pieces = [(start, length)]
         for row_base, row_size in sorted((row[1], row[2]) for row in rows):
-            if row_base <= cursor < row_base + row_size:
-                cursor = row_base + row_size
-                if cursor >= start + length:
-                    return True
-        return cursor >= start + length
+            row_end = row_base + row_size
+            remaining = []
+            for piece_start, piece_size in pieces:
+                piece_end = piece_start + piece_size
+                if row_end <= piece_start or row_base >= piece_end:
+                    remaining.append((piece_start, piece_size))
+                    continue
+                if piece_start < row_base:
+                    remaining.append((piece_start, row_base - piece_start))
+                if piece_end > row_end:
+                    remaining.append((row_end, piece_end - row_end))
+            pieces = remaining
+        return pieces
 
     added = 0
     for name, base, size in carve_outs:
-        if covered_by_union(base, size):
+        pieces = fragments_of(base, size)
+        if not pieces:
             continue
-        rows.append((name, base, size, DTB_CARVE_OUT, "dtb reserved-memory"))
-        added += 1
+        whole = len(pieces) == 1 and pieces[0] == (base, size)
+        for index, (piece_base, piece_size) in enumerate(pieces):
+            label = name if len(pieces) == 1 else f"{name}_{index}"
+            rows.append((label, piece_base, piece_size, DTB_CARVE_OUT,
+                         "dtb reserved-memory" + ("" if whole else " (trimmed around xbl rows)")))
+            added += 1
     if added:
         note(f"{added} device-tree reserved-memory region(s) added to the memory map")
+
+    # The vendor's own map overlaps itself (IMEM 0x14680000+0x2C000 vs IMEM_Cookie_Base
+    # 0x146AA000+0x16000). ArmCpuDxe refuses overlapping descriptors, so every row after
+    # the first that claims a byte already claimed is trimmed or dropped.
+    final_rows = []
+    claimed = []
+    for row in rows:
+        name, base, size = row[0], row[1], row[2]
+        pieces = [(base, size)]
+        for claimed_base, claimed_size in sorted(claimed):
+            claimed_end = claimed_base + claimed_size
+            remaining = []
+            for piece_base, piece_size in pieces:
+                piece_end = piece_base + piece_size
+                if claimed_end <= piece_base or claimed_base >= piece_end:
+                    remaining.append((piece_base, piece_size))
+                    continue
+                if piece_base < claimed_base:
+                    remaining.append((piece_base, claimed_base - piece_base))
+                if piece_end > claimed_end:
+                    remaining.append((claimed_end, piece_end - claimed_end))
+            pieces = remaining
+        if not pieces:
+            note(f"dropped {name} (0x{base:X}+0x{size:X}): fully claimed by an earlier region")
+            continue
+        if pieces == [(base, size)]:
+            final_rows.append(row)
+        else:
+            kept = sum(piece_size for _, piece_size in pieces)
+            note(f"trimmed {name} 0x{base:X}+0x{size:X} -> {kept:#x} bytes (overlapped an earlier region)")
+            for index, (piece_base, piece_size) in enumerate(pieces):
+                final_rows.append((f"{name}_{index}", piece_base, piece_size, row[3], row[4]))
+        claimed.append((base, size))
+    rows = final_rows
 
     width = max(len(row[0]) for row in rows) + 3
     body = ""

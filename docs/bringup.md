@@ -532,3 +532,26 @@ trust_ui_vm / llcc_lpi…）。ramoops 因已被 UEFI_FD 三行并集覆盖而�
 新固件：`SILICIUM_UEFI-shennong-DEBUG.fd` sha256 `646bcfc39f429b9241977c5351f120c88f285d4299f670a8471d8ecdc1fcfc8f`，
 新镜像：`boot/Mu-shennong-fd4.img` 2,523,136 B sha256 `7ba626e299ca0d52172c54b5e0d2271d720aee4fc9382a1f8f0c2922dea1e4ba`，
 预检 15 项全过（含 `image append_dtb` 1,238,463 B）。
+
+### 关键发现 3：fd4 时代码跑到 MMU 初始化，屏幕自己打出内存映射错误
+
+照片 `device-runs/2026-11-10/fd4-console-2026.jpg`：
+
+```
+Project Silicium for Xiaomi Xiaomi 14 Pro
+Firmware Version 4.0 Build at 12:20:27 Nov 10 2026
+MMU: 53 regions
+"aop_tme_uefi_merged_region" (0x81C80000) and "UEFI_Log" (0x81CE4000) Overlap!
+```
+
+两件事同时被证明：
+
+1. **显示链是通的**——这是第一次在屏幕上看到我们自己固件的文字（SimpleFbDxe + 控制台都正常），
+   `MemoryMapLib` 的 53 条描述也确实是新固件（fd3 时代是 36 条）。
+2. **厂商数据自己就重叠**：设备树 `aop_tme_uefi_merged_region` = 0x81C80000+0x74000
+   一直盖到 0x81CF4000，而 xbl 的 `UEFI_Log` 是 0x81CE4000+0x10000，两者重叠 64 KB。
+   ArmCpuDxe 拒绝重叠描述符，所以停在 MMU 初始化。
+
+修复：生成器不再「整块加入」，而是**按已占用区间裁剪**——DTB 保留区先被 xbl 行裁剪
+（aop_tme 变成 0x81C80000+0x64000），最后再对整个描述符表做一次去重（xbl 自己的
+`IMEM` 与 `IMEM_Cookie_Base` 也重叠 8 KB，`IMEM` 裁到 0x2A000）。自检：53 行、**零重叠**。
