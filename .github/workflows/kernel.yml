@@ -569,10 +569,7 @@ jobs:
           # The scan measures the board's own kernelcache, so the IPSW and its device class
           # come from board.toml [ipsw]; the iPadOS 17.7.11 pins used to be hard-coded here
           # and measured the wrong kernel once the OS profile moved to iPhone17,1 27.0.1.
-          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "
-import tomllib
-b = tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml', 'rb'))['ipsw']
-print(b['url'], b['device_class'])")"
+          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "import tomllib;b=tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['ipsw'];print(b['url'],b['device_class'])")"
           IP="out/ipsw/$(basename "$IPSW_URL")"
           echo "scan IPSW: $IP (device class $DEVICE_CLASS)"
           mkdir -p out/ipsw
@@ -675,10 +672,7 @@ print(b['url'], b['device_class'])")"
           # verifies both modules against their pinned digests and writes the bundle.
           # Same IPSW as board.toml [ipsw]: the static trust cache that lets AMFI accept
           # launchd has to come from the same build as the kernel being packaged.
-          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "
-import tomllib
-b = tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml', 'rb'))['ipsw']
-print(b['url'], b['device_class'])")"
+          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "import tomllib;b=tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['ipsw'];print(b['url'],b['device_class'])")"
           IPSW_NAME=$(basename "$IPSW_URL")
           IP="out/ipsw/$IPSW_NAME"
           [ -f "$IP" ] || curl -sL --max-time 3600 -o "$IP" "$IPSW_URL" \
