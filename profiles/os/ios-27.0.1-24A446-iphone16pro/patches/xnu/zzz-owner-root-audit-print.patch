@@ -1,0 +1,20 @@
+--- a/bsd/kern/bsd_init.c
++++ b/bsd/kern/bsd_init.c
+@@ -972,6 +972,17 @@
+ 			}
+ #endif
+ 			if (autherr && !owner_authorized) {
++				/* Bring-up evidence: the panic line cannot say which conjunct of
++				 * readonly && device_vnode && verified_block_root_authorized failed. */
++				{
++					extern volatile int native_owner_root_trust_enabled;
++					kprintf("owner-root: autherr=%d owner=%d readonly=%d mount_dev=%d "
++					        "selected_dev=%d trust=%d\n",
++					        autherr, owner_authorized, native_owner_root_readonly,
++					        (int)native_owner_root_mount_device,
++					        (int)native_owner_root_selected_device,
++					        native_owner_root_trust_enabled);
++				}
+ 				panic("rootvp not authenticated after mounting");
+ 			}
+ #if defined(XNU_OWNER_ROOT_TRUST) && XNU_OWNER_ROOT_TRUST
