@@ -668,10 +668,9 @@ jobs:
         run: |
           # The loader accepts the trust-cache bundle format (a count/offset header followed
           # by the raw modules), not an IPSW IM4P: packing the IM4P makes the firmware refuse
-          # the payload with "Compromised Data". scripts/build-original-system-trust.py
-          # verifies both modules against their pinned digests and writes the bundle.
-          # Same IPSW as board.toml [ipsw]: the static trust cache that lets AMFI accept
-          # launchd has to come from the same build as the kernel being packaged.
+          # the payload with "Compromised Data". The static trust cache that lets AMFI accept
+          # launchd has to come from the same build as the kernel being packaged, so the
+          # bundle is derived from board.toml [ipsw] below.
           read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "import tomllib;b=tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['ipsw'];print(b['url'],b['device_class'])")"
           IPSW_NAME=$(basename "$IPSW_URL")
           IP="out/ipsw/$IPSW_NAME"
@@ -680,48 +679,27 @@ jobs:
           mkdir -p refer .cache/firmware/target-volumes
           ln -f "$(cd "$(dirname "$IP")" && pwd)/$IPSW_NAME" "refer/$IPSW_NAME" 2>/dev/null \
             || cp "$IP" "refer/$IPSW_NAME"
-          IPSW_NAME="$IPSW_NAME" DEVICE_CLASS="$DEVICE_CLASS" python3 - <<'PY'
-          import plistlib, zipfile
-          from pathlib import Path
-
-          def der(data, at):
-              tag, size = data[at:at + 2]
-              at += 2
-              if size & 128:
-                  count = size & 127
-                  size = int.from_bytes(data[at:at + count], 'big')
-                  at += count
-              return tag, data[at:at + size], at + size
-
-          import os
-          name, devclass = os.environ['IPSW_NAME'], os.environ['DEVICE_CLASS']
-          with zipfile.ZipFile('refer/' + name) as archive:
-              manifest = plistlib.loads(archive.read('BuildManifest.plist'))
-              identity = [i for i in manifest['BuildIdentities']
-                          if i['Info']['DeviceClass'] == devclass][0]
-              raw = archive.read(identity['Manifest']['StaticTrustCache']['Info']['Path'])
-          tag, sequence, end = der(raw, 0)
-          fields, cursor = [], 0
-          while cursor < len(sequence):
-              kind, data, cursor = der(sequence, cursor)
-              fields.append((kind, data))
-          if fields[0][1] != b'IM4P':
-              raise SystemExit('static trust cache is not an IM4P')
-          Path('.cache/firmware/target-volumes/static-trustcache.bin').write_bytes(fields[3][1])
-          print('static module:', len(fields[3][1]), 'bytes')
-          PY
-          if ! python3 scripts/build-original-system-trust.py > /tmp/trust-bundle.out 2>&1; then
-            tail -20 /tmp/trust-bundle.out | sed 's/^/::error::/'
-            exit 1
-          fi
-          tail -2 /tmp/trust-bundle.out
-          ls -l build/original-static-system-trust/*.bundle | sed 's/^/trust bundle: /'
+          # device/scripts/build-target-trust-bundle.py owns this now: it derives the IPSW,
+          # device class and both modules from board.toml, verifies each module against the
+          # sha384 recorded in BuildManifest.plist, and writes
+          # build/target-static-system-trust/{static-system.bundle,inputs.json}.
+          # unixnu/scripts/build-original-system-trust.py pinned
+          # refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw + j120ap/21H461 and died with
+          # FileNotFoundError once the board moved to iPhone17,1 24A446 (run 42878351134);
+          # a 17.7.11 trust cache cannot cover the iOS 27 launchd either.
+          python3 "$GITHUB_WORKSPACE/device/scripts/build-target-trust-bundle.py" \
+            --board "$GITHUB_WORKSPACE/device/board.toml" --refer refer \
+            --out build/target-static-system-trust \
+            | sed 's/^/trust bundle: /'
+          ls -l build/target-static-system-trust/*.bundle | sed 's/^/trust bundle file: /'
+          cat build/target-static-system-trust/inputs.json
+          ls -l build/target-static-system-trust/ | sed 's/^/trust bundle dir: /'
       - name: Build payload
         working-directory: unixnu
         run: |
           # The static trust cache of this IPSW is what lets AMFI accept launchd; the
           # payload step packs it and the ADT gains its TrustCache memory-map entry.
-          TC=$(ls -t build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          TC=$(ls -t build/target-static-system-trust/*.bundle build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
           echo "trust cache: ${TC:-none}"
           TC_ARG=""; [ -n "$TC" ] && TC_ARG="--trust-cache $(cd "$(dirname "$TC")" && pwd)/$(basename "$TC")"
           # kernel_symbols() parses llvm-nm output assuming every line with three fields
@@ -943,7 +921,7 @@ jobs:
           ADT=/tmp/board-adt.bin
           ROOT_UUID=$(python3 -c "import tomllib;print(tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml','rb'))['payload']['adt'].get('root_match_volume_uuid',''))")
           echo "adt root-match volume uuid: ${ROOT_UUID:-none}"
-          TC=$(ls -t build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
+          TC=$(ls -t build/target-static-system-trust/*.bundle build/original-static-system-trust/*.bundle out/ipsw/*/*.trustcache 2>/dev/null | head -1)
           echo "adt trust cache: ${TC:-none}"
           # DarwinBoot refuses to boot when kernel.macho.vroot exists but the ADT has no
           # RootPolicies slot (DarwinBoot.c: PolicyOffset == MAX_UINTN -> EFI_COMPROMISED_DATA).

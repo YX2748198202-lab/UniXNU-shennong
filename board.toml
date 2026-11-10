@@ -83,7 +83,11 @@
 ["payload"]
 # The loader only accepts the trust bundle format (raw modules, not an IM4P), so this
 # board pins the bundle built from its own IPSW: static + System trust modules, unchanged.
-"trust_cache_sha256" = ["7416ca4f8377146626bb284e2133c76bee6cb4e3ee0af5d648b186235a7323a7"]
+# iOS 27.0.1 24A446 / d93ap, built by scripts/build-target-trust-bundle.py:
+#   static 91,728 B (3,821 entries) sha256 28838d2c…, system 3,144 B (130 entries) sha256 d9db3ecc…
+#   bundle 94,884 B sha256 a2a2566f…  (was 7416ca4f…, the iPadOS 17.7.11 / j120ap bundle,
+#   which cannot cover the iOS 27 launchd this payload releases)
+"trust_cache_sha256" = ["a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c"]
 "volume" = "SHENNONGESP"
 "size_mib" = 192
 # uefi-sheng ships no UniXNULoaderProtocol implementation. The XNU loader must travel in the
