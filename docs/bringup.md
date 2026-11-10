@@ -555,3 +555,113 @@ MMU: 53 regions
 修复：生成器不再「整块加入」，而是**按已占用区间裁剪**——DTB 保留区先被 xbl 行裁剪
 （aop_tme 变成 0x81C80000+0x64000），最后再对整个描述符表做一次去重（xbl 自己的
 `IMEM` 与 `IMEM_Cookie_Base` 也重叠 8 KB，`IMEM` 裁到 0x2A000）。自检：53 行、**零重叠**。
+
+### 关键发现 4：fd6 的新异常（0x088E2000，二级翻译故障）
+
+照片 `device-runs/2026-11-10/fd6-exception-2028.jpg`（20:28 拍摄）：
+
+```
+ASSERT [ArmCpuDxe] CpuExceptionHandlerLib.c(438)
+ELR 0xCF8B6E60   LR 0xCF8B2568   SP 0xA764BAB0
+ESR 0x96000006   FAR 0x088E2000
+ESR : EC 0x25  IL 0x1  ISS 0x00000006
+Data abort: Translation fault, second level
+```
+
+结论（已核实）：
+
+1. `FAR = 0x088E2000` 在我们的 53 条描述符里**没有任何一条覆盖**（用生成后的
+   `MemoryMapLib.c` 逐条比对得出），所以这是又一处未映射地址。
+2. 但**没有任何模块的机器码里有指向 0x088E2000 页的 `adrp`**（新写的
+   `scripts/find-mmio-reference.py` 扫完 FD 解压后的 106 个 PE 得到的结论），
+   说明它不是编译进代码的寄存器基址，而是**算出来的指针**——继续猜基址没有意义。
+3. `X20 = X23 = 0xCF8B0000` 与 `ELR = 0xCF8B6E60` 说明故障模块的加载基址是
+   0xCF8B0000、故障点在该模块 +0x6E60 处；`ArmCpuDxe` 只是异常向量表的拥有者。
+
+因此下一步不再改地址表，而是**把"哪个模块在跑"变成屏幕上的文字**：
+新增 `UniXNUPkg/Driver/BootTraceDxe`，它做两件事——
+
+- 每加载一个镜像就打印 `BT img <base> +<size> <文件名>`，崩溃前最后一行即肇事模块；
+- 启动时直接回答几个"故障地址是否已映射"：`BT probe 0x088E2000 mapped/UNMAPPED`。
+
+## 2026-11-10 21:00–21:20：从"USB 组崩溃"到"没有谁去启动菜单"（fd10–fd14）
+
+这一段把 UEFI 阶段从"驱动崩溃"推进到"驱动全部装完、BDS 空转"，并定位了
+真正卡住阶段 A 的那一环。
+
+### fd10：把转储压成一行，暴露出第一个真凶
+- 改动：`SiliciumPkg.dsc.inc` 里 `PcdDebugPrintErrorLevel` 从 `0x8007EE0F` 改为
+  `0x0007EE0F`（清掉 bit31 == `DEBUG_ERROR`）。控制台只有约 40 行，原来
+  `CpuExceptionHandlerLib` 的 60 行转储会把之前的 `Loading driver ...` 全部冲掉。
+- 结果：屏幕只剩一行 `Synchronous Exception at 0x00000000CF8A6E60`，上面完整的
+  装载记录第一次被保住。
+- 归属判定：崩溃前最后一条装载记录是
+  `Loading driver at 0x000CF89C000 EntryPoint=0x000CF89D000 UsbConfigDxe.efi`，
+  `0xCF8A6E60` 落在 `[0xCF89C000, 0xCF89C000+0x16000)` 内，偏移 `+0xAE60`；
+  且它紧跟在 `UsbConfigLib_pmic_npa_create_sync_client` 的几条消息后面。
+
+### fd11：整组移除 USB 驱动后，装载一路走到底
+- 改动：`Platforms/Xiaomi/shennongPkg/Include/APRIORI.inc` / `DXE.inc` 里注释掉
+  11 个 USB 模块（`UsbPwrCtrlDxe`、`UsbfnDwc3Dxe`、`XhciPciEmulationDxe`、
+  `XhciDxe`、`UsbBusDxe`、`UsbKbDxe`、`UsbMassStorageDxe`、`UsbMsdDxe`、
+  `UsbDeviceDxe`、`UsbConfigDxe`、`UsbInitDxe`），模块数 107 → 96。
+- 结果：`UsbConfigDxe` 那处崩溃不再出现，装载穿过 `ChargerExDxe`、`ButtonsDxe`、
+  `TsensDxe`、`SimpleFbDxe`、`LimitsDxe`、`GpioDxe`、`UCDxe`、`RngDxe`、
+  `SimpleTextInOutSerial`、`ConPlatformDxe`、`ConSplitterDxe` —— **BDS 已经在跑**。
+- 备注：USB 对这条启动路径不是必需品（payload 来自 appended image，由
+  `UniXNURamDiskDxe` 提供），所以移除它没有副作用。
+
+### fd12：`gRT->SetVariable` 在本机会 fault
+- `BootTraceDxe` 加了 NVRAM 探针后，屏幕上**没有** `BT nvram set` 那一行，
+  紧随 `BT hook` 的就是 `BT SYNC … esr 0000000020000000 far …0 ec 0 iss 0`。
+- 结论（推断，但证据链完整）：这台机器的变量写入路径不可用，而
+  `UniXNUDxe` 当年的 Depex 是
+  `gEfiVariableArchProtocolGuid AND gEfiVariableWriteArchProtocolGuid`，
+  变量服务不可用 ⇒ 驱动永远不被 dispatch ⇒ 没有任何启动项 ⇒ BDS 空转。
+
+### fd13：ReadyToBoot 是错的钩子（源码已证）
+- 设计：`UniXNUDxe` 的 Depex 改 `TRUE`，在 **ReadyToBoot** 事件里
+  `LoadImage` + `StartImage` 起 app。
+- 结果：屏幕与 fd11 完全一样，没有 `UX entry`、没有 `UX startimage`。
+- 源码核对：本树里 `EfiSignalEventReadyToBoot()` 全树只有一处调用——
+  `Mu_Basecore/MdeModulePkg/Library/UefiBootManagerLib/BmLoadOption.c:1490`，
+  而且被 `LoadOption->OptionType == LoadOptionTypePlatformRecovery` 包着。
+  也就是说 **BootOrder 为空时 ReadyToBoot 根本不会触发**，这个钩子在 shennong
+  上从设计上就不可能命中。
+
+### fd14：改成"GOP 出现就启动应用"
+- `UniXNUDxe` 入口先 `LocateProtocol(gEfiGraphicsOutputProtocolGuid)`：
+  - 已有 GOP → 直接 `LoadImage` + `StartImage`；
+  - 没有 → `CreateEvent(EVT_NOTIFY_SIGNAL)` + `RegisterProtocolNotify`，等
+    `SimpleFbDxe` 装上 GOP 时在同一轮 dispatch 里启动。
+- 注意（已修正的一个坑）：`CreateEventEx(..., &gEfiGraphicsOutputProtocolGuid, ...)`
+  是**事件组**语义，对协议 GUID 永远不触发；协议通知必须用 `RegisterProtocolNotify`。
+- 启动前把 `LoadedImage->LoadOptions` 显式设成 `L"unixnu:firmware"`，让应用知道
+  自己是被固件拉起的，和当年 Boot#### 的 optional data 行为一致。
+- 全过程直写屏状态：`UX entry` → `UX found app` → `UX gop hook <st>` →
+  `UX image <st>` → `UX startimage <st> exit <code>`。
+
+### fd15：应用终于被拉起来了，然后它自己踩空
+- 改动：启动逻辑从 `UniXNUDxe` 整个搬进 `BootTraceDxe`（后者在 fd10–fd14 五次启动里
+  每次都有 `BT START`，前者一次都没有）；删掉 VBAR 钩子；恢复
+  `PcdDebugPrintErrorLevel = 0x8007EE0F` 让 DxeCore 的错误重新可见。
+- 结果：屏幕第一次给出**完整原生异常转储**，内容与之前的"静默停住"完全不同：
+  - `Synchronous Exception at 0x00000000D208B1E4`
+  - `ESR 0x96000046` → EC `0x25`（同 EL 数据访问中止），ISS `0x46`：WnR=1、DFSC=0x06
+    ⇒ **对 0x0880402C 的写操作触发二级翻译错误**
+  - `FAR 0x0880402C`，`SP 0x00000000A764B910`
+  - 结尾 `ASSERT [ArmCpuDxe] CpuExceptionHandlerLib.c(438)`
+- 归属判断（**推断**）：`0xD208B1E4` 不在任何已知驱动基址区
+  （`0xCF9xxxxx/0xCFAxxxxx/0xCFBxxxxx`），而 LoadImage 会把应用装到高地址，
+  因此这一条很可能就是 `UniXNU.efi` 自身；即 fd15 的 "FV 探针 → LoadImage →
+  GOP 通知 → StartImage" 链路真的跑通了。
+
+### 「屏幕只有 40 行」这个天花板是可以拆的（源码已证）
+- `FrameBufferSerialPortLib` 的行数 = `FB_HEIGHT / ((FONT_HEIGHT-4) * FontScale)`，
+  `FontScale` 取自 `gSiliciumPkgTokenSpaceGuid.PcdFrameBufferFontScale`，`0` 表示
+  自动（`shorterDim / 426`）。
+- `shengPkg/sheng.dsc:82` 显式设成 `3`；**shennongPkg 之前没有设**，所以是自动值
+  （约 3，一行字模放大三倍 ⇒ 约 40 行）。
+- 结论：改一个 PCD 就能把可见行数放大三倍，转储与我们自己的日志首次可以同屏——
+  这比继续盲改代码有价值得多。fd16 已按 `PcdFrameBufferFontScale|1` +
+  `PcdFrameBufferDelay|30000` 构建下发。
