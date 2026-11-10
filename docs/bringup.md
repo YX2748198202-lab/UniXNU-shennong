@@ -1038,3 +1038,12 @@ DTB 校验失败时 `return EFI_SUCCESS`。而 fd26 把 hint/扫描兜底写在�
 构建：`FD ok`；镜像 `Mu-shennong-fd27.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `3ed17e71`；
 **23:45:17 由 autoloop 自动下发**（fd26 诊断屏 90 秒后自行冷复位，autoloop 接上了 fd27），
 这次不需要人按键。
+
+### fd28：诊断屏从 90 秒延到 10 分钟
+fd26/fd27 的诊断屏只留 90 秒，人还没拿起手机就被冷复位吃掉了。
+`HoldVerdict()` 拆成 `HoldVerdictFor (Seconds)`：
+- 诊断屏（`PcdUniXNUBootDiag` 为 TRUE 或加载失败）→ **600 秒**
+- 应用启动后返回的结论屏 → 仍是 90 秒（那条路是无人值守循环，短一点更好）
+
+镜像 `Mu-shennong-fd28.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `8f837fa3`。
+`device-runs/2026-11-10/.autoloop-last` 已清空，设备下次出现在 fastboot 时会重发一版。
