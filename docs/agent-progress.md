@@ -429,3 +429,38 @@ step 20  Replace the schema-2 ADT with the board ADT  skipped
 
 组装脚本有一次卡死 10 分钟，原因是 `mcopy -o -i <不存在的镜像> ...` 在**有终端**时进入 mtools 的交互式
 驱动器参数询问。以后所有 `mcopy/mdir/mattrib` 一律加 `</dev/null` 并配 `timeout`；脚本里已经这么改。
+
+### 27.5 trust bundle 改成从 board 自己的 IPSW 生成（本次的第二个真修复）
+
+`board.toml:83` 的注释本来就写着 “this board pins the bundle built from its own IPSW”，
+但真正干活的 `unixnu/scripts/build-original-system-trust.py` 把 **iPadOS 17.7.11 / j120ap / 21H461**
+硬编码进 `refer/` 路径和两条 sha256 白名单里。board 换成 iPhone17,1 之后这个步骤必然抛
+`FileNotFoundError`，而且就算那条 IPSW 在场，产出的也是 **17.7.11 的信任缓存**——它盖不住 iOS 27 的
+launchd，属于“能跑但错的产物”。
+
+新增 `scripts/build-target-trust-bundle.py`（本仓库，不经框架），一切从 `board.toml` 派生：
+
+| 输入 | 来源 |
+|---|---|
+| IPSW 文件名 | `[ipsw] url` 的 basename，在 `refer/` 下 |
+| DeviceClass | `[ipsw] device_class` = `d93ap` |
+| static 模块 | `StaticTrustCache` |
+| system 模块 | `Cryptex1,SystemTrustCache` |
+
+它只考虑**同时带这两个键**的 BuildIdentity：iPhone17,1 24A446 的第 3 个 identity 是
+`Recovery Customer Install`，它的 StaticTrustCache 是恢复分区的
+`043-68523-763.dmg.aea.trustcache` 且根本没有 `Cryptex1,SystemTrustCache`，混进来就会张冠李戴
+（第一次跑就是这个报错，已按此修正）。每个模块都按 BuildManifest 里的 sha384 逐字节校验后才打包。
+
+实测结果（本地用真实 IPSW 跑，两次独立计算一致）：
+
+```
+static: 3821 entries, 91728 B, sha256 28838d2c5f1c37c11ba4e58cad498ba9f65fd69a4cd62f42818019440dd6ef36
+system: 130 entries,  3144 B, sha256 d9db3ecc5ad4a3fc11a440e0845acd0919ebadc0fff26b38542f2dba02d64b44
+bundle: 94884 B sha256 a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c
+```
+
+`board.toml [payload] trust_cache_sha256` 已从 `7416ca4f…`（iPadOS 时期的包，61,356 B）改成
+`a2a2566f…`；workflow 的 `Build the trust bundle` 改为调用本仓库脚本，
+`Build payload` 与 ADT 步骤的取值 glob 增加 `build/target-static-system-trust/`。
+`scripts/test-verify-boot-package.py` 复跑：`all checks passed`。
