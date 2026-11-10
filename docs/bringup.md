@@ -1336,3 +1336,35 @@ fd35 基线 args（payload 内已回读确认）：
 -v serial=3 debug=0x14e cpus=1 kt_fixed_zones=120 -no_slto_panic armcpu-diagnostics=1 boot-progress=2 sheng-pmgr=2 sheng-log=1
 ```
 镜像 `Mu-shennong-fd35.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `6c652f07`。
+
+### fd35 判读：iOS 27 供体的阶段 C 复验通过（里程碑）
+
+屏幕原文：
+```
+Failed to mount root device @IOKitBSDInit.cpp:984
+frames ffffffff007a1fa18 ffffffff007928318 ffffffff0076b4774 ffffffff0079993dc ffffffff0073f64a4
+pages=0x0000000000000bb1b  free=0x0000000000000b3a0
+```
+
+**已验证结论**：
+1. 这正是 11-04/11-05 在 iPadOS 供体上用于验收阶段 C 的那一行，
+   现在出现在 **iOS 27（24A446，arm64e，XNU 12377.121.6）供体**上
+   → `docs/handoff/BRINGUP-STATUS.md` 里那句「现在没有证据说明 iOS 27 的 XNU 能走到阶段 C」
+   **作废**，iOS 27 侧阶段 C 成立
+2. 只要去掉 `native-ufs-probe=3` 与 `native-source-storage=1`，内核就走到 `vfs_mountroot`
+   → fd34 的 `@NativeUFs.cpp:491` 停死**只属于 UFS adopt 路径**，不是内核整体回归
+3. 与 11-04 记录逐项对比：
+
+   | 项 | 11-04（iPadOS） | fd35（iOS 27） |
+   |---|---|---|
+   | 停点 | `IOKitBSDInit.cpp:984` | `IOKitBSDInit.cpp:984`（相同） |
+   | frames[0] | `fffffff007a11af0` | `fffffff007a1fa18`（新构建，地址偏移） |
+   | frames[4] | `fffffff0073f24a4` | `fffffff0073f64a4`（同段） |
+   | pages | `0xbb6d` | `0xbb1b`（更少，正常差异） |
+   | free | `0xb3f2` | `0xb3a0` |
+
+里程碑照片：`artifacts/UniXNU-shennong/device-runs/2026-11-11/milestones/stageC-ios27-vfs_mountroot.jpg`
+镜像 `Mu-shennong-fd35.img` sha256 前缀 `6c652f07`，预检 `0 failure(s)`。
+
+**下一步（fd36）**：回到 UFS 路径，用 11-05 走通过的 `native-ufs-probe=12 native-ufs-diagnostics=1`
+（不带 `native-source-storage=1`），看读路径能否在这次的内核上复现 `NATIVE_UFS media report`。

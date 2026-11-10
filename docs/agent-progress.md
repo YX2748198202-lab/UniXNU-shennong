@@ -1,6 +1,6 @@
 # Agent 进度记录（机器可读的接续入口）
 
-最后更新：2026-11-11 00:50 CST
+最后更新：2026-11-11 01:05 CST
 本轮执行者：DSH Agent（接管轮）
 
 > **阶段 C 已达成（2026-11-11 00:45，fd34）**
@@ -10,7 +10,11 @@
 > `NATIVE_UFS adopt: list replaced` + `@NativeUFs.cpp:491` + `pages=0xbb1e free=0xb7a2`。
 > 证据照片只留两张：`artifacts/UniXNU-shennong/device-runs/2026-11-11/milestones/`。
 > 逐条判读见 `docs/bringup.md` 的「阶段 C 达成」一节。
-> 下一段目标：`NATIVE_UFS adopt` 之后的停点 → 根卷挂载 → `bsd_init` → `launchd`。
+> **iOS 27 阶段 C 复验通过（fd35，2026-11-11 01:03）**：去掉 UFS 探针与 source-storage 后，
+> 屏显 `Failed to mount root device @IOKitBSDInit.cpp:984`，与 11-04 iPadOS 验收同一行。
+> 由此确认 fd34 的 `@NativeUFs.cpp:491` 停死**只属于 UFS adopt 路径**。
+> 里程碑照片 `device-runs/2026-11-11/milestones/stageC-ios27-vfs_mountroot.jpg`。
+> 下一段目标：fd36 用 `native-ufs-probe=12 native-ufs-diagnostics=1` 复现 UFS 读路径 → 根卷 → `bsd_init` → `launchd`。
 
 ## 1. 仓库与工作区状态（实测）
 
