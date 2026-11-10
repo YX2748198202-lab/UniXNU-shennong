@@ -1,7 +1,16 @@
 # Agent 进度记录（机器可读的接续入口）
 
-最后更新：2026-11-10 17:10 CST
+最后更新：2026-11-11 00:50 CST
 本轮执行者：DSH Agent（接管轮）
+
+> **阶段 C 已达成（2026-11-11 00:45，fd34）**
+> arm64e 内核在 EL1 真正执行并打印我们补丁自己的诊断：`args pa 0xBC1D0000`、
+> `video base 0xFC400000 1440x3200 32bpp`、`entry words 1400001E`（ARM64 `b`）、
+> `CurrentEL 1`、`SCTLR_EL1 0x30D0198D`、`PARange 2`、`SOFTWARE_LOCK`、
+> `NATIVE_UFS adopt: list replaced` + `@NativeUFs.cpp:491` + `pages=0xbb1e free=0xb7a2`。
+> 证据照片只留两张：`artifacts/UniXNU-shennong/device-runs/2026-11-11/milestones/`。
+> 逐条判读见 `docs/bringup.md` 的「阶段 C 达成」一节。
+> 下一段目标：`NATIVE_UFS adopt` 之后的停点 → 根卷挂载 → `bsd_init` → `launchd`。
 
 ## 1. 仓库与工作区状态（实测）
 
