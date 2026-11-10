@@ -373,3 +373,59 @@ payload 文件与 trust cache 摘要（对 board.toml 允许列表）、ADT 解�
 菜单参数、boot image 头常量、gzip 流、BootShim 的 ARM64 头、`_Payload` 指向的 FV、
 内嵌 payload 与输入逐字节一致、镜像总长。测试把这五类真实失败模式逐个造出来并断言会 FAIL：
 payload 改过镜像没重打、trust cache 不被 board 接受、菜单指向不存在的内核。
+
+## 27. 2026-11-11 凌晨：iOS 27 内核首次编译成功，fd44 上机
+
+### 27.1 CI run 42878351134（sha `d1e65d3`）：内核编译通过，卡在 trust bundle
+
+`Build kernel` 这一轮**成功了**，产物 `kernel/kernel.macho` 94,552,064 B，sha256 `feb5deb3b22d4478…`。
+里面的两条版本串说明这确实是我们要的那个混合体：
+
+```
+@(#)VERSION: Darwin Kernel Version 27.0.0: ... root:xnu-13432.2.10~2/RELEASE_ARM64_T8140   ← iOS 27.0.1 原版 prelink 部分
+@(#)VERSION: Darwin Kernel Version 25.5.0: Tue Nov 10 18:57:18 UTC 2026; runner:ios-obj/DEVELOPMENT_ARM64_BCM2837  ← 我们自己编的 xnu-12377
+```
+
+失败点前移到下一步：
+
+```
+step 18  Build the trust bundle   failure
+File ".../unixnu/scripts/build-original-system-trust.py", line 29, in <module>
+    with zipfile.ZipFile(ROOT / 'refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw') as archive:
+FileNotFoundError: ... refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+step 19  Build payload                          skipped
+step 20  Replace the schema-2 ADT with the board ADT  skipped
+```
+
+根因（已验证，源码行号）：这个脚本把 **iPadOS 17.7.11 / j120ap** 的
+`Cryptex1,SystemTrustCache` 硬编码在 `ROOT / 'refer/...ipsw'`，并对两个模块做 sha256 白名单校验
+（`da88460e…` = 目标卷 static-trustcache、`d121ba89…` = j120ap 的 system trustcache）。board 切到
+`iPhone17,1_27.0.1_24A446` 之后，CI 只下 iOS 27 的 IPSW，这份 iPadOS IPSW 不在机器上，于是直接抛
+`FileNotFoundError`。要修就得把 IPSW 路径/DeviceClass/两条期望摘要一起从 board 派生 —— 属于明天的工作，
+今晚的启动路径不依赖它（见 27.3 的 trust cache 校验）。
+
+### 27.2 纠正一个我自己立的错误判据
+
+之前 chain2 用“`kernel.macho` 里出现 `c3a4d926`”当作“这是 iOS 27 内核”的闸门，**这个判据是错的**：
+`C3A4D926-…` 是 `board.toml:113` 的 `root_match_volume_uuid`，会被写进 **ADT**，不是内核二进制里的字符串。
+实测两份内核的文本计数都是 0。正确判据是：内核里 `Darwin Kernel Version 27.0.0 … xnu-13432.2.10`
+（Apple 原版 prelink）与 `runner:ios-obj/DEVELOPMENT_ARM64_BCM2837`（自编部分）同时存在。
+
+### 27.3 fd44 组装（本地，不依赖 CI payload 步骤）
+
+| 项 | 值 | 校验 |
+|---|---|---|
+| 内核 | CI `kernel.macho` 94,552,064 B | sha256 `feb5deb3b22d4478…` |
+| trust cache | 61,356 B | sha256 `7416ca4f…` **与 board.toml:86 允许值逐字节相同** |
+| ADT | `boot/adt-ios27.dtb` 10,468 B | payload 无 `.vroot` → 不带 RootPolicies |
+| 菜单 | 补 `[[driver]] path = "Payloads/DarwinBoot.efi"` | 并把 `args` 对齐 board.toml:104 |
+| boot image | `boot/Mu-shennong-fd44.img` 103,059,456 B | sha256 `6bc62eb7e3e916b2…` |
+| 预检 | `scripts/verify-boot-package.py` | **0 failure(s)** |
+
+`03:53:12` 下发：`Sending 'boot.img' (100644 KB) OKAY / Booting OKAY`，设备离开 fastboot（`fastboot devices` 为空、
+`lsusb` 无匹配），即已进入我们自己的镜像。
+
+### 27.4 坑：mtools 在终端里会静默等输入
+
+组装脚本有一次卡死 10 分钟，原因是 `mcopy -o -i <不存在的镜像> ...` 在**有终端**时进入 mtools 的交互式
+驱动器参数询问。以后所有 `mcopy/mdir/mattrib` 一律加 `</dev/null` 并配 `timeout`；脚本里已经这么改。
