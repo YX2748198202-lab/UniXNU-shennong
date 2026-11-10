@@ -1215,3 +1215,44 @@ drivers 0 loaded / 1 failed    kits 0
 
 预期：菜单 5 秒倒计时 → 启动 `shennong XNU native UFS` → 内核加载 → 90 秒结论屏
 `fd33 start <status> exit <status>`；同时红字会显示 DarwinBoot.efi 的确切失败原因。
+
+### fd33 判读：红字是「重复启动」，不是故障；但菜单没走
+屏幕原文：
+
+```
+config error: drv DarwinBoot.efi
+              start failed Already started
+drivers 0 loaded / 1 failed    kits 0
+```
+
+两条信息：
+1. `start failed Already started` = `EFI_ALREADY_STARTED`。
+   `DarwinBootPkg/Driver/DarwinBoot.inf` **本来就在 FDF 里**、固件启动时已经 start 过，
+   配置里的 `[[driver]] path = "Payloads/DarwinBoot.efi"` 只是又启动了一次同一个驱动 → 无害
+2. 菜单仍然 `Select an entry` 停住 —— `timeout = 5` 没生效
+
+**根因（已验证）**：fd33 那个 toml 我用「按字节搜 `timeout = 0`」的方式改，
+搜到的其实是 FAT 里一个**残留旧簇**（`0xc340c`），
+而文件系统里的正本是 `0x3285c0d` 的 `timeout = -1`（CRLF）。
+所以 payload 从没被改成 5 秒，菜单一直按 `-1` 走 `fallback_timeout`。
+
+用 mtools 直接读 FAT 得到铁证：
+
+```
+mtype -i payload-fd25.img ::/EFI/UniXNU/unixnu.toml
+  version = 1
+  [boot]
+  timeout = -1
+  fallback_timeout = 3600
+```
+
+### fd34：用 mtools 改真文件
+- `payload-fd34.img`（`payload-fd25.img` 副本）
+- 通过 `mtype` 读出**真实** toml，`mcopy` 写回：`timeout = -1 → 5`、`fallback_timeout = 60`、
+  删掉 `[[driver]]` 段（DarwinBoot 已在 FV 里，无需重复启动，红字随之消失）
+- 写入后 `mtype` 回读确认（见上方输出）
+- 教训入档：**改 payload 里的文件一律走 mtools，不用字节搜索定位**
+
+镜像 `Mu-shennong-fd34.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `77e5a559`。
+预期：菜单出现 5 秒倒计时 → 自动启动 `shennong XNU native UFS` → 内核加载 →
+若返回则菜单提示 `'shennong XNU native UFS' returned: <状态>`，那就是阶段 C 的真实停点。
