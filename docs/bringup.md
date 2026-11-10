@@ -1074,3 +1074,30 @@ BT gop fb FC400000 res 1440x3200
 - 时间窗满 600 秒才冷复位
 
 镜像 `Mu-shennong-fd29.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `3a1a5122`。
+
+### fd30：把 payload 的处境一次问清（UXRD + fs/bio/cfg + ram）
+
+**fd29 的停机原因（已验证）**：`FreePool (NULL)`。
+fd29 为了让「没有文件系统也照样报数」而去掉了 `ProbeConfigVolumes` 的提前返回，
+却把 `Handles` 置成 NULL 后仍然调用 `FreePool (Handles)`：
+`CoreInternalFreePool` 对 NULL 返回 `EFI_INVALID_PARAMETER`，
+`MemoryAllocationLib.c:821` 的 `ASSERT_EFI_ERROR` 立刻停机
+（屏上原文：`ASSERT_EFI_ERROR (Status = Invalid Parameter)` /
+`ASSERT [BootTraceDxe] MemoryAllocationLib.c(821)`）。
+断言点之前的三行同时证明：诊断模式确实跑到了面板函数，`UniXNU.efi` 也确实被 `LoadImage` 到了 `0xCFA54000`。
+
+fd30 三件事：
+
+1. **面板加 `ram` 段**（`RamSummary()`）：统计内存映射里
+   `EfiConventionalMemory / EfiBootServicesData / EfiLoaderData` 的描述符数量、总量与地址跨度，
+   输出 `ram <n>D <x>M <lo>-<hi>`。行格式变成
+   `fd30 UXRD … | fs <n> bio <n> cfg <st> | ram <n>D <x>M <lo>-<hi>`
+2. **扫描扩到全 RAM**：hint（`0x01000000`）落在 RAM 内才用 ±128 MiB 窗口，
+   不在就遍历所有 RAM 描述符；预算 3 GiB，扫满即停，坏映射只会慢不会卡死
+3. **所有池操作判空**：`FreePool` 不再可能拿到 NULL，`RamSummary` 的 `Map` 也先置 NULL
+
+构建：`FD ok`；内层 FV 里 `fd30`×1、`ram %uD %luM %lx-%lx`×1、`ram 0D`×1、
+`UXRD started`×1、`UXRD none x0 %lx hint %lx`×1、`fs %u bio %u cfg %lx`×1；
+镜像 `Mu-shennong-fd30.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `a1c9179a`。
+
+判读表见下节。
