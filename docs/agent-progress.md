@@ -532,3 +532,29 @@ panic screen is 0xa47 bytes at 0xfffffff00ad815c0, the padding ends at 0xfffffff
 ```
 
 `scripts/test-entry-probe.py` 复跑：`entry-probe contract: all checks passed`。
+
+### 27.8 CI run 42904596191 全绿：第一个配置正确的 iOS 27 引导包（fd46）
+
+patch 层三处修好之后，CI 这一轮 **kernel / logs 两个 job 全部 success**，payload 步骤产出
+`payload.img` 201,326,592 B（192 MiB）。产物实测：
+
+| 项 | 值 | 验证方式 |
+|---|---|---|
+| payload 内核 | 94,552,064 B（与 CI `kernel/kernel.macho` **不同** sha：`ab2f3ecd…` vs `31e33289…`） | payload 里那份是打过 stage 色带 + panic screen 的副本，全图 4,460 字节差异 |
+| owner-root 诊断串 | `owner-root: autherr=%d owner=%d readonly=%d mount_dev=%d selected_dev=%d trust=%d` | `strings -a` 在 payload 内核副本里直接命中 |
+| panic screen | 写在 `0xfffffff00ad815a8`（首 8 字节 `e1030091 bb000014`），与本地跑出的地址逐字节一致 | 与未打补丁的 CI 内核对比该地址（原本全 0） |
+| trust cache | 94,884 B sha256 `a2a2566f41c6d3e7…` | 卷内读回 |
+| vroot 通道 | `kernel.macho.vroot` 1,152 B，头 `VROOTB01`，内含 `VROOT01` 条目 | `xxd` |
+| ADT | 10,520 B，含 `RootPolicies` / `TrustCache` / `root-matching` 三个串 | `scripts/adt-ios27-vroot.dtb` |
+
+组装结果：
+
+```
+Mu-shennong-fd46.img  203,722,752 B  sha256 2e735e6c6b9e091d…
+verify: ok (kernel 2389419 incl. dtb 1238463, ramdisk 201326592, payload at 0x249000)
+预检 verify-boot-package.py → 0 failure(s)
+```
+
+对比 fd44：fd44 用的是 **iPadOS 17.7.11 的 61,356 B 信任缓存**、没有 vroot 通道、ADT 也不带
+RootPolicies；fd46 这四项全是 iOS 27 对应的正确件。**上机判断应以 fd46 为准**，fd44 的屏幕只说明
+"无 vroot 时的失败形态"，信息量被 fd46 完全覆盖。
