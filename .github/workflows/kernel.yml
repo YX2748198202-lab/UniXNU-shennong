@@ -566,14 +566,21 @@ jobs:
           # The scan feeds this path to clang, which does not run in this directory,
           # so it has to be absolute.
           TREE=$(cd "$TREE_REL" && pwd)
-          IP=out/ipsw/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
+          # The scan measures the board's own kernelcache, so the IPSW and its device class
+          # come from board.toml [ipsw]; the iPadOS 17.7.11 pins used to be hard-coded here
+          # and measured the wrong kernel once the OS profile moved to iPhone17,1 27.0.1.
+          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "
+import tomllib
+b = tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml', 'rb'))['ipsw']
+print(b['url'], b['device_class'])")"
+          IP="out/ipsw/$(basename "$IPSW_URL")"
+          echo "scan IPSW: $IP (device class $DEVICE_CLASS)"
           mkdir -p out/ipsw
           if [ ! -f "$IP" ]; then
-            curl -sL --max-time 1800 -o "$IP" \
-              "https://updates.cdn-apple.com/2025SpringFCS/fullrestores/122-77166/DCA6CFE8-90E9-4B92-880D-3DE171798E40/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw" \
-              || { echo "::error::IPSW download failed"; exit 0; }
+            curl -sL --max-time 3600 -o "$IP" "$IPSW_URL" \
+              || { echo "::warning::IPSW download failed; keeping the previous bindings"; IP=""; }
           fi
-          ls -l "$IP"
+          if [ -n "$IP" ]; then ls -l "$IP"; fi
           python3 -m pip install --quiet pyliblzfse || echo "::warning::pyliblzfse install failed"
           # The scan compiles Apple's published IOBlockStorageDevice.cpp with the flags
           # the kernel build recorded, so the reference sources must be in the tree.
@@ -591,10 +598,14 @@ jobs:
           ls -l "$REF/IOBlockStorageDevice.cpp" 2>&1 | sed 's/^/::warning::refer file: /'
           # The runner shell is bash -e, so a failing scan would abort before its own
           # diagnostics are printed. Swallow the failure and always dump the output.
-          python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
-            --ipsw "$IP" --device-class j120ap --tree "$TREE" \
-            --output "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" \
-            > /tmp/sstorage.out 2>&1 || echo "scan failed rc=$?"
+          if [ -n "$IP" ]; then
+            python3 "$GITHUB_WORKSPACE/device/scripts/scan-prelink-storage.py" \
+              --ipsw "$IP" --device-class "$DEVICE_CLASS" --tree "$TREE" \
+              --output "$GITHUB_WORKSPACE/device/scripts/prelink-storage-bindings.json" \
+              > /tmp/sstorage.out 2>&1 || echo "scan failed rc=$?"
+          else
+            echo "::warning::no IPSW; the storage bindings are unchanged this run"
+          fi
           # The scan measures the original kernelcache, where the kexts sit at their
           # original addresses. The prelink slides every component by board.toml
           # [kernel.prelink] slide, so shift what was just measured, or the bound
@@ -662,13 +673,20 @@ jobs:
           # by the raw modules), not an IPSW IM4P: packing the IM4P makes the firmware refuse
           # the payload with "Compromised Data". scripts/build-original-system-trust.py
           # verifies both modules against their pinned digests and writes the bundle.
-          IP=$(ls -t out/ipsw/*.ipsw 2>/dev/null | head -1)
-          if [ -z "$IP" ]; then echo "::error::no IPSW for the trust bundle"; exit 1; fi
+          # Same IPSW as board.toml [ipsw]: the static trust cache that lets AMFI accept
+          # launchd has to come from the same build as the kernel being packaged.
+          read -r IPSW_URL DEVICE_CLASS <<<"$(python3 -c "
+import tomllib
+b = tomllib.load(open('$GITHUB_WORKSPACE/device/board.toml', 'rb'))['ipsw']
+print(b['url'], b['device_class'])")"
+          IPSW_NAME=$(basename "$IPSW_URL")
+          IP="out/ipsw/$IPSW_NAME"
+          [ -f "$IP" ] || curl -sL --max-time 3600 -o "$IP" "$IPSW_URL" \
+            || { echo "::error::IPSW download failed for the trust bundle"; exit 1; }
           mkdir -p refer .cache/firmware/target-volumes
-          ln -f "$(cd "$(dirname "$IP")" && pwd)/$(basename "$IP")" \
-                refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw 2>/dev/null \
-            || cp "$IP" refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw
-          python3 - <<'PY'
+          ln -f "$(cd "$(dirname "$IP")" && pwd)/$IPSW_NAME" "refer/$IPSW_NAME" 2>/dev/null \
+            || cp "$IP" "refer/$IPSW_NAME"
+          IPSW_NAME="$IPSW_NAME" DEVICE_CLASS="$DEVICE_CLASS" python3 - <<'PY'
           import plistlib, zipfile
           from pathlib import Path
 
@@ -681,10 +699,12 @@ jobs:
                   at += count
               return tag, data[at:at + size], at + size
 
-          with zipfile.ZipFile('refer/iPad_Pro_HFR_17.7.11_21H461_Restore.ipsw') as archive:
+          import os
+          name, devclass = os.environ['IPSW_NAME'], os.environ['DEVICE_CLASS']
+          with zipfile.ZipFile('refer/' + name) as archive:
               manifest = plistlib.loads(archive.read('BuildManifest.plist'))
               identity = [i for i in manifest['BuildIdentities']
-                          if i['Info']['DeviceClass'] == 'j120ap'][0]
+                          if i['Info']['DeviceClass'] == devclass][0]
               raw = archive.read(identity['Manifest']['StaticTrustCache']['Info']['Path'])
           tag, sequence, end = der(raw, 0)
           fields, cursor = [], 0

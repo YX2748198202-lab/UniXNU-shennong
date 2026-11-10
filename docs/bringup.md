@@ -1541,3 +1541,47 @@ pages=0x0000000000000bb1d  free=0x00000000000006d00
 - 复核：ADT 10,468 B / TrustCache 在 / UUID 命中；内核 `04769d26`×1、`8846fe78`×1、`c3a4d926`×0
 
 镜像 `Mu-shennong-fd41.img` 203,722,752 B（payload 192 MiB），预检 `0 failure(s)`，sha256 前缀 `138ec9a9`。
+
+### 2026-11-11 深夜：确认「换 iOS 27 根卷」才是正确方向，并查出三处硬错位
+
+YG 的纠正：目标是 iOS 27 iPhone 用户态，设备上那份 iPadOS 17.7.11 根卷本来就该被替换。
+顺着这条线做逐字节核对，发现三处独立错位：
+
+**1) 一直跑的内核其实是 iPadOS 17.7.11 构建，不是 iOS 27**
+- 内核二进制里带构建路径 `/out/shennong/ipados-17.7.11-21H461/shennong/tree/build/verified-root/libVerifiedRoot.a(...)`，
+  搜 `ios-27.0.1-24A446` / `ipados-27.0.1-24A446` 均为 0 命中
+- 内嵌策略 UUID 计数：`04769d26`(17.7 OS)×1、`8846fe78`(17.7 SystemOS)×1、`c3a4d926`(27 OS)×0、`ecfe851c`(27 SystemOS)×0
+- 结论：fd34–fd42 这条线的内核与 iOS 27 无关；它只是把 17.7.11 根卷挂上了
+
+**2) 内核嵌的策略与设备根卷其实一致，但仍然认证失败 → 说明缺的不是 UUID**
+fd40（payload 内嵌 17.7 策略）与 fd41（k8 内核，同样 17.7 策略）对同一份 17.7.11 根卷
+都停在 `rootvp not authenticated after mounting @bsd_init.c:1100`，`pages`/`free` 数值一致。
+判定式是 `readonly && device_vnode && native_verified_block_root_authorized(device)`，
+三者任一为假都会 panic。既然策略 UUID 已对齐，剩下的可能是
+①根挂载不是只读 ②镜像上的 `.vroot` 块表与内嵌 header 的 `hash_table_sha256` 不符
+③认证函数要求该设备是驱动 adopt 阶段验证过的那一个。**这三条尚未取得证据，属推断。**
+
+**3) 签名私钥已不在本机**
+`docs/handoff/ARTIFACTS.md:32` 记录的 `.artifacts/policy/root-key.rsa` 与整个 `.artifacts/` 目录都已不存在。
+→ 若 iOS 27 根卷的组合摘要与已提交策略不同，就必须用新密钥重签，
+而新密钥的 `trusted-key.bin` 必须重新嵌进内核 → **内核必须重建（CI）**。
+
+### iOS 27 根卷的本机构建链（不需要 macOS）
+官方 `ipsw` CLI（blacktop）自带 AEA1 实现与内嵌 FCS 密钥，Linux 上能直接解开 iOS 27 的 `.dmg.aea`。
+据此改了框架：
+
+```
+UniXNU/scripts/unixnu/ipsw.py :: decrypt_aea()
+  非 Darwin 主机：ipsw fw aea -b <key> -o <dir> <file.dmg.aea>
+  Darwin 主机：保持原样（ipsw fw aea --key 取 key → /usr/bin/aea decrypt）
+```
+同改动已同步到 `UniXNU-pin`（提交 `3818889`）。`udif.py` 本就有 Linux 分支，因此
+`./unixnu build userdata --ipsw <path>` 现在能在 WSL 里跑完整条链路。
+
+### CI 去掉 iPadOS 17.7.11 硬编码
+`.github/workflows/kernel.yml` 里两处原本写死 iPad IPSW 与 `--device-class j120ap`：
+- 存储绑定的 prelink 扫描步
+- 静态信任缓存的打包步
+
+现在都从 `board.toml [ipsw]` 读 `url` 与 `device_class`（iPhone17,1 / 93ap）。
+不改的话，iOS 27 构建会拿 iPad 内核去量绑定、拿 iPad 的静态信任缓存去打内核包。
