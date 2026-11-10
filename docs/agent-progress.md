@@ -255,3 +255,65 @@ python3 firmware/make-boot-image.py --uefi /home/yoox/android/sources/uefi-sheng
 - boot image **没有 payload**（`payload.img` 已丢），所以现在只能验到 UEFI 菜单，不能进 XNU。
 - `Resources/DTBs/shennong.dtb` 已生成（由 `dts/shennong.dts` 编译，1,238,463 字节），
   但 `append_dtb` 只是照旧配置打开，未验证 ABL 是否吃这份 DTB。
+
+---
+
+# 第 4 轮（2026-11-10 18:40–19:20）：固件取证工具链 + payload 本地重建
+
+## 19. 结论
+
+两件事从"外部依赖"变成"本机能做"：
+
+1. **payload 可以本地组装**：`payload/payload.img`（192 MiB）与 `boot/Mu-shennong-fd2.img`
+   （68,390,912 B，含 64 MiB payload）都已产出，并从镜像内部读回复核。
+2. **固件可以反过来拆**：新增 FV/FFS/section 扫描器 + EDK II 原版 LZMA 解码器，
+   连"我们自己的卷"都能拆开逐个报出模块名和大小——这使"换厂商驱动"变成一条有工具的路。
+
+## 20. 新工具（都有自证）
+
+| 工具 | 自证 |
+|---|---|
+| `scripts/scan-uefi-fv.py` | 扫自建 `FVMAIN.Fv` 得 **106** 个文件，含 `UniXNU` 103,984 B、`DarwinBoot` 33,846 B、`PmicDxe` 274,540 B、`UFSDxe` 143,414 B、`BdsDxe` 385,166 B |
+| `tools/lzma-decode` | 解自建 `FVMAIN_COMPACT` 得 7,708,680 B，与 `Build/shennongPkg/DEBUG_CLANGPDB/FV/FVMAIN.Fv` **逐字节相同**（多 8 字节 section 头） |
+| `scripts/test-scan-uefi-fv.py`、`firmware/test-make-payload-image.py` | 全绿 |
+
+顺带修掉两个真 bug：
+- 扫描器最初把"名字全 0xFF"当成卷结束，而 **EDK II 每个卷都以 PAD 文件开头**，于是任何真卷都报 0 个文件；
+- payload 契约测试第一版断言"整镜像可复现"，实测发现本机 `mformat` 会在最后扇区写 19 字节未初始化内存，改为断言引导扇区+文件内容可复现，并把这条写进文档。
+
+## 21. 本机 abl 里的厂商 DXE：查证结果是**取不出来**
+
+`abl_a.bin` 只有一个 FV，里面只有一个 FFS = 标准 FVMAIN_COMPACT，LZMA guided，头部声明解压后
+1,343,688 字节。穷举结果：标准 LZMA 解 27 字节即失败；`xz`/`7za` 同样；225 组 props 最好 419 字节；
+8 组字典大小恒为 27 字节；`FINISH_ANY` 无效。
+
+27 字节解出来的内容与我们自己的卷开头**同构**（空的 RAW 段 + `FV_IMAGE` 段头，长度字段正好等于声明大小），
+说明封装头部是真的、压缩流在第 28 字节起就不是合法 LZMA——最可能是额外加密或非标准分块变体。
+详细证据与下次的数据源见 `docs/handoff/VENDOR-DXE-EXTRACTION.md`。
+
+`Binaries/giulia` 因此继续作为替身，风险面已量化：giulia 80 目录/88 efi/9.6 MB（SM8650，与本机同族），
+muyu 70/79/8.9 MB（SM8635，不同族）；差异集中在 `Oplus*` 私有驱动与面板/PMIC 配置表。
+
+## 22. payload 重建（详见 `docs/handoff/PAYLOAD-REBUILD.md`）
+
+`firmware/make-payload-image.py` 按框架 `scripts/unixnu/payload.py` 的**同一卷布局**离线组装：
+`EFI/UniXNU/{unixnu.toml,Payloads/{kernel.macho,kernel.macho.adt,DarwinBoot.efi}}`，
+`mformat -C -F -T <sectors> -v SHENNONGESP -N 53484e47` + `mcopy -s -Q -m`，时间戳固定 1980-01-01。
+
+产物：
+- `payload/payload.img` 201,326,592 B `sha256 30aa035a…`（192 MiB，生产形状）
+- `payload/payload-64m.img` 67,108,864 B `sha256 d534e93d…`（64 MiB，为 fastboot 快一些）
+- `boot/Mu-shennong-fd2.img` 68,390,912 B `sha256 de9a4cd8…`
+- `payload.json`：每个文件的字节数与 sha256、内核参数行
+
+端到端复核：从 `Mu-shennong-fd2.img` 的 `0x139000` 取出 64 MiB，sha256 与 `payload-64m.img` 完全相同；
+`mdir` 列出 `SHENNONGESP`、`5348-4E47`、1980-01-01，`Payloads/` 下三个文件大小与源一致。
+
+## 23. 仍然缺（不要当成已知）
+
+| 缺 | 后果 |
+|---|---|
+| iOS 27 内核 | 现在装的是 iPadOS 17.7.11 内核（52,068,352 B，arm64 Mach-O，ncmds 25），与 `board.toml` 的 `kt_fixed_zones`/`sheng-*`/prelink 不是同一套 |
+| `kernel.macho.trustcache` | 无信任缓存，AMFI 会在早期拒绝 |
+| `kernel.macho.vroot`（root policies） | `native-source-storage=1` 的根卷策略缺失 |
+| 真机 | `Mu-shennong-fd2.img` 一次都没 `fastboot boot` |
