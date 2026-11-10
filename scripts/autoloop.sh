@@ -3,7 +3,7 @@
 # has not been booted yet.  State lives in .autoloop-last so a device that
 # resets back into fastboot does not replay the same build forever.
 BOOT=/home/yoox/android/artifacts/UniXNU-shennong/boot
-RUN=/home/yoox/android/artifacts/UniXNU-shennong/device-runs/2026-11-10
+RUN=/home/yoox/android/artifacts/UniXNU-shennong/device-runs/2026-11-11
 LOG=$RUN/autoloop.log
 STATE=$RUN/.autoloop-last
 while true; do

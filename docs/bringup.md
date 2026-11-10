@@ -1317,3 +1317,22 @@ pages=0x000000000000bb1e free=0x000000000000b7a2
 2. 若停在 UFS 接管之后不再前进，下一步是让 `NativeUFs` 的读路径真正返回块数据，
    再往上是根卷挂载（`IOMedia` → `AppleAPFS`/HFS）与 `bsd_init`
 3. 用户空间还需要：AMFI/trustcache 放行、`launchd` 起根卷
+
+### fd35 起的定位阶梯（卡点：`@NativeUFs.cpp:491`）
+fd34 最后一屏停在 UFS 接管之后，同屏出现 `frames …` + `pages=… free=…`，与 11-04
+`@IOKitBSDInit.cpp:984` 那次 panic 输出同构 → 判定这是**陷落位置**而不是普通日志。
+`db=0 ie=0 is=0` 说明门铃未写、中断未使能、无挂起中断。
+
+三轮配置石阶（只改 payload args，不重编内核）：
+
+| 轮次 | args 关键项 | 目的 | 判读 |
+|---|---|---|---|
+| fd35 | 去掉 `native-ufs-probe=3` 与 `native-source-storage=1` | 取回基线：iOS 27 内核能否走到阶段 C | `@IOKitBSDInit.cpp:984` = 阶段 C 复验通过，停点确属 UFS 路径 |
+| fd36 | `native-ufs-probe=12 native-ufs-diagnostics=1` | 复现 11-05 走通过的读路径 | `NATIVE_UFS media report` + `disk*` = 发布成功 |
+| fd37 | `native-ufs-probe=10` | 判断陷落是否与等级相关 | 仅 12 陷落 → 目标锁定在 10→12 之间新增代码 |
+
+fd35 基线 args（payload 内已回读确认）：
+```
+-v serial=3 debug=0x14e cpus=1 kt_fixed_zones=120 -no_slto_panic armcpu-diagnostics=1 boot-progress=2 sheng-pmgr=2 sheng-log=1
+```
+镜像 `Mu-shennong-fd35.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `6c652f07`。
