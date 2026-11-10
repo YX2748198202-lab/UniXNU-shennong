@@ -1047,3 +1047,30 @@ fd26/fd27 的诊断屏只留 90 秒，人还没拿起手机就被冷复位吃掉
 
 镜像 `Mu-shennong-fd28.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `8f837fa3`。
 `device-runs/2026-11-10/.autoloop-last` 已清空，设备下次出现在 fastboot 时会重发一版。
+
+### fd28 判读：还是 `no-driver`，问题不在驱动而在「读数太早」
+屏幕原文：
+
+```
+== fd28 ==
+fd28 UXRD no-driver | fs 0 cfg n/a
+BT gop fb FC400000 res 1440x3200
+```
+
+先排除了「代码没进镜像」：解压内层 FV 后 `UXRD started` ×1、`UXRD none` ×4、
+`SHENNONGESP` ×1、`UniXNURamDiskDxe` ×4 —— fd27/fd28 的新代码确实在 FD 里。
+
+于是剩下的解释只有一个：**BootTraceDxe 的 GOP 回调在 DXE 还没 dispatch 完时就已经跑了**。
+`BootTraceDxe` 靠 `gEfiGraphicsOutputProtocolGuid` 的通知事件触发，GOP 是 FDF 里很早的驱动，
+而 `UniXNURamDiskDxe` 排在后面；`fs 0` 也是同一原因——FAT 绑定还没发生。
+原来诊断面板只**取一次样**，所以永远显示 t=0 的状态。
+
+### fd29：面板每秒重算
+- `DiagPanel()`：600 秒里每秒重新调 `RamDiskNote()` + `ProbeConfigVolumes()`，
+  再画 `== fd29 ==` / 结果行 / GOP 行。屏上看到的永远是**最近一秒**的状态，
+  驱动稍后跑起来，字就会自己变
+- `ProbeConfigVolumes()` 去掉「没有文件系统就提前 return」的分支：
+  现在恒定输出 `fs <n> bio <n> cfg <st>`，`bio` 用来看块设备到没到
+- 时间窗满 600 秒才冷复位
+
+镜像 `Mu-shennong-fd29.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `3a1a5122`。
