@@ -191,3 +191,67 @@ git apply (zzzz-diag-marks.patch on xnu-12377 startup.c)    # 失败 → 记录�
    `patch-pre-mmu-squares.py`/`patch-mmu-guard.py` 生成镜像（cave 断言会自动检查是否越界）。
 4. 修复 `zzzz-diag-marks.patch`（按当前树重做或并入 `zzz-boot-progress` 语义），然后再考虑把
    `device:patches/xnu/series` 接进 `patch_series`。
+
+---
+
+# 第 3 轮（2026-11-10 17:30–17:50）：自己造出 SILICIUM_UEFI.fd
+
+## 14. 结论
+
+**固件不再是外部依赖**：本机（WSL x86_64）已能从源码构出 shennong 的 `SILICIUM_UEFI.fd`，
+3,145,728 字节（0x300000），`sha256 362aefb7bbe9ab30d35fe08cfe4b66149bc2d0fdf90f06c3c9dee8de000c5ae3`，
+内含 112 个 FFS 模块（含 `UniXNU`、`UniXNUDxe`、`UniXNURamDiskDxe`、`DarwinBoot`、`AdvancedLogDxe`、
+`PmicDxe`、`UFSDxe`、`SimpleFbDxe`、`BdsDxe`）。
+boot image 也已组装并通过字节级自检：`artifacts/UniXNU-shennong/boot/Mu-shennong-fd1.img`
+（1,282,048 字节，`sha256 df5a7598…`，shim 192 B + FD 3 MB → gzip 1,277,940 B）。
+
+## 15. 每块输入从哪来（全部可复查）
+
+| 缺的东西 | 本轮来源 | 证据 |
+|---|---|---|
+| Mu 基树 | `UniXNU/uefi-sheng@sheng`（CI 用的同款），1.5 GB，子模块含 `Mu_Basecore` / `Common/Mu` / `Binaries` / `Silicium-ACPI` | `git clone --branch sheng` 完成 |
+| BaseTools | 本地编译 `Mu_Basecore/BaseTools/Source/C`（`GenFw/GenFfs/GenFv/GenSec/EfiRom/VfrCompile`），补 `BrotliCompress`（git 子模块）与 `LzmaCompress`（FVMAIN 压缩必需） | `bin/` 九个工具齐全 |
+| 平台骨架 | `Platforms/OnePlus/giuliaPkg`（同 SoC：`LanaiPkg` = SM8650，完全源码构建，不依赖私有 Binaries） | `giulia.dsc` `!include LanaiPkg/LanaiPkg.dsc.inc` |
+| 内存映射 | **本机 xbl_config 实测**：`xbl_config_a` 里 37 条 DDR/IO 区域（base/size 为大端 u64），脚本解析成 `firmware/shennong-memory-map.toml` | `sha256 ebbc2e9cd3f98603…`，与 houji 同区域名逐条对齐 |
+| 描述符策略 | 同 SoC 的小米 houji 移植生成的 `MemoryMapLib.c`（同区域名的 HobOption/ResourceType/ArmAttribute） | 8 个 carveout 数值与 houji 完全一致 |
+| SMBIOS/面板 | 机身 23116PN5BC / Xiaomi 14 Pro；面板 1440×3200 | `shennong.dts` panel 节点 |
+| UniXNU 模块 | 框架 `package/UniXNUPkg`（menu/Dxe/RamDisk/AdvancedLog/UniXNULib）+ `UniXNU/DarwinBoot` 的 `DarwinBootPkg` | 注入 DSC `[Components]`/`[LibraryClasses]` 与 FDF `[FV.FvMain]` |
+| BootShim | 基树 `BootShim/BootShim.S`，只做"把 FD_SIZE 字节从 `_Payload` 拷到 `0xA7100000` 再跳"，不解析 Android 头 | `BootShim.S` 第 21–42 行 |
+
+## 16. 复现步骤（四条命令）
+
+```sh
+cd /home/yoox/android/workspace/UniXNU-shennong
+python3 scripts/extract-xbl-memory-map.py <xbl_config_a.bin> --toml --out firmware/shennong-memory-map.toml
+python3 scripts/make-shennong-uefi-pkg.py --uefi /home/yoox/android/sources/uefi-sheng --vendor-binaries giulia --force
+bash firmware/build-shennong-uefi.sh
+python3 firmware/make-boot-image.py --uefi /home/yoox/android/sources/uefi-sheng \
+  --fd /home/yoox/android/artifacts/UniXNU-shennong/firmware/SILICIUM_UEFI-shennong-DEBUG.fd \
+  --out /home/yoox/android/artifacts/UniXNU-shennong/boot/Mu-shennong-fd1.img --verify
+```
+
+`build-shennong-uefi.sh` 绕开 `edk2-pytool` 的 ext-dep 阶段（它要 GitHub release 上的
+`Mu-Basetools`/`mu_nasm`/`onecrypto-bin`，本机取不到），改为直连 `build.py`。
+关键环境：`CLANG_BIN=/usr/bin/`（带尾斜杠，否则拼成 `/usr/binclang`）、
+`PATH` 里必须有名为 `python` 的软链（BaseTools 包装脚本写死了 `python`）、
+`PACKAGES_PATH` 必须含 `<tree>/Platforms/Xiaomi`、`<tree>`、`Mu_Basecore`、`Silicon/*`、
+`Silicium-ACPI*`、框架的 `package/`（提供 `UniXNUPkg`）。
+
+## 17. 踩过的坑（都已修）
+
+1. `bin/DiskIoDxe` 与 `Fat` 被基树 `LanaiPkg`/`SiliciumPkg` 已经收进 FV，重复注入会让
+   `GenFv` 报 `the 31th file and 97th file have the same file GUID` → 生成器现在先扫
+   `Include/*.inc`、fdf、以及 SoC 包的 `dsc.inc` 去重。
+2. FVMAIN 用 LZMA 压进 3 MB 的 `FVMAIN_COMPACT`，缺 `LzmaCompress` 时 `GenSec` 只会报
+   `Error opening …SEC1.tmp` → 先编好 BaseTools 全部工具再构建。
+3. `--vendor-binaries giulia` 时重命名顺序会把 `Binaries/giulia/` 也改成 `Binaries/shennong/`
+   → 生成器最后一步把路径改回所选 vendor 目录。
+
+## 18. 本轮**未**验证的（不要当成已知）
+
+- **没有上机**：`Mu-shennong-fd1.img` 未 `fastboot boot` 过。屏幕、PMIC、UFS 是否正常全部未知。
+- **厂商 DXE 是 giulia 的同 SoC 替身**（`Binaries/giulia`），不是本机 `abl`/`xbl` 里的原厂驱动；
+  面板初始化序列与 PMIC 配置很可能需要换成本机自带的（`PmicDxe`/`DisplayDxe`/`UFSDxe`）。
+- boot image **没有 payload**（`payload.img` 已丢），所以现在只能验到 UEFI 菜单，不能进 XNU。
+- `Resources/DTBs/shennong.dtb` 已生成（由 `dts/shennong.dts` 编译，1,238,463 字节），
+  但 `append_dtb` 只是照旧配置打开，未验证 ABL 是否吃这份 DTB。
