@@ -1101,3 +1101,44 @@ fd30 三件事：
 镜像 `Mu-shennong-fd30.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `a1c9179a`。
 
 判读表见下节。
+
+### fd30 判读：三个数字把问题钉死了
+屏幕原文：
+
+```
+fd30 UXRD no-driver | fs 0 bio 129 cfg 800000000000000E | ram 55D 10796M 81A40000-B00000000
+```
+
+| 读数 | 含义（已验证） |
+|---|---|
+| `ram 55D 10796M 81A40000-B00000000` | 固件映射的 DRAM 从 **0x81A40000** 起，最高 0xB00000000，共 10796 MB / 55 个描述符 → 镜像头写的 `ramdisk_addr = 0x01000000` **不在这块 DRAM 上** |
+| `bio 129` | 块设备已经 129 个，说明 DXE 调度已经跑到 UFS 那一批 |
+| `fs 0` | 没有 FAT 卷可挂（UFS 上的分区不是 FAT），符合预期 |
+| `cfg 800000000000000E` | `EFI_NOT_FOUND`，没有卷自然读不到 toml |
+| `UXRD no-driver` | 我们的 RamDisk 驱动**一次都没执行**——它在 `Include/DXE.inc:113`，紧跟在 `BootTraceDxe`（111）后面 |
+
+**根因（推断，依据充分）**：`DiagPanel()` 是在 GOP 协议通知回调里直接
+`for (600) { 重画; gBS->Stall (1 s); }`。这 600 秒是**忙等**，DXE 调度器没有任何机会
+继续 dispatch——排在后面的 `UniXNURamDiskDxe` 就一直没被加载。
+`bio 129` 恰好是"调度在我们这里停住"的旁证：能起来的都起来了，排在我们后面的起不来。
+
+### fd31：面板交给定时器，别占着 CPU
+- `DiagPanel()` 拆成 `DiagPanelStart()` + `OnDiagTick()`
+  - `DiagPanelStart()` 只做一次有效工作：**一次性扫描全 RAM 找卷标** `SHENNONGESP`（boot sector `0x47`），
+    结果记成 `pay found end <addr>` 或 `pay none`；然后建 1 秒周期定时器、**立刻返回**
+  - `OnDiagTick()` 每秒钟只是重画，不做 `Stall`，600 秒后冷复位
+- 面板行变成
+  `fd31 <UXRD> | fs <n> bio <n> cfg <st> | ram <n>D <x>M <lo>-<hi> | pay <…>`
+- 这样 DXE 调度得以继续，`UniXNURamDiskDxe` 会被真正加载，`UXRD` 段才会出现真值
+- `pay` 段不依赖那个驱动，直接由 `BootTraceDxe` 自己扫出来，**一次成像就能判定 payload 在不在内存里**
+
+构建：`FD ok`；内层 FV 里 `fd31`×1、`pay none`×1、`pay found end %lx`×1、`SHENNONGESP`×2；
+镜像 `Mu-shennong-fd31.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `5e99ac50`。
+
+判读：
+
+| 屏上 | 结论 | 下一步 |
+|---|---|---|
+| `pay found end <addr>` | payload 其实在内存里（ABL 用了自己的地址） | fd32 直接按这个地址发布块设备 |
+| `pay none` + `UXRD none x0 …` | payload 没进内存 | fd32 把 `make-boot-image.py:38` 的 `RAMDISK_ADDR` 改到 DRAM 内（如 `0xA7600000`，避开 FD 窗口 0xA7100000+3MiB） |
+| `UXRD <a> <n>` + `fs ≥1` + `cfg 0` | 全通 | 关诊断，进阶段 C |
