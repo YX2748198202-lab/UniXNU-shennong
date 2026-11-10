@@ -1368,3 +1368,39 @@ pages=0x0000000000000bb1b  free=0x0000000000000b3a0
 
 **下一步（fd36）**：回到 UFS 路径，用 11-05 走通过的 `native-ufs-probe=12 native-ufs-diagnostics=1`
 （不带 `native-source-storage=1`），看读路径能否在这次的内核上复现 `NATIVE_UFS media report`。
+
+### fd36 判读：存储栈在 iOS 27 内核上完整复现（里程碑）
+
+屏幕原文：
+```
+NATIVE_UFS media report: published=2 reads=142 failures=0 media=7
+disk0  size=c4e00000 uuid=-
+disk1  EF57347C-0000-11AA-AA11-00306543ECAC size=c4e00000  uuid=E886F82C-EE56-4B52-AF5F-E70BF4B320C4
+disk3  EF57347C-0000-11AA-AA11-00306543ECAC size=16a400000 uuid=50F8067F-AFC1-4A11-B-DCBB-82162674C67F
+disk1s1 41504653-0000-11AA-AA11-00306543ECAC size=c4e00000  uuid=8846FE78-2910-4297-AF97-D59BB6F8FC16
+disk3s1 41504653-0000-11AA-AA11-00306543ECAC size=16a400000 uuid=04769D26-2CA0-4B25-B443-E2E5F88300F2
+disk2 GUID_partition_scheme size=16a408600 uuid=-
+disk2s1 7C3457EF-0000-11AA-AA11-00306543ECAC size=16a400000 uuid=9232A33A-5F0A-4A09-9A43-E7D8BCFCF4BC
+@NativeUfs.cpp:2145
+frames ffffffff007378dd4 ffffffff0073f64a4
+pages=0x0000000000000bb1c  free=0x00000000000006cff
+```
+
+**已验证结论**：
+1. `published=2 reads=142 failures=0 media=7` 与 11-05 iPadOS 那次**逐字相同**；
+2. 五个 UUID 与 11-05 记录逐个对齐：`E886F82C…`(OS 窗口)、`50F8067F…`(SystemOS 窗口)、
+   `8846FE78-2910-42…`(SystemOS policy)、`04769D26-2CA0-4…`(OS policy)、`7C3457EF…`(APFS 分区)
+   → 设备 userdata 里那份 11-05 根卷仍在，且这次内核里的策略包与它匹配
+3. 尾部 `@NativeUfs.cpp:2145` + `frames` + `pages/free` 是 **probe=12 报告线程故意的自陷**
+   （UFS-E3 文档已写明「the probe=12 report thread then panics to show it」），不是故障
+
+里程碑照片：`device-runs/2026-11-11/milestones/stageE-media-report-ios27.jpg`
+镜像 `Mu-shennong-fd36.img` sha256 前缀 `970bd7ab`。
+
+**结论**：iOS 27 内核 + 当前 UFS 驱动 + 设备上的根卷，三者在真机上同时成立。
+剩下唯一的事：让 XNU 真的去 `mount` 这个根设备。
+
+### fd37：把发布变成挂载
+- 去掉 `native-ufs-diagnostics=1`（报告线程不再自陷）
+- 加 `native-ufs-root=1`，让驱动走根卷路径
+- 保留 `native-ufs-probe=12`
