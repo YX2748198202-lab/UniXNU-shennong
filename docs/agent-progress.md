@@ -501,3 +501,34 @@ workflow 里的运行期补丁只覆盖得到已经存在的文件；tree 是在
 `ValueError: Only ordinary little-endian ARM64 is supported`（`kits/XnuPrelink/native_prelink.py:19` 只接受
 cpusubtype 0；iPhone17,1 的内核是 `0xc0000002`，即 arm64e + ptrauth ABI）。该步骤失败时 `exit 0`，属诊断信息，
 不影响打包。
+
+### 27.7 第四个真修复：panic screen 比 iPhone17,1 的 cave 大 23 字节
+
+run `42897412487`（sha `6cdd2cc`）里 `kernel_symbols` 的修复生效（不再报 `'Symbols'`），失败前移到
+panic screen 落位：
+
+```
+panic screen is 0xa47 bytes at 0xfffffff00ad815c0, the padding ends at 0xfffffff00ad81ff0
+```
+
+实测这块内核的空白（本地用产物 `kernel.macho` 逐字节量，VA→文件偏移走 `__TEXT_EXEC` 段）：
+
+| 位置 | 零填充长度 |
+|---|---|
+| `0xfffffff00ad815c0` 起向前 | **0xa43 = 2,627 B**（到 `0xfffffff00ad82003` 出现 `141f2003…`） |
+| `0xfffffff00ad815c0` 之前 | **308 B 连续零**（上一个 cave 的 `CAVE_SIZE` 预留尾部） |
+
+所以差得不多，但硬常量 `PANIC_CAVE_END` 只给 0xa30，比渲染代码还小。改法（`scripts/patch-xnu-entry-probe.py`）：
+
+1. 记录每个 stage 实际用了多少字节（`cave_lengths`）；上一个 cave 的 `CAVE_SIZE - 实际长度` 是可证明没人跳进去的尾部；
+2. panic screen 允许**向前**吃这段 slack（4 字节对齐、且只在原字节为 0 时移动）；
+3. 结束边界不再信常量，改为**实测**零填充直到第一个非零字节（上限 0x1000）。
+
+本地用真实产物复现并验证（同一命令：`patch-xnu-entry-probe.py <kernel.macho> --panic-screen --no-reset`）：
+
+```
+改前：panic screen is 0xa4f bytes at 0xfffffff00ad815c0, the padding ends at 0xfffffff00ad81ff0   (exit 1)
+改后：patched kernel.macho: … panic screen (0xa4f bytes at 0xfffffff00ad815a8; common funnel at 0xfffffff00ab69d48)   (exit 0)
+```
+
+`scripts/test-entry-probe.py` 复跑：`entry-probe contract: all checks passed`。

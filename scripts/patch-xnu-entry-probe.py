@@ -419,6 +419,7 @@ def main():
         sites.append((AFTER_MMU_VA, 3, {'target': AFTER_MMU_VA + 4}))
         description = f'stage 3 reset {args.reset_delay} s after the MMU is on'
 
+    cave_lengths = {}
     with tempfile.TemporaryDirectory() as tmp:
         for site, stage, symbols in sites:
             source = RESET_BEFORE if (stage == 4 and args.reset_before) else SOURCES[stage].format(ticks=TIMEBASE * args.reset_delay)
@@ -426,18 +427,36 @@ def main():
             if len(code) > CAVE_SIZE:
                 raise SystemExit(f'Stage {stage} code is too large')
             data[file_offset(CAVES[stage]):file_offset(CAVES[stage]) + len(code)] = code
+            cave_lengths[stage] = len(code)
     for site, stage, _ in sites:
         struct.pack_into('<I', data, file_offset(site), branch(site, CAVES[stage]))
     if args.panic_screen:
         # Right after the last probe cave in use, so the padding is shared as tightly as possible.
-        PANIC_CAVE = max(CAVES[stage] for _, stage, _ in sites) + CAVE_SIZE
-        if word(PANIC_VA) in (0, 0xFFFFFFFF) or any(data[file_offset(PANIC_CAVE):file_offset(PANIC_CAVE_END)]):
+        last_stage = max((stage for _, stage, _ in sites), key=lambda stage: CAVES[stage])
+        PANIC_CAVE = CAVES[last_stage] + CAVE_SIZE
+        # The last cave reserves CAVE_SIZE bytes but its code only consumes cave_lengths
+        # [last_stage]; the tail is padding nothing branches into. Older kernels left the
+        # rendered screen enough room after the cave, iPhone17,1 24A446 does not: the screen
+        # is 0xa47..0xa4f bytes and the padding after the cave stops 23 bytes short. Grow
+        # backwards into that provable slack, 4-byte aligned and only over zero bytes.
+        slack = min(CAVE_SIZE - cave_lengths[last_stage], 0x100) & ~3
+        while slack and any(data[file_offset(PANIC_CAVE - slack):file_offset(PANIC_CAVE)]):
+            slack -= 4
+        PANIC_CAVE -= slack
+        # Measure the padding instead of trusting the constant: it ends at the first non-zero
+        # byte, so a kernel that leaves more room after the cave keeps the whole screen.
+        panic_end = PANIC_CAVE_END
+        cursor, limit = file_offset(panic_end), min(len(data), file_offset(panic_end) + 0x1000)
+        while cursor < limit and data[cursor] == 0:
+            cursor += 1
+        panic_end = max(panic_end, PANIC_CAVE + (cursor - file_offset(PANIC_CAVE)))
+        if word(PANIC_VA) in (0, 0xFFFFFFFF) or any(data[file_offset(PANIC_CAVE):file_offset(panic_end)]):
             raise SystemExit('panic() or the panic screen padding is not as expected')
         with tempfile.TemporaryDirectory() as tmp:
             code, load, entry = assemble_c(ROOT / 'scripts/xnu-panic-screen.c', PANIC_CAVE, Path(tmp), kernel_names)
             common_entry = panic_common_entry(Path(tmp), code, load)
-        if load + len(code) > PANIC_CAVE_END:
-            raise SystemExit(f'panic screen is {len(code):#x} bytes at {load:#x}, the padding ends at {PANIC_CAVE_END:#x}')
+        if load + len(code) > panic_end:
+            raise SystemExit(f'panic screen is {len(code):#x} bytes at {load:#x}, the padding ends at {panic_end:#x}')
         if any(data[file_offset(load):file_offset(load) + len(code)]):
             raise SystemExit(f'Padding at {load:#x} is not empty')
         data[file_offset(load):file_offset(load) + len(code)] = code
