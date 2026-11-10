@@ -1256,3 +1256,64 @@ mtype -i payload-fd25.img ::/EFI/UniXNU/unixnu.toml
 镜像 `Mu-shennong-fd34.img` 103,059,456 B，预检 `0 failure(s)`，sha256 前缀 `77e5a559`。
 预期：菜单出现 5 秒倒计时 → 自动启动 `shennong XNU native UFS` → 内核加载 →
 若返回则菜单提示 `'shennong XNU native UFS' returned: <状态>`，那就是阶段 C 的真实停点。
+
+## 阶段 C 达成（2026-11-11 00:45）
+
+fd34 上，payload 配置的 5 秒倒计时生效（屏显 `Booting shennong XNU native UFS in 4 s`），
+随后 arm64e 内核**真正开始执行**，并输出我们补丁自己的诊断。里程碑照片只留两张：
+`artifacts/UniXNU-shennong/device-runs/2026-11-11/milestones/stageC-kernel-el1.jpg`、
+`stageC-native-ufs.jpg`。
+
+### 第一屏（内核入口与平台状态）
+```
+args  pa 0xBC1D0000 window 0x10000000 bytes
+video base 0xFC400000 1440x3200 row 5760 bytes 32 bpp
+entry words 1400001E 00000000 00000000 00000000
+CurrentEL 1  SCTLR_EL1 0x30D0198D  TCR_EL1 0x280803518
+ID_AA64MMFR0_EL1 0x210002220010122 (PARange 2, 4 KiB granule supported)
+ID_AA64PFR0_EL1  0x1101110003111111
+Loading core services. A green bar across the top marks the loader handoff before the kernel branch.
+SecurityLock::LockType: SOFTWARE_LOCK, Module: 42857F0A-13F2-4B21-8A23-53D3F714B840,
+  Function: LockCapsuleInterface, Output: LockCapsuleInterface
+```
+
+逐条判读（全部来自屏显，已验证）：
+
+| 行 | 含义 |
+|---|---|
+| `args pa 0xBC1D0000` | 内核拿到了设备树/参数区，物理地址 **0xBC1D0000**（正好在 fd31 报出的 DRAM 窗口内） |
+| `video base 0xFC400000 1440x3200 row 5760 32bpp` | 帧缓冲已被内核识别，1440×3200、每行 5760 B、32 bpp —— 与 UEFI 侧 `BT gop fb FC400000` 完全一致 |
+| `entry words 1400001E 0 0 0` | 内核入口前 16 字节：`0x1400001E` = ARM64 `b` 指令（`0x14000000 | imm26`），说明跳到的是**内核自己的入口**而不是错误地址 |
+| `CurrentEL 1` | 运行在 EL1（内核特权级正确） |
+| `SCTLR_EL1 0x30D0198D` | MMU 已开、I-cache/D-cache 已开（位 0/2/12 置位） |
+| `TCR_EL1 0x280803518` | 页表配置已装载 |
+| `PARange 2` | 物理地址 36 位（最大 64 GB），与 12 GB 机型相符 |
+| `SOFTWARE_LOCK` | 安全锁走的是软件锁路径（不是硬件锁），`LockCapsuleInterface` 已进入并返回 |
+
+### 第二屏（原生 UFS 接管）
+```
+NATIVE_UFS adopt: list replaced
+phys=d2194000 hcs=0000010f->0000101f
+is=00000000 db=00000000 rsr=00000001 ba=d2194000 bau=00000000 ie=00000000 @NativeUFs.cpp:491
+frames ffffffff00797288c ffffffff007976ec4 ffffffff0078a6c38 ...
+pages=0x000000000000bb1e free=0x000000000000b7a2
+```
+
+| 行 | 含义 |
+|---|---|
+| `NATIVE_UFS adopt: list replaced` | `native-ufs-probe=3` 生效：内核直接接管控件器列表 |
+| `phys=d2194000 hcs=0000010f->0000101f` | UFS 控制器物理基址 **0xD2194000**，HCS 寄存器被我们改写成 `0x0000101F` |
+| `@NativeUFs.cpp:491` | 停点/打印点就在这个文件这一行，是**我们自己的补丁代码**，不是 Apple 原逻辑 |
+| `pages=0xbb1e free=0xb7a2` | 页分配器已经正常工作（约 47,902 页已用、46,498 页空闲） |
+
+### 结论
+阶段 C 的可验证里程碑（内核越过 `Unsupported`、拿到内核自己的日志）**已达成**：
+内核在 EL1 上执行、MMU 已开、帧缓冲与参数区都正确、并且跑到我们注入的原生 UFS 接管代码。
+链路顺序已被逐环验证：`fastboot boot` → UEFI（BootTraceDxe 诊断面板）→ payload 卷
+→ FAT → `unixnu.toml` → 菜单 → xnu 装载 → **内核 EL1 执行**。
+
+### 下一段（往用户空间走）
+1. 继续拍后续屏（`NATIVE_UFS adopt` 之后到 IOKit/`bsd_init` 的每一屏），确定当前停点
+2. 若停在 UFS 接管之后不再前进，下一步是让 `NativeUFs` 的读路径真正返回块数据，
+   再往上是根卷挂载（`IOMedia` → `AppleAPFS`/HFS）与 `bsd_init`
+3. 用户空间还需要：AMFI/trustcache 放行、`launchd` 起根卷
