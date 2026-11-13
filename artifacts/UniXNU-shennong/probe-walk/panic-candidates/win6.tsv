@@ -1,0 +1,99 @@
+name	fmt_va	call_site_va	text
+_OUTLINED_FUNCTION_9+0x1c	0xfffffff0071e2732	0xfffffff00abb0430	%s() called with NO_EVENT @%s:%d
+_SecureDTGetPropertyInternal+0x164	0xfffffff0072d6a34	0xfffffff00b3a01a0	Device tree property overflow: prop %p, length 0x%x @%s:%d
+_SecureDTInit+0x68	0xfffffff0072d6993	0xfffffff00b39f7f4	DeviceTree overflow: %p, size %#zx @%s:%d
+__Z13lck_rw_assertP8lck_rw_sj+0x11c	0xfffffff0071de015	0xfffffff00ab8a588	Invalid RW lock type %d @%s:%d
+___hw_lock_unlock_unowned_panic+0x30	0xfffffff0071def2f	0xfffffff00b441598	hwlock: thread %p is trying to lock %p recursively @%s:%d
+___kmem_invalid_size_panic+0x30	0xfffffff0072005ea	0xfffffff00b45b350	kmem(map=%p, flags=0x%x): invalid size %zd @%s:%d
+___lck_spin_invalid_panic+0x68	0xfffffff007220381	0xfffffff00b478110	%s spinlock %p: <0x%016lx 0x%16lx> @%s:%d
+___stack_chk_fail+0x28	0xfffffff0072bf505	0xfffffff00b4e4b60	Kernel stack memory corruption detected @%s:%d
+___strncpy_chk+0xc8	0xfffffff007218a53	0xfffffff00ad3f980	__strncpy_chk object size check failed: dst %p, src %p, (%zu < %zu) @%s:%d
+__cnputc+0x124	0xfffffff0072196b2	0xfffffff00ad46a38	Bad cons_ops_index: %d @%s:%d
+__delayed_call_enqueue+0x238	0xfffffff0071e9673	0xfffffff00abd92e0	thread call (%p %p) on bad queue (old_queue: %p) @%s:%d
+__enable_preemption_underflow+0x28	0xfffffff0072222db	0xfffffff00b47a5c0	Preemption count underflow @%s:%d
+__os_log_with_args_internal+0x6e8	0xfffffff0072bdac2	0xfffffff00b279d24	Unknown firehose tracepoint flags %x @%s:%d
+__os_log_with_args_internal.cold.4+0x28	0xfffffff0072bdaa4	0xfffffff00b4e34cc	unknown KC format type @%s:%d
+_dtrace_action_panic+0x98	0xfffffff00722567b	0xfffffff00ad9f9fc	dtrace: panic action at probe %s:%s:%s:%s (ecb %p) @%s:%d
+_hw_lock_lock_contended+0x208	0xfffffff0071def2f	0xfffffff00ab91fac	hwlock: thread %p is trying to lock %p recursively @%s:%d
+_initialize_screen.cold.1+0x28	0xfffffff0071cff09	0xfffffff00b471258	overflow detected @%s:%d
+_initialize_screen.cold.2+0x28	0xfffffff0071cff09	0xfffffff00b471284	overflow detected @%s:%d
+_kalloc_large+0x270	0xfffffff0071dbf7b	0xfffffff00ab7c7ec	trying to kalloc(Z_NOFAIL) with a large size (%zd) @%s:%d
+_kernel_debug_internal.cold.2+0x34	0xfffffff007269703	0xfffffff00b49baa8	kdebug: invalid procfilt flags %x @%s:%d
+_kernel_memory_populate_object_and_unlock.cold.5+0x34	0xfffffff0071ffa37	0xfffffff00b45c8b4	%s: page_list too short @%s:%d
+_kernel_memory_populate_object_and_unlock.cold.6+0x34	0xfffffff0071ffad7	0xfffffff00b45c8ec	%s: page_list too long @%s:%d
+_kfree_size_confusion_panic+0x4c	0xfffffff0071dc22b	0xfffffff00b43e8a0	kfree: addr %p, size %zd (offs:%zd) not found in any zone @%s:%d
+_kfree_size_confusion_panic+0x84	0xfffffff0071dc1d8	0xfffffff00b43e8d8	kfree: addr %p, size %zd (offs:%zd) found in zone '%s%s' with elem_size %zd @%s:%d
+_kfree_size_invalid_panic+0x2c	0xfffffff0071dc199	0xfffffff00b43e850	kfree: addr %p trying to free with nonsensical size %zd @%s:%d
+_lck_rw_unlock_exclusive+0x5c	0xfffffff0071ddbcc	0xfffffff00ab87974	lck_rw_unlock_exclusive(): lock %p held in mode: %d @%s:%d
+_lck_rw_unlock_exclusive+0xa4	0xfffffff0071dda11	0xfffffff00ab879bc	%s:%d Assertion failed: %s : state=0x%x, owner=%p
+_log_payload_send.cold.2+0x28	0xfffffff0072bdbbf	0xfffffff00b4e3510	Log payload had private data but 'has_private_data' was not set! @%s:%d
+_ml_static_vtop.cold.1+0x48	0xfffffff00721f4fd	0xfffffff00b4777b8	%s: illegal VA: %p; virt base 0x%llx, size 0x%llx @%s:%d
+_os_log_context_encode.cold.6+0x28	0xfffffff0072be283	0xfffffff00b4e358c	unhandled return value @%s:%d
+_pe_init_debug_command+0x31c	0xfffffff0072d794a	0xfffffff00b3a43d0	%s: %s: %#x-byte window at #%lx exceeds maximum size of %#x @%s:%d
+_pe_init_debug_command+0x344	0xfffffff0072d78d3	0xfffffff00b3a43f8	%s: %s: failed to read property from device tree @%s:%d
+_pe_init_debug_command+0x37c	0xfffffff0072d790b	0xfffffff00b3a4430	%s: %s: property size %u bytes is not a multiple of %lu @%s:%d
+_pe_init_debug_command.cold.1+0x48	0xfffffff0072d7a29	0xfffffff00b4ef5a8	%s: %s[%ld]: out of space in command buffer @%s:%d
+_pmap_enter_options_internal+0xbc8	0xfffffff00721b334	0xfffffff00ad5ff14	%s: attempt to map illegal VA 0x%llx in pmap %p @%s:%d
+_pmap_enter_options_internal+0xe00	0xfffffff00721b307	0xfffffff00ad6014c	%s: pmap %p v 0x%llx not page-aligned @%s:%d
+_pmap_enter_options_internal+0x10b4	0xfffffff00721ce5e	0xfffffff00ad60400	%s: invalid PV head 0x%llx for PTE %p @%s:%d
+_pmap_enter_options_internal+0x10e8	0xfffffff00721b4b1	0xfffffff00ad60434	%s: attempt to enter mapping at pte %p owned by pmap %p through pmap %p @%s:%d
+_pmap_enter_options_internal+0x1108	0xfffffff00721b3dc	0xfffffff00ad60454	pmap_enter_options() pmap %p pa 0x%llx @%s:%d
+_pmap_enter_options_internal+0x1184	0xfffffff0071f23f8	0xfffffff00ad604d0	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_enter_options_internal+0x11e0	0xfffffff00721a802	0xfffffff00ad6052c	compressed PTE %p 0x%llx has extra bits 0x%llx: corrupted? @%s:%d
+_pmap_enter_options_internal+0x1210	0xfffffff00721b58d	0xfffffff00ad6055c	%s: unexpected pmap_enter_pv ret code: %d. new_pve_p=%p pmap=%p @%s:%d
+_pmap_enter_options_internal.cold.19+0x38	0xfffffff00721b62f	0xfffffff00b474048	pmap_enter(): over-unwire of ptdp %p for pte %p @%s:%d
+_pmap_enter_options_internal.cold.20+0x38	0xfffffff00721b5f7	0xfffffff00b474084	pmap_enter(): over-release of ptdp %p for pte %p @%s:%d
+_pmap_enter_options_internal.cold.21+0x28	0xfffffff00721b40a	0xfffffff00b4740b0	pmap_enter_options(): attempt to add executable mapping to kernel_pmap @%s:%d
+_pmap_map+0xec	0xfffffff00721a605	0xfffffff00ad58b80	%s: failed pmap_enter, virt=%p, start_addr=%p, end_addr=%p, prot=%#x, flags=%#x @%s:%d
+_pmap_map_bd_with_options+0x11c	0xfffffff00721a79a	0xfffffff00ad58cd8	%s: range crosses DRAM boundary. First inconsistent page 0x%lx %s DRAM @%s:%d
+_pmap_map_bd_with_options+0x3f0	0xfffffff0071f23f8	0xfffffff00ad58fac	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_map_bd_with_options+0x420	0xfffffff00721c988	0xfffffff00ad58fdc	%s: PTE write is unaligned, ptep=%p, pte=%p @%s:%d
+_pmap_map_bd_with_options+0x464	0xfffffff00721a6fe	0xfffffff00ad59020	%s: start 0x%lx is not page aligned @%s:%d
+_pmap_map_bd_with_options+0x4a8	0xfffffff00721a742	0xfffffff00ad59064	%s: end 0x%lx is not page aligned @%s:%d
+_pmap_map_bd_with_options.cold.3+0x28	0xfffffff00721a7ef	0xfffffff00b472a30	pmap_map_bd @%s:%d
+_pmap_map_bd_with_options.cold.4+0x34	0xfffffff00721a76b	0xfffffff00b472a68	%s: gDramBase/gDramSize not initialized @%s:%d
+_pmap_map_high_window_bd+0x4ac	0xfffffff00721c988	0xfffffff00ad595c0	%s: PTE write is unaligned, ptep=%p, pte=%p @%s:%d
+_pmap_map_high_window_bd+0x510	0xfffffff0071f23f8	0xfffffff00ad59624	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_map_high_window_bd+0x540	0xfffffff00721a8ba	0xfffffff00ad59654	%s: insufficient pages, pa_start=%p, len=%p, prot=0x%x @%s:%d
+_pmap_map_high_window_bd+0x63c	0xfffffff00721a868	0xfffffff00ad59750	%s: area too large, pa_start=%p, len=%p, prot=0x%x @%s:%d
+_pmap_remove_options_internal+0xd8	0xfffffff0071f23f8	0xfffffff00ad5cdd8	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_remove_options_internal+0x2e0	0xfffffff00721afda	0xfffffff00ad5cfe0	%s: pmap %p invalid address range %p, %p @%s:%d
+_pmap_remove_options_internal+0x314	0xfffffff00721ce5e	0xfffffff00ad5d014	%s: invalid PV head 0x%llx for PTE %p @%s:%d
+_pmap_remove_options_internal+0x340	0xfffffff00721b00a	0xfffffff00ad5d040	%s: attempt to remove mappings owned by pmap %p through pmap %p, starting at pte %p @%s:%d
+_pmap_remove_range_options+0x7fc	0xfffffff00721ce5e	0xfffffff00ad5c5c0	%s: invalid PV head 0x%llx for PTE %p @%s:%d
+_pmap_remove_range_options+0x828	0xfffffff00721ad32	0xfffffff00ad5c5ec	%s: PTE range [%p, %p) in pmap %p crosses page table boundary @%s:%d
+_pmap_remove_range_options+0x850	0xfffffff00721ad91	0xfffffff00ad5c614	%s: attempt to remove mappings from commpage pmap %p @%s:%d
+_pmap_remove_range_options+0x87c	0xfffffff00721adcd	0xfffffff00ad5c640	%s: attempt to remove mappings from the physical aperture for va: %p @%s:%d
+_pmap_remove_range_options+0x8a0	0xfffffff00721a802	0xfffffff00ad5c664	compressed PTE %p 0x%llx has extra bits 0x%llx: corrupted? @%s:%d
+_pmap_remove_range_options+0x8cc	0xfffffff00721c988	0xfffffff00ad5c690	%s: PTE write is unaligned, ptep=%p, pte=%p @%s:%d
+_pmap_remove_range_options+0x928	0xfffffff00721af72	0xfffffff00ad5c6ec	pmap_remove_range_options: over-release of ptdp %p for pte [%p, %p) @%s:%d
+_pmap_remove_range_options+0x9d8	0xfffffff00721ae19	0xfffffff00ad5c79c	%s:%d Assertion failed: %s : unexpected compressed pte %p (=0x%llx)
+_pmap_remove_range_options+0xa04	0xfffffff00721ae81	0xfffffff00ad5c7c8	%s:%d Assertion failed: %s : invalid pte %p (=0x%llx)
+_pmap_tte_deallocate+0x114	0xfffffff00721cc6d	0xfffffff00ad5b30c	%s: invalid PV head 0x%llx for TTE 0x%llx @%s:%d
+_pmap_tte_deallocate+0x1ac	0xfffffff00721ace7	0xfffffff00ad5b3a4	%s:%d Assertion failed: %s : %s: invalid TTE %p (0x%llx)
+_pmap_tte_deallocate.cold.1+0x5c	0xfffffff00721ac74	0xfffffff00b4736a8	%s: Passed in pmap doesn't own the page table to be deleted ptd=%p ptd->pmap=%p pmap=%p @%s:%d
+_ptep_get_info+0xd0	0xfffffff00721ce5e	0xfffffff00ad5cbe4	%s: invalid PV head 0x%llx for PTE %p @%s:%d
+_ptep_get_pmap+0xb4	0xfffffff00721ce5e	0xfffffff00ad5a804	%s: invalid PV head 0x%llx for PTE %p @%s:%d
+_serial_init+0x204	0xfffffff0072d74cb	0xfffffff00b3a39f8	Unable to find serial device driver for '%s' @%s:%d
+_serial_init+0x224	0xfffffff0072d743b	0xfffffff00b3a3a18	Unable to find a devicetree node with phandle %x @%s:%d
+_serial_init+0x244	0xfffffff0072d7592	0xfffffff00b3a3a38	Unable to find a devicetree node with the name '%s'. @%s:%d
+_serial_init.cold.1+0x28	0xfffffff0072d7508	0xfffffff00b4ef490	Unable to find the 'defaults' devicetree node. @%s:%d
+_serial_init.cold.3+0x28	0xfffffff0072d75ce	0xfffffff00b4ef4cc	The devicetree node has no phandle. This should never happen! @%s:%d
+_serial_init.cold.5+0x28	0xfffffff0072d747f	0xfffffff00b4ef508	The serial device devicetree node doesn't have a 'compatible' string @%s:%d
+_thread_call_cancel+0xcc	0xfffffff0071e90cd	0xfffffff00abd7574	(%p %p) uninitialized thread call @%s:%d
+_thread_call_cancel+0xf0	0xfffffff0071e962f	0xfffffff00abd7598	(%p %p) invalid thread call index: %d @%s:%d
+_thread_call_cancel_locked+0x194	0xfffffff0071e90cd	0xfffffff00abd7730	(%p %p) uninitialized thread call @%s:%d
+_thread_call_cancel_locked+0x1b8	0xfffffff0071e962f	0xfffffff00abd7754	(%p %p) invalid thread call index: %d @%s:%d
+_thread_call_dequeue+0x114	0xfffffff0071e90cd	0xfffffff00abd7e9c	(%p %p) uninitialized thread call @%s:%d
+_thread_call_dequeue+0x140	0xfffffff0071e9673	0xfffffff00abd7ec8	thread call (%p %p) on bad queue (old_queue: %p) @%s:%d
+_thread_call_dequeue+0x164	0xfffffff0071e962f	0xfffffff00abd7eec	(%p %p) invalid thread call index: %d @%s:%d
+_thread_call_enter_delayed_internal+0x2cc	0xfffffff0071e90cd	0xfffffff00abd678c	(%p %p) uninitialized thread call @%s:%d
+_thread_call_enter_delayed_internal+0x2f0	0xfffffff0071e962f	0xfffffff00abd67b0	(%p %p) invalid thread call index: %d @%s:%d
+_thread_call_enter_delayed_internal.cold.3+0x28	0xfffffff0071e9708	0xfffffff00b44aeec	_internal_call_allocate: thread_call_internal_queue empty @%s:%d
+_vm_entry_unlock_exclusive.cold.2+0x28	0xfffffff007213549	0xfffffff00b46eb90	Attempting to unlock a sentinel entry. @%s:%d
+_vm_object_deallocate.cold.11+0x28	0xfffffff007207fdf	0xfffffff00b4623a8	vm_object_deallocate: losing compressor_object @%s:%d
+_vm_object_deallocate.cold.12+0x28	0xfffffff007207fa6	0xfffffff00b4623d4	vm_object_deallocate: losing retired_pages_object @%s:%d
+_vm_object_deallocate.cold.13+0x28	0xfffffff007207f72	0xfffffff00b462400	vm_object_deallocate: losing a kernel_object @%s:%d
+_vm_packing_pointer_invalid+0x5c	0xfffffff007200133	0xfffffff00b45c4e0	pointer %p can't be packed: maximum encodable pointer is %p @%s:%d
+_vm_packing_pointer_invalid+0x80	0xfffffff0072000ca	0xfffffff00b45c504	pointer %p can't be packed: low %d bits aren't 0 @%s:%d
+_vm_packing_pointer_invalid+0xa0	0xfffffff007200102	0xfffffff00b45c524	pointer %p can't be packed: below base %p @%s:%d

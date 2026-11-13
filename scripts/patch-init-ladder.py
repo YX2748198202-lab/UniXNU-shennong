@@ -57,6 +57,39 @@ _start:
   ldp x29, x30, [sp], #16
 """
 
+# Reset mode: the marker cannot paint once the MMU is on (the frame buffer is not mapped by
+# then), but PSCI does not need any mapping. Marker k therefore waits (k+1)*step seconds and
+# then resets the machine, so the measured time to reboot names the marker that was reached.
+DELAY_RESET = """.text
+.global _start
+_start:
+  movz x9, #{ticks_lo}
+  movk x9, #{ticks_hi}, lsl 16
+  mrs x10, cntpct_el0
+  add x9, x10, x9
+1:
+  isb
+  mrs x10, cntpct_el0
+  cmp x10, x9
+  b.lo 1b
+  movz w0, #0x0009
+  movk w0, #0x8400, lsl 16
+  mov x1, xzr
+  mov x2, xzr
+  mov x3, xzr
+  smc #0
+2:
+  wfe
+  b 2b
+.ltorg
+"""
+
+TIMEBASE = 19200000
+
+RAW_TAIL = """  b tail
+.ltorg
+"""
+
 ENTRY_TAIL = """  pacibsp
   b tail
 .ltorg
@@ -84,6 +117,12 @@ def main():
     parser.add_argument('--from-call', type=int, default=1, help='1-based first call')
     parser.add_argument('--calls', type=int, default=15, help='how many calls to mark')
     parser.add_argument('--no-entry', action='store_true', help='omit the entry marker')
+    parser.add_argument('--mode', choices=('paint', 'reset'), default='paint',
+                        help='paint a band (MMU off only) or reset after (index+1)*step seconds')
+    parser.add_argument('--step', type=int, default=10,
+                        help='reset mode: seconds between consecutive markers')
+    parser.add_argument('--sites', metavar='VA,VA,...',
+                        help='explicit marker addresses instead of decoding bl calls')
     args = parser.parse_args()
 
     probe = load_probe(args.probe_tool)
@@ -92,14 +131,49 @@ def main():
     symbols = probe.kernel_symbols(args.kernel)
     entry = {name: va for va, name in symbols.items()}['_arm_init']
 
-    import capstone
-    md = capstone.Cs(capstone.CS_ARCH_ARM64, capstone.CS_MODE_LITTLE_ENDIAN)
+    if args.sites:
+        # Explicit addresses on a path the disassembly scan cannot see (a branch that is
+        # taken, an inlined helper, the body between two calls). Each marker blocks and
+        # resets, so the *shallowest* reached marker fires: increasing delays name it.
+        explicit = [int(part, 0) for part in args.sites.split(',') if part.strip()]
+        if len(explicit) > 16:
+            raise SystemExit(f'{len(explicit)} markers exceed the 16 bands')
+        args.workdir.mkdir(parents=True, exist_ok=True)
+        for index, site in enumerate(explicit):
+            if site & 3:
+                raise SystemExit(f'site {site:#x} is not 4-byte aligned')
+            cave = CAVE_BASE + index * CAVE_STRIDE
+            seconds = (index + 1) * args.step
+            ticks = TIMEBASE * seconds
+            if ticks >= 1 << 32:
+                raise SystemExit(f'marker {index} needs {ticks} ticks, over 32 bits')
+            source = DELAY_RESET.format(ticks_lo=f'{ticks & 0xFFFF:#x}',
+                                        ticks_hi=f'{(ticks >> 16) & 0xFFFF:#x}')
+            source += RAW_TAIL
+            blob = probe.assemble(source, cave, {'tail': site + 4}, args.workdir)
+            if len(blob) > CAVE_STRIDE:
+                raise SystemExit(f'cave {index} needs {len(blob)} bytes')
+            data[probe.file_offset(cave):probe.file_offset(cave) + len(blob)] = blob
+            site_off = probe.file_offset(site)
+            struct.pack_into('<I', data, site_off, probe.branch(site, cave))
+            print(f'  band {index:2d}  site {site:#x} -> cave {cave:#x}  reset {seconds:3d} s')
+        args.kernel.write_bytes(bytes(data))
+        print(f'patched {args.kernel} with {len(explicit)} explicit markers')
+        return
+
+    # No disassembler dependency: AArch64 `bl` and `ret` are decoded straight from the
+    # instruction words. The scan walks _arm_init linearly and stops at the first return.
     code = bytes(data[probe.file_offset(entry):probe.file_offset(entry) + 0x2000])
     calls = []
-    for ins in md.disasm(code, entry):
-        if ins.mnemonic == 'bl':
-            calls.append((ins.address, int(ins.op_str.lstrip('#'), 0)))
-        if ins.mnemonic in ('ret', 'retab'):
+    for offset in range(0, len(code), 4):
+        word = struct.unpack_from('<I', code, offset)[0]
+        site = entry + offset
+        if word >> 26 == 0b100101:                      # bl imm26
+            immediate = word & 0x3FFFFFF
+            if immediate & 0x2000000:
+                immediate -= 0x4000000
+            calls.append((site, site + immediate * 4))
+        elif (word & 0xFFFFFC1F) in (0xD65F0000, 0xD65F0C00):   # ret / retab
             break
     first = args.from_call - 1
     window = calls[first:first + args.calls]
@@ -116,12 +190,24 @@ def main():
     args.workdir.mkdir(parents=True, exist_ok=True)
     for index, (site, target) in enumerate(markers):
         cave = CAVE_BASE + index * CAVE_STRIDE
-        source = PAINT.format(
-            base_lo=f'{FB_BASE & 0xFFFF:#x}', base_hi=f'{(FB_BASE >> 16) & 0xFFFF:#x}',
-            size_lo=f'{BAND_BYTES & 0xFFFF:#x}', size_hi=f'{(BAND_BYTES >> 16) & 0xFFFF:#x}',
-            band=index, colour_lo=f'{COLOURS[index] & 0xFFFF:#x}',
-            colour_hi=f'{(COLOURS[index] >> 16) & 0xFFFF:#x}')
-        source += ENTRY_TAIL if target is None else CALL_TAIL
+        if args.mode == 'reset':
+            # Countdown: marker k waits (len - k) * step, so the deepest marker that is
+            # actually reached owns the earliest deadline and its time names it.
+            factor = (len(markers) - index) if args.countdown else (index + 1)
+            seconds = factor * args.step
+            ticks = TIMEBASE * seconds
+            if ticks >= 1 << 32:
+                raise SystemExit(f'marker {index} needs {ticks} ticks, over 32 bits')
+            source = DELAY_RESET.format(ticks_lo=f'{ticks & 0xFFFF:#x}',
+                                        ticks_hi=f'{(ticks >> 16) & 0xFFFF:#x}')
+            source += ENTRY_TAIL if target is None else CALL_TAIL
+        else:
+            source = PAINT.format(
+                base_lo=f'{FB_BASE & 0xFFFF:#x}', base_hi=f'{(FB_BASE >> 16) & 0xFFFF:#x}',
+                size_lo=f'{BAND_BYTES & 0xFFFF:#x}', size_hi=f'{(BAND_BYTES >> 16) & 0xFFFF:#x}',
+                band=index, colour_lo=f'{COLOURS[index] & 0xFFFF:#x}',
+                colour_hi=f'{(COLOURS[index] >> 16) & 0xFFFF:#x}')
+            source += ENTRY_TAIL if target is None else CALL_TAIL
         binds = {'tail': site + 4}
         if target is not None:
             binds['target'] = target
@@ -140,7 +226,8 @@ def main():
             label = f'call {args.from_call + index}'
         else:
             label = f'call {args.from_call + index - 1}'
-        print(f'  band {index:2d}  {label:8s} site {site:#x} -> cave {cave:#x}')
+        print(f'  band {index:2d}  {label:8s} site {site:#x} -> cave {cave:#x}' +
+              (f'  reset {seconds:3d} s' if args.mode == 'reset' else ''))
 
     args.kernel.write_bytes(bytes(data))
     print(f'patched {args.kernel} with {len(markers)} markers')

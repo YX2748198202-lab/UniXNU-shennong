@@ -12,7 +12,9 @@ Usage:
 """
 import argparse
 import importlib.util
+import shutil
 import struct
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -146,6 +148,75 @@ _start:
     branch_word = struct.unpack_from('<I', blob, 4)[0]
     check('assemble branch target', decode_branch(branch_word, 0xFFFFFFF00B4F9704),
           ('b', 0xFFFFFFF00B4F9800))
+
+    # 6. The silent-death hooks: each one must land in its own cave, and the cave must
+    #    really contain the wait-then-SYSTEM_RESET body. A hook that branches into a
+    #    cave holding something else looks exactly like a probe that never fired.
+    delta = symbol_va('_start_first_cpu') - probe.START_FIRST_CPU
+    caves = {stage: va + delta for stage, va in probe.CAVES.items()}
+    entry_va = probe.ENTRY_VA + delta
+    panic_va = symbol_va('_panic')
+    vector_va = symbol_va('_ExceptionVectorsBase') + 0x200
+    smc = 0xD4000003                     # smc #0, the PSCI SYSTEM_RESET call
+    wait_first = 0xD53BE021              # mrs x1, cntpct_el0
+
+    def walk(blob, cave, size=0x60):
+        return [struct.unpack_from('<I', blob, probe.file_offset(cave + offset))[0]
+                for offset in range(0, size, 4)]
+
+    def run_patch(*flags):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / 'kernel.macho'
+            shutil.copyfile(args.kernel, target)
+            result = subprocess.run([sys.executable, str(PROBE), str(target), *flags],
+                                    capture_output=True, text=True)
+            if result.returncode:
+                failures.append(f'patch {flags} failed: {result.stderr.strip()[-200:]}')
+                print(f'FAIL patch {flags}: {result.stderr.strip()[-200:]}')
+                return None
+            return target.read_bytes()
+
+    patched = run_patch('--reset-at-entry')
+    if patched is not None:
+        branch = decode_branch(struct.unpack_from('<I', patched, probe.file_offset(entry_va))[0], entry_va)
+        check('--reset-at-entry branches to cave 1', branch, ('b', caves[1]))
+        body = walk(patched, caves[1])
+        check('--reset-at-entry cave waits on cntpct', f'{body[0]:#010x}', f'{wait_first:#010x}')
+        check('--reset-at-entry cave resets', smc in body, True)
+        check('--reset-at-entry cave never returns to the kernel',
+              any(decode_branch(word, caves[1] + index * 4) == ('b', symbol_va('_start_first_cpu'))
+                  for index, word in enumerate(body)), False)
+
+    patched = run_patch('--no-reset', '--panic-reset', '20', '--fault-reset', '60')
+    if patched is not None:
+        panic_hook = decode_branch(struct.unpack_from('<I', patched, probe.file_offset(panic_va))[0], panic_va)
+        fault_hook = decode_branch(struct.unpack_from('<I', patched, probe.file_offset(vector_va))[0], vector_va)
+        check('--panic-reset hooks panic()', panic_hook is not None and panic_hook[0] == 'b', True)
+        check('--fault-reset hooks the EL1/SPx sync vector', fault_hook is not None and fault_hook[0] == 'b', True)
+        check('--panic-reset target is one of the caves', panic_hook[1] in caves.values(), True)
+        check('--fault-reset target is one of the caves', fault_hook[1] in caves.values(), True)
+        check('the two hooks use different caves', panic_hook[1] != fault_hook[1], True)
+        for label, cave in (('panic', panic_hook[1]), ('fault', fault_hook[1])):
+            body = walk(patched, cave)
+            check(f'{label} hook cave waits on cntpct', f'{body[0]:#010x}', f'{wait_first:#010x}')
+            check(f'{label} hook cave resets', smc in body, True)
+
+    # 7. The fingerprint hook: panic() cannot print this early, so the cave turns a slice of the
+    #    format-string address into a reset delay. The body must really shift, mask and scale
+    #    that slice — a cave that always waits the same time would decode as one slice forever.
+    patched = run_patch('--no-reset', '--panic-fingerprint', '4:6:10:3')
+    if patched is not None:
+        hook = decode_branch(struct.unpack_from('<I', patched, probe.file_offset(panic_va))[0], panic_va)
+        check('--panic-fingerprint hooks panic()', hook is not None and hook[0] == 'b', True)
+        if hook is not None:
+            body = walk(patched, hook[1])
+            # lsr x9, x0, #4   = UBFM x9, x0, #4, #63   -> immr=4, imms=63
+            check('fingerprint cave shifts the slice by 4', body[0], 0xD344FC09)
+            # and x9, x9, #0x3f = AND (immediate), 64-bit, N=1, immr=0, imms=5
+            check('fingerprint cave masks the slice to 6 bits', body[1], 0x92401529)
+            check('fingerprint cave scales by the step', body[2], 0xD280006A)  # movz x10, #3
+            check('fingerprint cave adds the base', body[4], 0x91002929)       # add x9, x9, #0xA
+            check('fingerprint cave resets', smc in body, True)
 
     print()
     if failures:

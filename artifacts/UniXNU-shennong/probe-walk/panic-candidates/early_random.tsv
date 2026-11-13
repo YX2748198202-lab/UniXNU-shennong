@@ -1,0 +1,5 @@
+name	fmt_va	call_site_va	text
+no_random_seed	0xfffffff0072d6d60	0xfffffff00b4ef034	no random seed @%s:%d
+ccdrbg_init_returned	0xfffffff007219e71	0xfffffff00ad551cc	ccdrbg_init() returned %d @%s:%d
+read_erandom_ccdrbg_error	0xfffffff007219ee7	0xfffffff00ad55ee0	read_erandom ccdrbg error %d @%s:%d
+stack_chk_fail	0xfffffff0072bf505	0xfffffff00b4e4b60	Kernel stack memory corruption detected @%s:%d

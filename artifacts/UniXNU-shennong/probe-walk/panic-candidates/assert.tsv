@@ -1,0 +1,2 @@
+name	fmt_va	call_site_va	text
+assert_failed	0xfffffff007224fe7	0x0	assertion failed: %s, file: %s, line: %d

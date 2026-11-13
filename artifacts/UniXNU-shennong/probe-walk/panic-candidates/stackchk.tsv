@@ -1,0 +1,3 @@
+name	fmt_va	call_site_va	text
+stack_chk	0xfffffff0072bf505	0xfffffff00b4e4b60	Kernel stack memory corruption detected @%s:%d
+segLOWESTAuxKC_decoy	0xfffffff007220441	0x0	decoy

@@ -1,0 +1,2 @@
+name	fmt_va	call_site_va	text
+cpu_topo	0xfffffff0071734b5	0x0	CPU configuration in device tree is invalid

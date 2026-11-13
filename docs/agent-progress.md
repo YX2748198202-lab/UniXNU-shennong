@@ -1,3 +1,80 @@
+# 项目规定（用户第一轮原文，2026-11-11 重述，最高优先级）
+
+> 本文件保存用户在本会话第一轮给出的《UniXNU-shennong 项目正式接管与持续开发指令》原文。
+> 每轮开工前必须先对照本文件。任何与本文件冲突的临时判断一律作废。
+
+## 0. 身份与目标
+我是本项目唯一主力开发 Agent，负责接管、审计、开发、构建、调试和推进 Xiaomi 14 Pro
+（shennong，23116PN5BC，SM8650，**12GB RAM**）的 UniXNU 移植工程。
+目标不是反复分析或做计划，而是持续产出真实、可复现、可验证的工程成果，
+尽可能推进到设备能启动 XNU、运行 iOS 用户空间。
+
+## 1. 仓库关系与工作目录
+- 设备主仓库（主落点，非只读）：YX2748198202-lab/UniXNU-shennong
+- 官方上游（供框架/规范/通用修复）：UniXNU/UniXNU
+- 迁移规范：https://unixnu.com/porting/migration
+- 设备主仓库：/home/yoox/android/workspace/UniXNU-shennong
+- 官方上游：/home/yoox/android/workspace/UniXNU
+- 产物：/home/yoox/android/artifacts/UniXNU-shennong
+- 禁止未分析就用上游覆盖设备仓库；禁止丢弃用户已有成果。
+
+## 2-3. 设备与接管
+已知历史线索 A–G 仅用于定位，不得当作当前 HEAD 已验证状态。
+A 构建链/加载器有阶段性成果；B UEFI 启动菜单有阶段性成果；
+C XNU 早期启动阻塞，历史指向 _arm_init 到 _machine_startup 之间；
+D CPU/异常/中断/内存管理需按当前供体重新核验；E SM8650 UFS 与根卷有实机成果但旧供体不证明新供体；
+F launchd/SpringBoard 未完成；G 显示/触控/GPU/网络/音频待适配。
+已完成项不得无理由从零重做。
+
+## 4-5. 审计与供体管理
+必须建立基于证据的状态基线，禁止把文档"已完成"当实机成功。
+供体必须记录型号/版本/Build/架构/XNU 版本/来源；符号、地址、偏移、补丁、二进制、哈希必须可追溯。
+**严禁混用 iPadOS 17 与 iOS 27 的符号、地址、偏移、补丁或产物。**
+IPSW 按需获取，先查缓存。
+
+## 6. 阻塞点与开发
+每次只针对明确问题提出**可验证假设**，选择**最小必要修改**，改完立即构建/测试/实机验证。
+失败时分析具体错误和日志再修正，不得反复输出相同的推测。
+
+## 7. 强制开发循环与验收
+检查现状 → 提出可验证假设 → 选择最小修改 → 实施 → 构建/测试 → 分析结果 → 记录证据 → 下一项。
+"已读代码/已做计划/已分析原因"不算完成。无法实机验证必须标"尚未实机验证"，不得伪称成功。
+每次修改检查 diff，不得有无关改动或破坏已有成果。
+
+## 8. Token/日志/资源规范
+用 rg/grep/find/git diff/log 定向查询，不整份读源码或日志；
+日志只提取关键片段；不把大量代码/二进制/重复构建信息输出给用户；
+已验证步骤记录复用；不为显得有进展而重复分析或堆文档。
+
+## 9. 进度记录
+维护 docs/agent-progress.md：更新时间、两仓库 HEAD/分支/工作区状态、当前供体完整版本、
+当前阶段、已验证成果及证据、本轮改动文件及目的、构建/测试/实机命令与结果、
+未解决阻塞与具体错误、下一项最优先任务。每轮结束更新。
+
+## 10. Git 与代码安全
+本地专用分支；改前查 git status，必要时建检查点；重要成果可本地 commit；
+**未经明确授权不得 push、不得覆盖远程分支、不得强推、不得重写远程历史**；
+不得随意删除用户代码/补丁/配置/提交/产物；同步上游要可审查可回滚；
+禁止大范围覆盖或无差别替换关键启动代码。
+
+## 11. 设备操作授权边界
+userdata 已被旧 iPadOS 17.7.11 根卷占用且无保留价值，允许按新供体需要修改/覆盖/清理/格式化/重建。
+执行前必须核对设备连接、分区映射、块设备标识、目标分区，严禁凭猜测选设备节点。
+授权仅限旧 userdata 根卷，**不得扩大为允许擦除整机**。
+Bootloader、UEFI 持久分区、GPT、modem、persist、其他固件分区均不在授权内，需单独授权。
+不得为方便做全盘擦除。所有设备写入要有目标、理由、结果、恢复方案。
+
+## 12. 连续执行与暂停
+默认继续执行，不频繁询问是否继续。仅在：缺关键资料/需账号密钥权限/超授权不可逆操作/
+重大数据风险/关键依赖不可用时暂停并报告。
+一般代码修改、构建失败、测试失败、常规调试自行解决。
+
+## 13. 每轮结束必须说明
+本轮真正完成了什么、验证证据是什么、还有什么阻塞、接下来正在执行什么。
+不得只给计划就停止。
+
+---
+
 # Agent 进度记录（机器可读的接续入口）
 
 最后更新：2026-11-11 01:05 CST
@@ -558,3 +635,873 @@ verify: ok (kernel 2389419 incl. dtb 1238463, ramdisk 201326592, payload at 0x24
 对比 fd44：fd44 用的是 **iPadOS 17.7.11 的 61,356 B 信任缓存**、没有 vroot 通道、ADT 也不带
 RootPolicies；fd46 这四项全是 iOS 27 对应的正确件。**上机判断应以 fd46 为准**，fd44 的屏幕只说明
 "无 vroot 时的失败形态"，信息量被 fd46 完全覆盖。
+
+## 28. 2026-11-11 上午：用复位探针把 iOS 27 内核的死点收进 `_arm_vm_init` 开头 2,324 字节
+
+### 28.1 设备规格更正（以用户 YG 确认为准）
+
+| 项 | 值 | 依据 |
+|---|---|---|
+| 机型 | 小米 14 Pro（shennong，23116PN5BC，SM8650） | 实测 `fastboot devices` 序列号 `9f72e95c` |
+| 存储 / 内存 | **256 GB + 12 GiB** | 用户本人确认「12+256」；`docs/bringup.md` 与 `porting.toml` 本来就写的 12 GB，只有对话里出现过一次错误的「16 GB」，现已更正 |
+| DRAM 起始 | `0x80000000` | `porting.toml` 的 `inputs`；`firmware/shennong-memory-map.toml` 由本机 `xbl_config_a` 解析而来 |
+
+内存容量这件事对当前判读有直接影响，所以把算式写在这里（**已验证：源码** `osfmk/arm64/arm_vm_init.c`）：
+
+```
+mem_size   = ((gPhysBase + args->memSize) & ~PAGE_MASK) - gPhysBase
+panic 条件 = mem_size >= (VM_MAX_KERNEL_ADDRESS - VM_MIN_KERNEL_ADDRESS) / 2
+VM_MIN_KERNEL_ADDRESS = 0xffffffe000000000   VM_MAX_KERNEL_ADDRESS = 0xfffffffbffffffff
+门槛 = 0xdffffffff ≈ 56 GiB
+12 GiB = 0x300000000  →  12 GiB ≥ 56 GiB 不成立  →  不会走 panic("Unsupported memory configuration %lx")
+```
+
+⇒ 之前那次「12 GiB 是不是超限」的疑虑可以闭环：**超限这条分支不走**。
+
+### 28.2 探针表（每一行都是真机实测，`fastboot boot` 下发）
+
+判读约定：探针=在某点等 N 秒后 `smc #0`（PSCI SYSTEM_RESET）；设备自己重启并落到 recovery = **命中**（该点确实执行到了）；USB 静默 = **未命中**。
+
+| 镜像 | 探针位置 | 延时 | 结果 | 证据 |
+|---|---|---|---|---|
+| fd47 | `0xfffffff00ad83438`（`msr SCTLR_EL1, x0` 之后 0x20） | 20 s | **命中** | 屏幕黑掉后自行重启到 TWRP ⇒ MMU 翻译正确 + PSCI SYSTEM_RESET 在 SM8650 上可用 |
+| fd49 | `_arm_init` 内 `bl _arm_vm_init` 之后（`0xb477374`） | 10 s | **未命中** | 105 s 采样 `fastboot=[] adb=[]` |
+| fd50 | `_arm_init` 内 `bl _arm_vm_init` 之前（`0xb477370`） | 10 s | **命中** | 09:41:19 起 `adb` 出现 `9f72e95c recovery` ⇒ `_arm_init` 确实走到这个调用 |
+| probe-walk/01 | `_arm_vm_init` 内 `_vm_set_page_size` 之后（`0xad782f8`） | 10 s | **未命中** | 09:43:15→09:46:13 无任何 USB 变化 |
+
+结论（已验证）：死亡区间 = `_arm_vm_init` 入口 `0xad77ae4` 到 `0xad782f8` 之间，共 **2,324 字节**，其间只有 8 处调用：
+`_phystokv`(0xad77bc0)、`_early_random`(0xad77bcc)、`_kvtophys`(0xad77c44)、`__bzero`(0xad77cd0)、
+`_getsegdatafromheader`×18（首个 0xad77e14）、`_getsectdatafromheader`×2、`_PE_get_kc_header`(0xad780a0)、
+`_PE_parse_boot_argn`(0xad78244)、`_getlastkerneladdr`(0xad782b4)。
+
+### 28.3 新工具
+
+- `scripts/probe-walk.py`：把「构建→预检→下发→判定→`adb reboot bootloader` 接管→下一探针」串成一条自动走查。命中会自己回到 fastboot 继续跑，只有未命中才需要人手断电。
+  踩坑记录：`fastboot boot` 把 `OKAY` 写在 **stderr**，只看 stdout 会把成功判成失败（已修，`boot-failed` 判据现在合并输出）。
+- `scripts/patch-xnu-entry-probe.py` 新增 `--panic-reset SECONDS`：把 `_panic` 改跳进空闲 cave，等 N 秒后 `smc #0`。用途是把「静默死亡」分成两类——设备自己重启 = 内核**主动 panic**；依旧静默 = **异常/自旋**。
+
+### 28.4 尚未验证（不要当成已知）
+
+- loader 实际填进 `boot_args->memSize` 的**具体数值**没有实测过（`未验证`）；只知道它必须 ≥56 GiB 才会触发那条 panic。
+- 死亡是 panic 还是异常，当前**未知**，下一次上机（fd51）就是来定这件事的。
+
+### 28.5 fd53 / fd54：死法是 panic，但 panic 屏在这个位置画不出来（2026-11-11 上午）
+
+**fd53**（`_panic` 等 20 s 复位 + EL1/SPx 同步异常等 60 s 复位，双钩）：下发 09:54:02，09:55:36 以 recovery 身份回到 USB。
+两条钩子的延时把两个等式钉死（`A` = 走到 `bl _arm_vm_init` 的时刻，`D` = 复位后 TWRP 起 adb 的耗时）：
+
+```
+fd50（探针 10 s 命中）: A + 10 + D = 76      →  A + D = 66
+fd53（本次）           : X + 20 + D = 94      →  X + D = 74      （X = 进入 _panic 的时刻）
+相减                   : X - A = 8 秒
+```
+
+若那次复位来自异常钩子（60 s），等式右边会变成 114 而不是 94，实测不符 ⇒ **死因是 `_panic()`，不是数据/未定义指令异常**（推断，依据是上面两条实测时刻）。
+
+**fd54**（`--panic-screen`）：`panic screen (0xa4f bytes at 0xfffffff00ad815a8; common funnel at 0xfffffff00ab69d48)`，09:57:50 下发，120 s 采样无任何 USB 变化。
+真机照片显示：屏幕仍是 DarwinBoot 菜单 + 蓝条 + 洋红条，**没有被清屏**，也没有白字。
+渲染器 `scripts/xnu-panic-screen.c:222` 先读 `VINFO`，只要 `v_baseaddr == 0` 或 `v_depth != 32` 就直接 `park()`；清屏发生在这次检查之后。画面没被清 ⇒ **它停在了这个检查上**，即 `_vinfo` 在 `arm_vm_init` 这么早的时刻还没有内容（推断：`_vinfo` 是 XNU 侧稍后才填的全局）。
+
+⇒ 结论：**panic 屏这条通道对 `arm_vm_init` 早期的 panic 无效**，要读消息得自己从 `gPhysBase`/`physmap_base` 算帧缓冲 KVA，而 `physmap_base` 恰恰是在那条 panic 之后才赋值（源码顺序），所以这条路暂时放弃。
+
+### 28.6 改用「panic 15 s + 探针 60 s」双钩：每一轮都会自己重启，不再需要手动断电
+
+`scripts/probe-walk.py` 新增 `--panic-reset` 与 `--hit-after`：panic 钩子早于探针复位，于是
+
+- 探针**未**到达（内核先 panic）→ 复位≈`A+8+15`≈下发后 89 s 回到 USB
+- 探针**到达** → 复位≈`S+60`（`S ≥ A`）≈下发后 126–134 s 回到 USB
+
+两者相差 ~40 s，用 100 s 阈值分开即可。走查因此可以在没有任何人工干预的情况下把 `_arm_vm_init` 开头 2,324 字节里的 8 个调用点全部问一遍。
+
+## 29. 2026-11-11 上午：panic 指纹通道（候选表 + 切片编码），以及走查分类器的真 bug
+
+### 29.1 窗口的源码定位（已验证：反汇编 ↔ 源码逐条对应）
+
+`_arm_vm_init` 开头 `[0xad77ae4, 0xad782f8)` 这 2,324 字节，用字节级 BL 扫描 + 符号反查，里面**没有任何 `bl _panic`**；它恰好覆盖 `osfmk/arm64/arm_vm_init.c` 第 1843–2090 行：
+
+| 反汇编里的调用 | 源码行 | 含义 |
+|---|---|---|
+| `_phystokv` ×4 | 1863 | `physmap_base = phystokv(args->topOfKernelData)` |
+| `_early_random` ×1 | 1866 | physmap 随机滑动 |
+| `_kvtophys` ×4 | 1908 | `boot_ttep = kvtophys(&bootstrap_pagetables)` |
+| `___bzero` ×3 | 1911 | 清 bootstrap 页表 |
+| `_getsegdatafromheader` ×24 | 1994–2074 | 段表解析 |
+| `_PE_get_kc_header` ×1 | 2026 | `KCKindPrimary` |
+| `_PE_parse_boot_argn` ×1 | 2077 | `use_contiguous_hint` |
+| `_getlastkerneladdr` ×1 | 2088 | `end_kern` |
+| （窗口末尾） | 2090 | `vm_set_page_size()` ← 探针站点 |
+
+⇒ panic 不是 `arm_vm_init` 自己直调，而是某个被调函数／它的 cold 段里（`_arm_vm_init.cold.18` = auxKC 检查、`_arm_vm_init.cold.31` = `BOOTSTRAP_TABLE_SIZE too small`，两条都在 `#if DEVELOPMENT||DEBUG` 或 auxKC 分支里）。
+
+### 29.2 走查分类器的真 bug（已验证：修复前后各一次实机）
+
+`fastboot boot` 返回后，设备仍以 `????????????  fastboot` 回答 `fastboot devices` 达数秒；旧判定把「看得到 fastboot」当成「探针回来了」，于是第 01 轮（`_phystokv`）报了一个**15 秒的假 panic**。
+修法：新增 `wait_boot_started()`——以「bootloader gadget 消失」为 boot 真正开始的时刻，计时与判定都从这一刻起算；`unknown`（<5 s 就回来）单独成一类并重试一次。`scripts/test-probe-walk.py` 用桩 `fastboot`/`adb` 回放时间线，钉住 hit / panic / unknown / boot-failed / miss 五种判定，`probe-walk classifier: all checks passed`。
+
+### 29.3 panic 候选表收集器（新工具）
+
+`scripts/collect-panic-sites.py`：从符号表取函数区间 → 找 `bl/b _panic`、`_panic_trap_to_debugger` 等 → 回溯还原 `x0`（`adrp`+`add` 或 `ldr x0, #literal`）→ 从内核里读回格式串。踩到的坑（都已修）：
+- `adrp` 在回溯顺序里出现在 `add` 之后，必须先把 page 映射收集完再解析 `add`；
+- 编译器把 panic 分支放进 `.cold.N`，`_PE_get_kc_header` 本体里一条都没有——必须跟进 `.cold.*` 与 `_OUTLINED_FUNCTION_*`；
+- cold 段常常用**尾分支 `b`** 而不是 `bl`。
+
+### 29.4 指纹两轮实测（已验证）
+
+`--panic-candidates` 把 `panic()` 拿到的格式串地址与候选表逐条比较，命中第 i 条就等 `10+6i` 秒后复位，未命中等 `34` 秒。判定用「校准轮」消掉启动时间与 recovery 启动时间：
+
+```
+校准（--panic-reset 10）: 65 s      → A + D = 55 s
+候选表（4 条，10/16/22/28，未知 34）: 87 s
+delay = 87 − 65 + 10 = 32 s
+```
+
+32 s 落在 28 s（`segLOWESTAuxKC`）与 34 s（未知）之间，偏向「未知」；且 28 s 那条所在的 `arm_vm_auxkc_init()` 在源码里位于第 **2208** 行，远在 `vm_set_page_size()`（2090）之后，本来就不可能是它。
+⇒ **结论（已验证）：panic 不属于这 4 条候选，是别处（更深的被调函数 / `assert` / `_panic_trap_to_debugger` 路径）**。
+
+同时得到一个有用常数：**A + D ≈ 55 秒**（A = boot 真正开始→进入 `_arm_vm_init`；D = 复位→recovery 的 adb 起来）。
+
+### 29.5 下一步（正在跑）
+
+用修好的分类器把窗口里 8 个调用点扫一遍（`--delay 60 --panic-reset 15 --hit-after 96`）：探针命中 ≈ 115 s 回来，panic 先发生 ≈ 78 s 回来，两个簇相差 ~37 s。拿到「最后到达 / 第一个未到达」的括号后，只对那一个被调函数跑收集器，候选数会降到个位数，再一轮候选表就能点名。
+
+## 30. 2026-11-11 10:40–11:00：突破！`physmap_slide = 0` 让 `arm_vm_init` 越过 `_vm_set_page_size`
+
+### 30.1 fd60 先把「走不走 panic」定死（已验证）
+
+fd60 = 故障向量钩 10 s + panic 钩 90 s。boot 起点 ≈10:36:14，adb 于 10:38:38 以 `9f72e95c recovery` 回来 = **≈144 s**；故障臂预测 ≈56 s、panic 臂预测 ≈136 s ⇒ **`_panic()` 确实被调用**。旁证：fb5（无任何钩子）超过 3 分钟从不自己重启，说明 144 s 那次复位只可能来自我们的 panic 钩。
+⇒ fb5 照片上没有白带，坏的是**显示通道**（存根或帧缓冲写），不是「没进 panic」。
+
+### 30.2 `--zero-physmap-slide`：把 `_early_random` 换成 `x0 = 0`（已验证）
+
+实现（`scripts/patch-xnu-entry-probe.py`）：定位 `_arm_vm_init` 内对 `_early_random` 的 `bl`（`0xad77bcc`，原值 `0x97ff74b5`），**先校验**该字确实是 BL 且目标等于 `_early_random`，再写 `mov x0, xzr`（`0xD2800000`）⇒ `physmap_slide = 0`，`assert(physmap_slide < ARM64_PHYSMAP_SLIDE_RANGE)` 自然成立。
+踩坑记录：BL 目标校验里符号扩展写错（`(imm26 << 2) - (bit25 << 1)`，正确是 `imm26 - 0x4000000` 再 `<< 2`），导致把正确的调用点判成「不是 early_random」；已修。
+
+### 30.3 fe01 真机：前沿首次推进（已验证：计时）
+
+镜像 `Mu-shennong-fe01.img`，sha `1f2c9152ea9571c8…`，预检 `0 failure(s)`，补丁 = `--zero-physmap-slide` + `_vm_set_page_size` 探针（10 s）+ panic 钩（90 s）。
+下发 10:40:38，boot 起点 ≈10:40:56，adb 于 **10:42:02** 回来 = 启动后 **≈66 s**。站点臂预测 `A+10+D ≈ 56 s`、panic 臂 ≈136 s ⇒ **命中站点探针：`_vm_set_page_size`（`0xad782f8`）第一次真正到达**。
+
+### 30.4 尾巴走查（已跑，但阈值设计有缺陷，待复核）
+
+`--zero-physmap-slide --delay 60 --panic-reset 90 --hit-after 110`：
+
+| 锚点 | 回来耗时 | 粗判 |
+|---|---|---|
+| `_patch_low_glo_static_region`（`arm_vm_init` 最后一个实调用） | 144 s | ≥阈值，倾向命中 |
+| `_pmap_bootstrap` | 134 s | 倾向命中 |
+| `_arm_auxkc_init` | 134 s | 倾向命中 |
+| `_set_mmu_ttb` | 106 s | 判定为 panic，但 106 = `A+60+D`（A+D=46）**恰好是站点臂**，实际应为命中 |
+
+**设计缺陷**：panic 钩 90 s 与站点 60 s 只差 30 s，而 `D` 抖动 10–20 s，两个簇重叠 ⇒ 这一轮的分类不可信。改法：panic 钩拉到 **240 s**，站点臂 106–150 s、panic 臂 ≥286 s，两簇彻底分开。正在用 `--panic-reset 240` 复核 `_patch_low_glo_static_region` 与 `_arm_init` 里 `bl _arm_vm_init` 之后的点位。
+
+### 30.5 已确定的修复形态（P2 要落进源码）
+
+`early_random()` 在 iOS 内核里只用于生成 physmap 随机滑动量；本移植在 `arm_vm_init` 阶段还没有 corecrypto DRBG（`prng_funcs` 指向 kext），调用即死。正确落法是在 `osfmk/arm64/arm_vm_init.c` 里让滑动量可配置：默认 0，`PE_parse_boot_argn("physmap_slide")` 可覆盖；这样既保住原逻辑，又不依赖早期 DRBG。
+
+## §31 越过 arm_vm_init 之后的死点点名（2026-11-11 12:05）
+
+### 已验证
+| 实验 | 配置 | 实测 | 结论 |
+|---|---|---|---|
+| fe10 | 候选表 3 槽（10/70/130 s） | 61 s = 槽 0 | panic 串 = `Kernel stack memory corruption detected @%s:%d` |
+| fe11 | `--allow-stack-chk` + 站点 `_patch_low_glo_static_region`(10 s) | 68 s | arm_vm_init 最后一个调用**到达** ⇒ arm_vm_init 跑完 |
+| fe12 | 站点 `_machine_startup`(10 s) panic 240 | 293 s = panic 臂 | machine_startup 未到达 |
+| 阶梯 | 站点 `_ml_map_cpu_pio`(10 s) panic 60 | 116 s = panic 臂 | `ml_map_cpu_pio` **没返回** ⇒ panic 在它里面 |
+| fi01 | 指纹 `0:4:10:20` | 166 s ⇒ 槽 5 | 串 VA 的 bit0-3 = 5 |
+| fi02 | 指纹 `4:4:10:20` | 283 s ⇒ 槽 11 | bit4-7 = 0xB |
+| fi03 | 指纹 `8:4:10:20` | 146 s ⇒ 槽 4 | bit8-11 = 0x4 ⇒ **VA ≡ 0x4B5 (mod 0x1000)** |
+
+关键教训：fe13/fe14 第一次跑出 59 s 是**误读**——当时没加 `--no-reset`，默认的 stage-3 站点（MMU + 6 s）先复位了，panic 钩根本没轮到。
+凡是只用 panic 钩的镜像必须显式 `--no-reset`。
+
+### 串地址枚举（不依赖调用图）
+严格按「字符串起点 + 前字节为 NUL」扫描整个 Mach-O，VA 低 12 位 = 0x4B5 且含格式符的只有 10 条，
+其中与早期启动 CPU 初始化阶段相符的只有一条：
+
+```
+0xfffffff0071734b5   "CPU configuration in device tree is invalid" @%s:%d
+```
+
+该串**不在**本地 xnu-3199e8bc 源码树里（整棵树 grep 无命中）——线上内核是 xnu-13432.2.10，
+属于更新的闭源部分（推断：arm64 的 CPU 拓扑解析器）。
+
+### 回读通道实测（TWRP 侧）
+```
+/dev/mem      不存在
+/dev/kmem     不存在
+/proc/kcore   不存在
+/sys/fs/pstore 已挂载但为空（total 0）
+```
+⇒ 没有直接回读物理内存的手段；时间通道仍是唯一通用水位线，**上限 4 bit/次启动**。
+
+### 下一步
+1. 看 shennong.dtb 的 `/cpus` 是否带 Apple 拓扑解析器要求的属性（`state`/`reg`/拓扑节点）；
+   缺就在加载器里合成，缺得太多就把该 panic 的冷路径改成容错。
+2. 确认 panic 确实发生在 `ml_map_cpu_pio` 内部：在它入口再挂一个站点（一次启动 ~2 分钟）。
+
+## 32. 2026-11-11 下午 · AppleARMCPU 抢占 /cpus（本轮结论）
+
+### 32.1 已证伪：改 kext 代码不生效
+- fi07：`bl _validateConfiguration`(0x85f6f00) 改 `mov x0,#1` + 其后 `tbz` 改 nop → 设备仍 panic，110 s（= 50 s panic + 60 s 钩）。
+- fi08：把 panic 分支 `bl`(0x85f746c) 直接改成跳到成功续接 0x85f71ec → 仍 115 s。
+- fi10：把 panic 冷桩 0x86473b0 首指令改 `ret` → 仍 167 s、槽值 5（与 0x4b5 一致）。
+- 对照：kernel 主文本区补丁（`__stack_chk_fail`、探针 cave）一直是生效的。
+- 结论：`__TEXT_EXEC` 里 kext 代码段在运行时不是按我们改的字节执行（推断：运行期另有映射/副本）。
+  → **放弃"逐个绕闭源检查"的代码补丁路线。**
+
+### 32.2 已查明：panic 的真实来源是 AppleARMPlatform 抢节点
+- panic 串 `0xfffffff0071734b5` "CPU configuration in device tree is invalid" 只被
+  `0xfffffff0086473b0` 这个冷桩引用，冷桩唯一调用点是 `0xfffffff0085f746c`，
+  它所在的函数在 `0xfffffff0085f6f00` 调 `_validateConfiguration`（0x85f751c）。
+- `__PRELINK_INFO` 里 AppleARMCPU 的 personality：`IONameMatch = "cpu"`，
+  前缀匹配会吃掉 `cpu@0` 和 `cpus` 容器；一旦匹配就要求 Apple 私有属性
+  （`max_cpus`、每核 `cpu-id`/`interrupts`/`function-*`），Qualcomm ADT 没有 → panic。
+- 项目自带的官方修法：`tree/scripts/patch-applearmcpu-ioname.py`，3 字节原地改
+  `cpu` → `xpu`（等长、不动布局），rmx1971 / mondrian / sirius 都在用。
+- 用该脚本 `--check` 验过：fi11（以及 fe/fd 系列）**都还是 `cpu`**，即此前所有启动
+  实验都撞在同一个点上；fi13 是第一个带上该修的镜像（脚本输出 `cpu -> xpu, 1 byte`）。
+
+### 32.3 尚未验证
+- fi13 真机表现（推镜像后设备回到 UniXNU 加载器菜单，没拿到时序）。
+- 下一次只需一次启动即可判定：命中站点探针≈60 s = 过了 CPU 关；≈110 s = 仍 panic。
+
+## 33. 11-11 下午：作废读数、内核确实在跑、MMU 关已过
+
+### 33.1 已被证伪的说法（不要再用）
+- **“设备停在加载器菜单、内核没启动”**：错。把照片放大 3 倍读出加载器日志，最后两行是
+  `DARWINBOOT: inputs validated; exiting boot services` / `DARWINBOOT: hand-off to the kernel`
+  （源码 DarwinBoot.c:800），屏幕上的“菜单”是启动前画好的旧画面留在帧缓冲里，内核只在顶部叠了色带。
+- **“56 秒处命中 CPU 配置 panic”**：读数不可信。那几次判定依赖“adb 隔多久回来”，而设备可能根本没进内核
+  或停在别处；fi14/fi15/fi16 的秒数一律作废，不再参与推理。
+- **“fi13 是第一个带 xpu 的镜像”**：`patch-applearmcpu-ioname.py --check` 对 payload-fd46 的输出是
+  `nothing to do: AppleARMCPU IONameMatch is already xpu`，payload 一直是 xpu。
+
+### 33.2 已验证（真机，fi19）
+- payload 里的 `unixnu.toml` 原为 `timeout = 0`；这台机器 `CountInputDevices()` 为 0，改成 `timeout = 3`
+  后行为不变（仍是加载器画面），说明“等按键”不是唯一原因，见 33.1。
+- **fi19**（`stage 1 blue` + `stage 3 reset 6 s after the MMU is on` + `panic bands`，内核 sha 由构建日志给出）
+  13:24:39 下发，`fastboot boot` 返回 0；随后设备**自己重启进入 Android 设置向导**（照片）。
+  由于 panic 画带钩子触发时会画 32 条竖带并死循环、不会重启，这次重启只能来自 stage 3 探针
+  → **MMU 打开那一步已经通过**（推断，证据链：fi19 的两个信号互斥 + 之前几次硬挂 10 分钟不重启）。
+- 由此确认三处补丁有效：`physmap_slide = 0`（替换 `bl _early_random`）、两处 Apple-monitor `msr` 置 `nop`、
+  `__stack_chk_fail` 置空。
+
+### 33.3 下一步（fi20）
+- `scripts/patch-init-ladder.py` 去掉了 capstone 依赖（纯 Python 解 `bl`/`ret`），可在本机直接生成阶梯。
+- `Mu-shennong-fi20.img`：`_arm_init` 入口 + 前 15 个 `bl` 调用点各画一条带（band 0 白 … band 15），
+  画在**调用之前**，所以死在被调用函数里也能留下最后一条带。一次开机即可把死点收窄到一个调用。
+- 判读：没有白带 = 死在 `_arm_init` 之前；白带 + k 条 = 死在 `_arm_init` 第 k 个调用里；16 条全到 = 整段跑完。
+
+### 33.4 fi21 的设计缺陷与 fi22 修正
+- **fi21**：每站点等 `(序号+1)×10 s` 后复位。缺陷：入口标记必然先触发并复位，后面的站点永远轮不到，
+  所以只能读出"入口到达"（实测 11 秒 ≈ 交棒 1 s + 入口 10 s），读不出更深的位置。
+- **fi22**：改成倒计时（`--countdown`），第 k 个站点等 `(16-k)×8 s`，最深的到达点最先到期复位，
+  复位时间直接对应站点：128 s=入口、120 s=call 1 … 8 s=call 15；永不重启=连入口都没到。
+- 复位型探针不依赖内存映射（PSCI `smc #0`），MMU 打开后依然有效（fi19 已证）；画色带的方式在 MMU
+  打开后不可靠，不再用于 `_arm_init` 内部。
+
+### 33.5 fi22 作废 + 离线模拟 + fi23
+- **fi22 的倒计时设计是错的**：标记是阻塞的（cave 里等完直接复位），所以最后一个被进入的标记永远挡住更深的标记。
+  倒计时只能让入口（延时最长 128 s）先到期，读数恒为 ~128 s，即"两分多钟"与死点无关。
+  **正确的编码是递增延时**（fi21 原本那样）：能被复位命中的是"最先遇到的、最浅的那个已到达标记"，其延时就是站点编号。
+- **离线模拟**（unicorn，`/tmp/emu_trace.py`）：把文件集按加载器方式映射（VA == PA，窗口 0xfffffff007004000+94.5 MB），
+  从 `_arm_init` 跑，PAC/bti 指令按 NOP 处理。结果：
+  - `_arm_init` 的首段是**内联的 `arm_slide_rebase_and_sign_image()`**（源码 arm_init.c:349 第一句），
+    走的是 fileset 分支（`_mh_execute_header` 在 0xfffffff007184000，flags=0x80218001，bit31=MH_DYLIB_IN_CACHE，静态核对过）；
+  - 实际执行路径：0xb4768f0 → 跳到 **0xb476a94**，然后 4 段连续区间 a94..b20 / bb0..d40 / da8..f5c；
+  - **0xb476a80 不在执行路径上**（那是非 fileset 分支的 bl），fi21 把它当成"call 1"是错误的；
+  - 模拟跑完整个 fixup 走查（92 万基本块）**没有触发任何越界访问**，最后停在 PAC 签名指令上（unicorn 不支持，非内核问题）。
+- **fi23**：实路阶梯（16 个标记，10..160 s）+ `--fault-reset 3`（EL1 同步异常向量 3 s 后复位）。
+  一次开机三种结果可分辨：≤5 s=异常；10..160 s=命中的实路站点；一直不重启=连 0xb476a94 都没到或纯自旋无异常。
+
+### 33.6 设备树/启动参数的静态核对（离线，未上机）
+- **内核收到的设备树不是 boot 镜像里追加的 `shennong.dtb`**，而是加载器读的 `<KernelPath>.adt`：
+  `DarwinBoot.c:648-657` → `EFI/UniXNU/Payloads/kernel.macho.adt`（10,520 B，Apple ADT 格式）。
+  boot 镜像里 `--append-dtb shennong.dtb`（1,238,463 B）是给 UEFI 固件用的，不是给 XNU 的。
+- ADT 解析（属性头 = 32 B 名字 + u32 长度 + 数据，4 对齐；整棵树正好 10,520 B，格式无误）：
+  ```
+  /device-tree                    model=Xiaomi-14-Pro compatible=qcom,pineapple-mtp,...
+  /device-tree/chosen             dram-base=0x80000000  dram-size=0x10000000(256 MB)
+                                  darwinboot-memory-size=窗口大小  random-seed  nvram-*  osenvironment
+  /device-tree/chosen/memory-map  TrustCache, RootPolicies（无 RAMDisk，因为不传 ramdisk）
+  /device-tree/cpus/cpu0          state, reg, device_type, compatible, timebase-frequency（**只有 cpu0**）
+  /device-tree/defaults           sleep-disabled
+  /device-tree/product            product-name, model
+  /device-tree/arm-io/intc        compatible, reg, redistributor-stride
+  ```
+- boot_args ABI 正确（`DarwinBoot.c` 的 `DARWIN_BOOT_ARGS` = XNU `pexpert/pexpert/arm64/boot.h` 的 rev2 布局，0x480 B，偏移有 STATIC_ASSERT 保证）。
+  但语义上有两处可疑，等 fi23 读数回来后再动：
+  - `memSize = WindowSize`（≈94.5 MB）< 1 GB ⇒ `arm_init` 会选 `PAGE_SHIFT_CONST = ARM_PGSHIFT`（4 KB 页），而不是 `PAGE_MAX_SHIFT`（16 KB）；
+  - `dram-size = 256 MB`、`cpus` 只有 cpu0；`hw.memsize` 大概率取不到 ⇒ `xmaxmem = 0` 传给 `arm_vm_init`。
+- `_arm_init` 前 16 个 bl 的目标函数（供 fi23 读数对照）：
+  ```
+  f74  PE_set_kc_header            fac  kernel_collection_adjust_mh_addrs
+  fb4  OSRuntimeSignStructorsInFileset  fc8  static_if_init(arm_static_if_init)
+  fe0  memcpy(const_boot_args)     ff8  cpu_data_init
+  ffc  ml_default_rop_pid          7004 ml_default_jop_pid
+  7014 PE_init_platform            7018 boot_progress_init
+  701c configure_timer_apple_regs  7020 wfe_timeout_configure
+  7024 wfe_timeout_init            7028 configure_misc_apple_boot_args
+  7030 configure_misc_apple_regs   7048 SecureDTLookupEntry（UPSI/chosen 块）
+  ```
+  `configure_timer_apple_regs / wfe_timeout_* / configure_misc_apple_*` 反汇编里没有 Apple 专有系统寄存器访问
+  （只有 `mrs cntkctl_el1`、`mrs tpidr_el1` 这类标准寄存器），所以它们不是"Apple 专有指令"陷阱。
+
+### 33.7 fi23 读数与 fi24 分类探针
+- **fi23 = 13 秒**：命中第 0 号站点 `0xfffffff00b476a94`（10 s 档 + 约 3 s 交棒/上传开销），20 s 档 `0xfffffff00b476bb0` 未命中。
+  由阻塞标记的语义，这只证明"执行到过 a94"，不能推出其后走了多远（一旦进入 cave 就停在原地等复位）。
+  结合静态分析：fileset 分支的头部检查全部通过（`k_mh->flags` bit31、首个 LC 为 `LC_SEGMENT_KERNEL`、`slide=0`、
+  `kc_mh->filetype == MH_FILESET`），死点在进入内联 `kernel_collection_slide()` 之后。
+- **fi24**（20:18:35 下发）：`--panic-reset 4` + `--fault-reset 8` + 4 个深站点（20/40/60/80 s，分别在
+  `0xb476f74` / `0xb476fc8` / `0xb477014` / `0xb477030` 之前）。一次开机把死法分成：panic / 同步异常 / 跑完滑动段 / 更深处 / 纯自旋。
+- 新增工具能力：`scripts/patch-xnu-entry-probe.py --fault-fingerprint SHIFT:BITS:BASE:STEP`
+  —— 把 `FAR_EL1`（出错地址）的指定位切片编码成复位延时（`FAR_SLICE_RESET` 模板，cave 0x5c 字节，已验证可生成）。
+  用于异常分支：一次开机读出出错地址落在哪个 2–16 MB 区间，无需反复二分。
+
+### 33.8 fi25 / fi26：从"测量"转为"跳过并继续"
+- **fi25 = 10 秒**（14 站点、步长 10 s，首站在 `0xfffffff00b476fac`）：执行到达 `fac`，即 **`PE_set_kc_header` 成功返回**。
+  已验证链条：入口 → 内联滑动段完整跑完 → `PE_set_kc_header` 返回 → 到达 `kernel_collection_adjust_mh_addrs` 调用点。
+- **fi26（20:29:33 下发）**：`fac`(adjust_mh_addrs) 与 `fb4`(OSRuntimeSignStructorsInFileset) 两条 `bl` 直接改成 `nop`，
+  从 `fc8` 起 10 个连续调用点做阶梯（步长 15 s，15..150 s），仍带 `--panic-reset 4` / `--fault-reset 8` 与 ADT `dram-size=0x300000000`。
+  判读：4 s=跳过引发 panic；8 s=同步异常；15 s=越过两个调用到达 `static_if_init` 前；30..150 s=继续深入；不重启=跳过导致后续状态缺失。
+- 反汇编复核：`ml_default_rop_pid` / `ml_default_jop_pid` 在本内核中为 `mov x0,#0; ret` 空桩，`cpu_data_init` 全为普通 store，
+  均无 Apple 专有系统寄存器访问，不需要预防性打补丁。
+
+### 33.9 fi28 结论：跳过不必要，回到干净内核
+- **fi28 = 15 秒**（干净内核，无任何 nop，只在 `0xb476fe0` / `0xb477014` 放站点）：原版内核自己就能到达 `0xb476fe0`。
+  ⇒ fi26/fi27 的三处 nop 全部撤销；fi25 的 10 s 只说明"到过 fac"，跳过从来不是必需的。
+- 已验证可跑通的整段（干净内核、无 panic、无异常）：入口 → 内联滑动段 → `PE_set_kc_header` → `kernel_collection_adjust_mh_addrs`
+  → `OSRuntimeSignStructorsInFileset` → `static_if_init` → `memcpy(const_boot_args)` 调用点 `0xb476fe0`。
+- 反汇编排除了"Apple 专有寄存器陷阱"这条线（`bti; ret` 空桩）：`configure_misc_apple_boot_args`、`configure_misc_apple_regs`、
+  `configure_timer_apple_regs`、`wfe_timeout_configure`、`wfe_timeout_init`、`ml_default_rop_pid`、`ml_default_jop_pid`。
+  `ml_get_boot_cpu_number` 只是两次全局读。带实质逻辑的只剩 `ml_parse_cpu_topology`。
+- **fi29**（20:38:10 下发）：干净内核 + 站点 `0xb477110`(15 s，`ml_parse_cpu_topology`/`ml_get_boot_cpu_number` 之后) 与
+  `0xb4772fc`(30 s，`arm_init` 最后一个 bl)；`--panic-reset 4` / `--fault-reset 8`；ADT `dram-size=0x300000000`。
+
+### 33.10 重大节点：fi30 到达 bl _arm_vm_init
+- **fi30 = 15 秒** ⇒ 干净内核（仅 3 个基础补丁 + ADT dram-size 修正）到达 `0xb477370` 的 `bl _arm_vm_init`。
+- 已验证连续跑通（无 panic、无异常）：入口 → 内联滑动段 → `PE_set_kc_header` → `kernel_collection_adjust_mh_addrs` → `OSRuntimeSignStructorsInFileset`
+  → `static_if_init` → `memcpy` → `cpu_data_init` → `PE_init_platform` → `boot_progress_init` → `/chosen` DT 查找 → `ml_parse_cpu_topology`
+  → `ml_get_boot_cpu_number` → `_thread_bootstrap`/`_cpu_bootstrap`/`_rtclock_early_init`/`_kernel_startup_bootstrap`/`_timer_call_init`/`_cpu_init`
+  /`_processor_bootstrap` → `PE_parse_boot_argn`×4 / `PE_get_default` / `kern_feature_override`×2 / `nanoseconds_to_absolutetime` → `boot_progress_stage`
+  → **`bl _arm_vm_init`**。整条早期路径跑完。
+- fi26/fi27 的三处 nop 已证明不必要并全部撤销（fi28=15 s 原版即达 `fe0`）。
+- `_arm_vm_init` 内部调用表已解出（237 个 bl），前段：`_phystokv`(0xad77bc0) / `_early_random`(0xad77bcc) / `_kvtophys`(0xad77c44)
+  / `___bzero`(0xad77cd0) / `_getsegdatafromheader`×18 / `_PE_get_kc_header`(0xad780a0) / `_vm_set_page_size`(0xad782f8)
+  / `_arm_vm_prot_init`(0xad783d8) / `_arm_vm_physmap_slide`(0xad78494) / `_qsort`(0xad78520) / `_set_mmu_ttb_alternate`(0xad7856c)
+  / `_set_mmu_ttb`(0xad78580) / `_arm_auxkc_init`(0xad7862c)。
+- **fi31**：站点 `0xad7862c`(15 s, `bl _arm_auxkc_init`) 与 `0xad78580`(30 s, `bl _set_mmu_ttb`)，用于判断 arm_vm_init 前段能走多深。
+
+### 33.11 fi31/fi32：pmap_bootstrap 与 set_mmu_ttb 全部通过
+- **fi31 = 30 秒** ⇒ 到达 `0xad78580` (`bl _set_mmu_ttb`)。注意两站点地址顺序：`0xad78580` < `0xad7862c`，阻塞式先命中前者，30 s 档才是 `set_mmu_ttb`。
+- 已跑通：`_phystokv` / `_early_random`(被 patch) / `_kvtophys` / `___bzero`×4 / `_getsegdatafromheader`×18 / `_getsectdatafromheader`×2
+  / `_PE_get_kc_header` / `_getlastkerneladdr` / `_vm_set_page_size` / `_arm_vm_prot_init` / `_arm_vm_physmap_slide`×2
+  / `_arm_vm_page_granular_prot` / `_qsort` → **`_set_mmu_ttb`**。
+- **fi32 = 15 秒** ⇒ 到达 `0xad78c0c` (`bl _patch_low_glo_static_region`)，即 `_set_mmu_ttb`、`_arm_auxkc_init`、
+  4×`_arm_vm_page_granular_prot`、**`_pmap_bootstrap`**、`_disable_preemption`、`_pmap_init_pte_page`×2 全部返回。
+  ⇒ **TTBR 已安装、内核 pmap 已起来**，`arm_vm_init` 主体跑完。
+- **fi33**：单站点 `0xb477550` (`bl _machine_startup`, 15 s)。到达即表示 `arm_init` 完整返回，
+  `_patch_low_glo` / `_serial_init` / `_kernel_startup_initialize_upto` / `_PE_init_platform`(2nd) / `_ml_map_cpu_pio` / `_early_random` 全部跑通。
+
+### 33.12 panic 定位：kernel_startup_initialize_upto(STARTUP_SUB_KPRINTF)
+- fi33 = **4 秒** ⇒ `panic()` 被调用。fi32 到达 `0xad78c0c`（arm_vm_init 尾部），fi33 未到 `0xb477550`。
+- fi34 = **15 秒** ⇒ 到达 `0xb4773a4`（`_kernel_startup_initialize_upto` 调用点），未到 `0xb4774f4`。
+  ⇒ panic 在 `kernel_startup_initialize_upto(w0=4)` 内部。
+- 反汇编确认实参：`mov w0, #4` = `STARTUP_SUB_KPRINTF`（枚举 NONE=0, TUNABLES=1, TIMEOUTS=2, LOCKS=3, KPRINTF=4）。
+  即该调用会执行全部 subsystem ≤ KPRINTF 的启动条目（TUNABLES/TIMEOUTS/LOCKS/KPRINTF），来源类 ~38 个不同函数、按 lock 声明实例化多次。
+- 全内核 `bl _panic` 站点表：**3,166 条**（站点 VA / 格式串 VA / 所属符号 / 消息）→ `/tmp/panic_sites.txt`。
+  与 sys≤KPRINTF 条目求交，自带 panic 的是 `PE_init_kprintf_config`("Platform Expert not initialized")、`ipc_sec_policy_configs_validate`、`stack_init`。
+- **fi35**：单站点 `0xb4ef404`（`_PE_init_kprintf` 入口，KPRINTF 子系统第一条），15 s + panic-reset 4 s。
+  4 s ⇒ panic 在 TUNABLES/TIMEOUTS/LOCKS 条目里；15 s ⇒ 已进 KPRINTF，panic 在 `PE_init_kprintf` 或其内部调用。
+
+### 33.13 fi38/fi39：arm_init 收尾整段拆除 → 进入 kernel_bootstrap
+- **修复动作（非探针）**：`scripts/patch-arm-init-tail.py` 把 `arm_init` 尾部 12 个 Apple 专有调用 nop 掉
+  （switch_to_serial_console / PE_create_console / PE_init_printf / cpu_machine_idle_init / PE_init_platform(2nd) /
+   pe_arm_debug_init_early / ml_map_cpu_pio / cpu_timebase_init / kptimer_curcpu_up / PE_init_cpu /
+   apt_msg_init / apt_msg_init_cpu / fiq_context_init），`early_random` 改 `mov x0,xzr`。
+- **fi38 = 15 s** ⇒ 越过整段，到达 `bl _machine_startup`。原 panic 卡点消失。
+- **fi39 = 15 s** ⇒ 进入 `_kernel_bootstrap`（`0xfffffff00abb76b4`），`_machine_conf` 也通过。
+- `machine_startup` 结构：`machine_conf()` → 尾调用 `kernel_bootstrap()`。
+- `kernel_bootstrap` 步骤序列（每个 = boot_progress_stage + kprintf + 实际函数）：
+  `_printf(version)` `_scale_setup` `_vm_mem_bootstrap` `_atm_init` `_kernel_startup_initialize_upto(OSLOG)`
+  `_ubsan_minimal_init` `_trap_telemetry_init` `_console_init` `_stackshot_init` `_mac_policy_init`
+  `_mapping_free_prime` `_machine_init` `_thread_machine_init_template` `_clock_init` `_thread_group_init` …
+
+## 2026-11-11 夜间：panic 上屏通道与内存窗口（fi48–fi52b）
+
+### 已验证（真机 + 产物）
+
+| 事实 | 证据 |
+|---|---|
+| payload 内 ADT 的 `dram-size` 与 `darwinboot-memory-size` 原值都是 `0x10000000`（256 MB） | 从 `payload.img` 抽出 ADT，按 `DarwinBoot.c:273-372` 的 36 字节属性记录解析：`dram-size` 值 @0x218、`darwinboot-memory-size` 值 @0x244，均小端 u64 |
+| DarwinBoot 把该窗口直接写进 `boot_args->MemorySize` | `sources/DarwinBoot/DarwinBootPkg/Driver/DarwinBoot.c:750-751` |
+| 文档早已记录“窗口 256 MiB、framebuffer 在窗口外、开 MMU 后写 FB 触发数据中止并双重故障” | `docs/bringup.md:260-310`；既有修法 `scripts/patch-fb-map.py` |
+| `patch-fb-map.py` 的固定站点在当前 CI 内核里仍是 `mov x0, xzr`（`0xaa1f03e0`），cave 目标 `0xfffffff00b4fb000` 在原内核里全零 | 反汇编 + 逐字节比对 |
+| `panic()` 钩子确实生效：fi51 刷入后屏幕无字但**约 20 秒自动重启**（该复位来自 `park()` 的倒计时） | 用户实测；`scripts/xnu-panic-screen.c` 的 `park_for()` |
+| fi50 的 `Compromised Data` 由**大端写入**引起：`0x100000000` 落盘后被 `U64()` 按小端读成 `0x01000000`（16 MB），低于 `DarwinWindowSizeValid` 的 256 MB 下限 | `DarwinBoot.c:331-334`、`drmWindowSizeValid` 于 `WindowSize.h` |
+
+### 新增/修改的工具
+
+- `scripts/patch-adt-window.py`：只改原 ADT 里两个 u64（小端），不重建树（解析器要求 `Offset == TreeSize`，换树会被判 `EFI_COMPROMISED_DATA`）。
+- `scripts/xnu-panic-screen.c`：`_vinfo` 为空时回退到 stage 2 存下的 `boot_args->Video` 六字段；**不做 physmap 换算**（`patch-fb-map.py` 把 FB 恒等映射到同一 VA）；`park_for()` 支持两档延时（8 s = 无可用帧缓冲，20 s = 已拿到帧缓冲）。
+
+### 产物
+
+| 镜像 | 内核 sha256 前缀 | 差异 |
+|---|---|---|
+| fi50 | 21f29faa | 4 GB 窗口 + 12 GB DRAM，**大端写错** → `Compromised Data` |
+| fi51 | 21f29faa | 同上但小端正确；panic 屏含 physmap 换算 |
+| fi52b | d0c14517 | 加 `patch-fb-map.py` + 恒等地址 + 两档 park |
+
+### 待判读（fi52b，23:00:40 下发）
+
+- 有文字 → panic 原文与 frames；
+- 约 8 秒重启 → 渲染器拿不到帧缓冲几何；
+- 约 20 秒重启 → 拿到帧缓冲但画面无字（行宽/宽度/清屏范围不符）。
+
+## 2026-11-11 23:18 — panic 上屏成功，定位到真实崩溃点（fi58）
+
+### 已验证（真机照片 + 反汇编 + 源码）
+
+fi58 首次把 `panic()` 的原文与调用栈画到了真机屏幕上。屏幕内容：
+
+```
+PAC failure from kernel with IA key while branching to x9 at pc 0xfffffff00ad52664
+  x9: 0x0    lr: 0x16b64ff00ad55e88   esr: 0x72000000
+frames: 0b478394 ad7e5c0 0b478844 ad7d7e4 ad52664 ad55e88 ad55898
+        0b44f808 0b45b07c abb773c 0b477554 0b4768f0
+```
+
+符号化（用本仓库的 kernel.macho 符号表 + 逐帧二分）：
+
+| 帧 | 函数 |
+|---|---|
+| `0xfffffff00b4768f0` | `_arm_init` |
+| `0xfffffff00b477554` | `_arm_init+0xc64` |
+| `0xfffffff00abb773c` | `_kernel_bootstrap+0x88`（`bl _vm_mem_bootstrap` 的返回地址） |
+| `0xfffffff00b45b07c` | `_vm_mem_bootstrap+0x3c` |
+| `0xfffffff00b44f808` | `_zone_bootstrap+0xa0` |
+| `0xfffffff00ad55898` | `_random_bool_init+0x90` |
+| `0xfffffff00ad55e88` | `_read_erandom_generate+0x6c` |
+| `0xfffffff00ad52664` | `_ccdrbg_generate+0x3c` ← 崩溃点 |
+
+崩溃指令（`0xfffffff00ad52644..0xad52664`）：
+
+```
+ldr   x9, [x8, #0x18]!     ; 从 DRBG 结构 +0x18 取回调
+blraa x9, x17              ; 带 PAC 的间接调用；x9 = 0
+```
+
+### 根因（源码级确定）
+
+- `osfmk/prng/prng_random.c:289` `read_erandom_generate()` 直接用 `erandom.drbg_info` 调 `ccdrbg_generate`；
+- `erandom.drbg_info` 只由 `early_random_init()` 里的 `ccdrbg_factory_nisthmac()` 填充，而 `early_random_init()` 只被 `early_random()` 惰性调用（`:267-280`）；
+- 我们的 `scripts/patch-arm-init-tail.py` 曾把 `arm_init.c:685` 的 `bl _early_random` 换成 `mov x0, xzr`，于是 DRBG 从未初始化 → 回调为空 → PAC 失败。
+- 另有前置条件：arm64 的 `BOOTLOADER_ENTROPY_REQUEST_SIZE = 4*SHA512_DIGEST_LENGTH = 256`（`:52-55`），`bootseed_init_bootloader()` 在拿不到 256 字节时 panic（`:65-79`），而 ADT 里 `random-seed` 原为 64 字节。
+
+### 显存映射：为什么最终这样写（fi48–fi58 的教训）
+
+| 做法 | 结果 |
+|---|---|
+| 靠 4 GB 窗口 + `gPhysBase/gVirtBase` 换算 | 失败：窗口基址在 `0x0DB0004000`，显存 `0xFC400000` 在其**下方**，`virt+(pa-phys)` 落出内核区（fi55 的 14 s） |
+| `patch-fb-map.py` 改 V=P 表 `L1[3]`（池第 4/5 页） | 挂死：4 GB 窗口时池第 4/5 页正是窗口自己的 L2 表 |
+| 自写 cave 改 V=P `L1[3]`（池第 15 页） | 仍挂死：显存地址落在 `dram-size` 覆盖的 DRAM 范围内，把它改成 Device 等于毁掉内核自己的内存 |
+| **panic 现场建 TTBR1 `L1[1]` → `0xFFFFFFC040000000`**（fi58） | **成功画出整屏文字** |
+
+fi58 的做法：`PE_state.video` 取几何（`pexpert/arm/pe_init.c:449`）→ `boot_args` 自带 `VirtualBase/PhysicalBase` 换算表地址 → `mrs ttbr1_el1` 取活根表 → 池第 15 页做 L2（stage 2 把其物理地址存进 `PANIC_TEXT+0xff8`）→ 填 64 个 2 MiB Device 块 → `tlbi vmalle1` → 画到 `0xFFFFFFC040000000`。TTBR1 索引 1 与内核镜像（索引 `0xC0`）相距 47 TiB，不改变任何 DRAM 语义。
+
+### 新工具
+
+- `scripts/patch-adt-randseed.py`：把 `/chosen/random-seed` 从 64 扩到 256 字节（`DarwinBoot.c:652` 的 `TreeSize` 就是文件大小，`:661` 只要求走查后 `Offset == TreeSize`，插入后自检通过：10712 字节，走查结束 `0x29d8`）。
+  注意顺序：**先** `patch-adt-window.py`（固定偏移 0x218/0x244），**再** 插种子（插入点在 0x19c 之前的所有偏移都会移动）。
+- `scripts/patch-arm-init-tail.py --keep-early-random`：保留 `bl _early_random`。
+
+---
+
+## 2026-11-12 23:45 — panic 通道三次翻车与修复（fi60–fi66）
+
+### 本轮最重要的发现（已用反汇编 + 实机验证）
+
+**1. `patch-arm-init-tail.py` nop 掉了 `_PE_init_platform`，而 `PE_state.video` 只有它填。**
+
+被 nop 的 12 个调用及其目标（全部核对过）：
+
+| 调用点 | 目标 |
+|---|---|
+| 0xb4774c0 | `_switch_to_serial_console` |
+| 0xb4774d0 | `_PE_create_console` |
+| 0xb4774d8 | `_PE_init_printf` |
+| **0xb4774f4** | **`_PE_init_platform`** ← panic 屏几何的唯一来源 |
+| 0xb4774fc | `_pe_arm_debug_init_early` |
+| 0xb477510 | `_ml_map_cpu_pio` |
+| 0xb477518 | `_cpu_timebase_init` |
+| 0xb47751c | `_kptimer_curcpu_up` |
+| 0xb477520 | `_PE_init_cpu` |
+| 0xb477524 | `_apt_msg_init` |
+| 0xb477528 | `_apt_msg_init_cpu` |
+| 0xb477530 | `_fiq_context_init` |
+
+后果：fi59–fi65 里所有"没看到 panic"的判读都不可靠——panic 可能一直发生，只是屏幕画不出来。
+同时，放在 `_pe_arm_debug_init_early`/`_cpu_timebase_init`/`_PE_init_cpu`/`_fiq_context_init` 上的 beacon 全是死代码。
+修法：`patch-arm-init-tail.py --keep-pe-init-platform`（fi65 起启用）。
+
+**2. 三处自己引入的代码 bug，逐个修掉（每处都有反汇编证据）。**
+
+| Bug | 后果 | 修复 |
+|---|---|---|
+| beacon stub `b site+4` 跳过 `pacibsp` | 函数返回时 `retab` 校验失败，内核直接崩（fi60/fi61 零输出） | stub 开头 `.inst` 重放首指令 |
+| `fb_beacon` 的 `struct ctx g` 未初始化，而 `fb_setup` 首句 `if (g->base != 0) return 1` | 栈垃圾被当成"已映射"，用野指针写显存（fi62 黑屏重启） | 显式清零全部字段 |
+| stub `sub sp,#0x60` 却存到 `[sp,#0x70]` | 溢出 0x18 字节写进调用者栈帧 | 栈改 `0xA0`，布局 16 字节对齐 |
+
+**3. loader 屏幕上的真实内存布局（拍照确认，修正了此前错误记录）。**
+
+```
+va   = 0xFFFFFFF007004000
+pa   = 0x8C0004000        ← 此前记录的 0xBB004000 是错的
+args = 0x8C5A30000
+window = 0x100000000 (4 GiB)，即 [0x8C0004000, 0x9C0004000)
+video base = 0xFC400000  1440x3200  row 5760 bytes  32 bpp
+```
+
+显存 `0xFC400000`（3.9 GiB）确实远在窗口之外——这一点与旧结论一致。
+
+### 实机结果
+
+| 镜像 | 改动 | 结果 | 结论 |
+|---|---|---|---|
+| fi60/fi61 | 7 个 beacon | 零输出、不重启 | beacon stub 跳过 pacibsp |
+| fi62 | 修 pacibsp + 加自检 | 几秒黑屏重启 | `ctx` 未初始化 |
+| fi63 | 清 `ctx` | **10 秒**黑屏 | `msize` 误判 |
+| fi64 | 去 `msize` + 修栈 + 传 boot_args | 一分钟不黑屏 | 映射写入未生效 |
+| fi65 | 保留 `PE_init_platform` | **10 秒**黑屏 | virtu/phys 两条来源都为空 |
+| fi66 | panic 屏改用池 KVA 常量，彻底不换算 | 待验证 | — |
+
+### 修复要点：不再做 virt/phys 换算
+
+trampoline 的 16 页池 KVA 固定（反汇编确认 `adrp x25, #0xFFFFFFF00C8B4000`）：
+池第 1 页 = TTBR1 根表 `0xFFFFFFF00C8B5000`，第 15 页 = 我们的 L2 `0xFFFFFFF00C8BF000`。
+`read_ttbr1()` 拿到根表物理后，L2 的物理就是 `root_pa + 0xE000`，两个 KVA 直接是常量。
+**`_arm_init` 阶段 `PE_state.bootArgs` 必然为空、stage 2 的 stash 也没带上基址，所以任何换算都注定失败。**
+
+### 改动文件
+
+- `scripts/xnu-panic-screen.c`：`fb_setup(g, fatal, ba_hint)`，换算改为可选，缺省用池常量；`fb_beacon` 清零 ctx。
+- `scripts/patch-beacons.py`：stub 重放 `pacibsp`/`bti`、栈 0xA0、传调用者 x0。
+- `scripts/patch-arm-init-tail.py`：新增 `--keep-pe-init-platform`。
+- `docs/agent-progress.md`：本文件，顶部加入用户第一轮规定原文。
+
+### 下一步
+
+fi66 实机判读：`CK 01` 出现 = 通道终于打通；12/14 秒 = 池常量路径也不对，改用 stage 1 在开 MMU 前把轨迹写进 DRAM 并下次启动画出的方案。
+
+---
+
+## 2026-11-13 01:30 — 显存通道的最终结论（fi60–fi72）
+
+### 一句话结论
+
+**这个 SoC 上，EL1 内核写不了显存 `0xFC400000`。** 映射存在、写入不 fault、cache 也 clean 过，写进去的数据就是不出现在屏幕上。只有 UEFI 固件和 MMU 关闭前的 trampoline 能写。所以内核侧任何"自建映射让 panic 屏显示"的方案都不可能成功——不是实现 bug，是硬件层面的显示孔径保护。
+
+### 证据链（每条都可核）
+
+| 版本 | 做法 | 实机结果 | 说明 |
+|---|---|---|---|
+| fi68 | 恢复 `PE_create_console`/`PE_init_printf`/`ml_map_cpu_pio` | 屏幕无变化 | console 初始化没执行到 |
+| fi69 | `patch-fb-map-ttbr1.py`：TTBR1 L1[1] → 池页4 的 L2 | 10 秒黑屏重启 | L1 索引算错（见下），写入未生效 |
+| fi70 | `FB_KVA = 0xFC400000`（物理地址直写，走 V=P 表） | 不崩、不重启、无画面 | **关键实验**：映射存在，写入被丢弃 |
+| fi71 | fi70 + `clean_to_memory()`（`dc civac` + `dsb`） | 仍无画面 | 排除 cache 一致性 |
+| fi72 | beacon 写内核 BSS，trampoline 下次启动读槽画带 | 待判读 | 绕开内核写显存这条死路 |
+
+fi70 的"什么都不发生"是决定性证据：如果 `0xFC400000` 未映射，写入会 data abort → 看门狗复位；如果只是 cache 问题，fi71 的 flush 会让它出现。两者都排除后只剩硬件丢弃。
+
+### 顺带纠正的三个错误假设（全部有反汇编证据）
+
+1. **池基址不是 `0xFFFFFFF00C8B4000`**。`_arm_vm_init` 里 `adrp x25, #0xfffffff00c8b3000`（`0xfffffff00ad77c74`），所以池基址 `0xFFFFFFF00C8B3000`，页 1 = `0xC8B4000`、页 4 = `0xC8B7000`、页 15 = `0xC8C2000`。之前所有基于 `0xC8B4000` 的页号推算全部偏移了 `0x1000`。
+2. **TTBR1 的 L1 索引不是 1**。`0xFFFFFFC040000000` 这类 VA 的 bits[47:39] 全是 1 → L1 index = 511；内核镜像 `0xFFFFFFF007004000` 自己也在 index 511。`root[1]` 指向 `0xFFFF008000000000`，和显存毫无关系。
+3. **`MMU_ENABLE_VA` 常量 `0xFFFFFFF00B9D2330` 是错的**（那里是字符串数据 `0x635f1210`）。文件里 `msr sctlr_el1, x0` 唯一出现在 `0xFFFFFFF00AD83418`。不过 `patch-xnu-entry-probe.py` 运行时会按 `0xD5181000 / 0xD5033FDF / 0xD2A00600 / 0xD5181040` 四条指令序列在 `_start_first_cpu` 后 0x1000 范围内动态搜索，搜到的正是 `0xAD83418`，所以实际 stage 2/stash 一直是好的——常量只在动态搜索失败时才有害。
+
+### 上游代码给出的正确做法（此前一直在自造轮子）
+
+- `UniXNU/scripts/xnu-panic-screen.c` **不做任何 L1/L2 自建映射**，注释写明 "With the board observer it uses the retained GOP mapping prefix; otherwise it uses vinfo.v_baseaddr"。
+- `uefi-sheng/DarwinBootPkg/Driver/Entry.S` 的 `DarwinEnter(x0=args, x1=entry, x2=owned, x3=size, x4=fb, x5=size)` 只做三件事：画绿带、`dc civac` 刷内核镜像、**关 MMU**、`br x1`。它不建立显存映射，`VideoBase` 只是填进 boot_args 的数值。
+- 所以"内核里 v_baseaddr 直接可用"的前提在这块板子上不成立。
+
+### 新增/修改的工具
+
+- `scripts/patch-slot-bands.py`：在 MAIR 站点（`0xAD832C8`，MMU 关闭、物理地址可直接寻址）注入 108 字节 cave，读 `_boot_progress_panic_text + 0x800` 的物理地址（`0x8C46DC490`，由符号 + loader 的 va/pa 在构建时算出）并画 9 条带：band 0 白色=读出代码跑了，band 1..8 = tag 的 bit0..bit7。
+- `scripts/xnu-panic-screen.c` 的 `fb_beacon` 改为把 tag 写进 `PANIC_TEXT + 0x800` 并 `dc civac` 刷到内存，不再碰显存。
+- `scripts/patch-fb-map-ttbr1.py`：TTBR1 版本的显存映射尝试，fi69 证明无效，保留供参考但不要使用。
+- 构建时必须 `export UNIXNU_UEFI=/home/yoox/android/sources/uefi-sheng`，否则 `--panic-screen` 找不到 `Font.h` 而静默失败（`patch-xnu-entry-probe.py:522`，脚本只认环境变量，不认 `--uefi` 参数）。
+
+### 判读表（fi72 起）
+
+| 屏幕 | 含义 |
+|---|---|
+| 顶部若干白/黑相间的细带 | 槽通道成功；数白色带子（band 1..8）读出 tag。`0x101` → bit0 和 bit8 置位，但 bit8 不进 band，所以 band1 白、band2..8 黑 |
+| 完全无带子 | trampoline 的 cave 没跑到，或槽地址算错 |
+| 仍然只是原来的绿带+蓝带 | cave 未执行 |
+
+### 下一步
+
+fi72 需要**两次启动**才有读数：第一次让内核写槽（会静默挂死），第二次由 trampoline 把它画出来。如果第一次的槽没保留（`fastboot boot` 走完整 bootloader，DRAM 可能被重新初始化），就必须改成同一次启动内可读的通道——候选是把 tag 写进 UEFI 变量区或让 trampoline 自己在跑完后立刻画（只能报"上次"的值）。
+
+### fi72 细节（凌晨补记）
+
+构建：`artifacts/UniXNU-shennong/boot/Mu-shennong-fi72.img`，`verify: ok`，payload 内核 `978ebdecbea8aadc`。
+
+组成：
+- `--panic-screen`（0xbc7 字节）+ `--stash-fb` 未启用（不再需要 stash 几何来自建映射）
+- `patch-beacons.py --beacon _arm_init:0x101` → `fb_beacon` 把 tag 写进 `PANIC_TEXT+0x800`
+- `patch-slot-bands.py` → 在 `0xAD832C8`（MAIR，MMU 关）注入 108 字节 cave，读槽画 9 条带
+- `patch-arm-init-tail.py --keep-early-random --keep-pe-init-platform`（nop 11 个）
+- `PE_state` 几何、kalloc 修复、ADT 12GB/4GiB + 256 字节种子
+
+`fb_beacon` 写槽后 `dc civac` + `dsb sy`；`panic_screen_main` 在碰显存**之前**也写槽（0xFF），所以内核 panic 与静默挂死可以区分。
+
+反汇编验证过 cave 的槽地址构造（`movz/movk` 得 `0x8C46DC490`）、band 0 恒白、band n 取 bit(n-1)——第一版写成了 `lsr x14, #1`，取到的是 bit2/bit1 而不是 bit0..7，已修。
+
+### fi72 判读（需要两次启动）
+
+第一次刷入 → 内核写槽（大概率静默挂死）→ 第二次刷同一镜像 → trampoline 在 MMU 关时读槽画带。
+
+| 顶部可见 | 含义 |
+|---|---|
+| band 0 白 + band 1..8 全黑 | 通道工作，槽 = 0（DRAM 未保留，`fastboot boot` 冷启动清空了） |
+| band 0 白 + band 1 白，其余黑 | 槽 = 0x101：`_arm_init` beacon 跑到了，之后无 panic |
+| band 0 白 + band 1..8 全白 | 槽 = 0xFF：**内核 panic 了**（此前所有"静默挂死"可能都是这个） |
+| 完全没有带子 | trampoline cave 未执行，或槽地址算错 |
+
+### 下一步（fi73 方向）
+
+若 fi72 证明通道可用，接下来的实质修复方向不再是显示，而是让内核往前走：
+`patch-arm-init-tail.py` 现在 nop 掉 11 个调用，其中 `cpu_timebase_init`、`kptimer_curcpu_up`、`PE_init_cpu`、`fiq_context_init` 属于时间基准/CPU 初始化，缺失会导致任何依赖定时器的等待变成死循环——这是"静默挂死"最可能的成因。恢复顺序建议一次一个：先 `cpu_timebase_init` + `kptimer_curcpu_up`，观察是"更靠后"还是"崩"。
+
+### fi73：静默挂死的成因修复（已构建，待验证）
+
+`patch-arm-init-tail.py` 的 11 个 nop 里，有三个属于**时间系统**，而它们正是"不触发 panic 的静默挂死"最合理的解释：没有 `_cpu_timebase_init`，`mach_absolute_time()` 恒为 0，任何 `while (now < deadline)` 都会变成死循环——不 panic、不复位、屏幕不再变化，与观察到的现象完全一致。
+
+反汇编确认这三个都是**通用内核代码**，没有一条 `msr` 触碰 Apple 专有寄存器，所以不会因为"非 Apple 硬件"立即崩：
+
+- `_ml_map_cpu_pio`（`0xAD86B70`）：CPU 私有寄存器映射
+- `_cpu_timebase_init`（`0xAD73710`，248 字节）：先 `bl _current_act` 取 act，再读 `[x20,#0x88]` 等字段
+- `_kptimer_curcpu_up`（`0xAD448F4`，304 字节）：读全局 `0xB782B70`，`bl _current_processor`
+
+fi73 = fi72 + 恢复这三个（`--keep=pio,timebase,kptimer`，nop 数从 11 降到 8）。`PE_init_cpu`、`fiq_context_init` 仍为 nop，保持一次只动一组变量。镜像：`artifacts/UniXNU-shennong/boot/Mu-shennong-fi73.img`，`verify: ok`。
+
+### 用户操作流程（fi72 通道验证）
+
+槽通道需要两次启动：第一次让内核写槽，第二次由 trampoline 读出来画。
+
+1. 开机进 fastboot（音量下 + 电源），监听器会自动 `fastboot boot` fi72；
+2. 内核跑完会停在菜单或静默挂死，长按电源重启，再进一次 fastboot；
+3. 第二次 `fastboot boot` 同一镜像后，**屏幕顶部 180 行内会出现 9 条横向色带**；
+4. 按上面的判读表读出 tag，就能知道这是"panic"还是"挂在 _arm_init 之后"。
+
+手动命令：
+
+```bash
+cd /home/yoox/android/workspace/UniXNU-shennong
+fastboot boot /home/yoox/android/artifacts/UniXNU-shennong/boot/Mu-shennong-fi72.img
+```
+
+## 2026-11-13 — panic 屏画不出的真正原因（fi76–fi77），以及外部同类项目的交叉验证
+
+### 结论先行
+
+1. **`fb_setup` 读错了结构体。** panic 屏一直从 STASH（`_boot_progress_panic_text + 0x800`）里取 `boot_args->Video` 的值当指针用，那是**物理地址 `0xFC400000`**；内核页表里没有这个 VA 的映射，写入落空。**这是 fi59–fi75 十七个版本全部“屏幕上什么都没有”的原因。**
+2. **正确来源是内核自己的 vinfo。** 反汇编 fi58（唯一验证过能画屏的版本）得到：基址 `0xFFFFFFF00B782000`，字段 `+0x350 v_height / +0x354 v_width / +0x358 v_depth / +0x35C v_rowBytes / +0x360 v_baseaddr`，`v_baseaddr` 是**内核已映射好的虚拟地址**。fi76/fi77 已按此重写 `fb_setup`。
+3. **uke 项目独立踩过同一个坑**，见 `UniXNU/docs/devices/uke.md` 所引 PROGRESS.md：
+   > `PE_current_console returns physical PE_state.video, while mapped framebuffer is video_console vinfo.`
+   两个项目、两条独立路线得出同一结论，可信度高。
+4. **`--stash-fb` 才注入 stage 蓝带 cave。** `patch-xnu-entry-probe.py` 里 `CAVES` 只在 `args.stash_fb` 分支被 `branch()` 写入；`--panic-screen` 只注入 panic 屏本身。**fi76 没传 `--stash-fb`，所以“蓝带消失”是正常现象，不是内核没启动。** fi77 = fi76 + `--stash-fb`。
+
+### 证据
+
+| 主张 | 证据 |
+|---|---|
+| fi58 从 vinfo 读几何并直接用 `v_baseaddr` 当 VA | fi58 `kernel.macho` 反汇编 `0xB4F722C` 起：`movk x13,#0xb78,lsl#16` … `ldr x12,[x13,#0x360]`、`ldr w11,[#0x35c]`、`ldr w10,[#0x354]`、`ldr w9,[#0x350]` |
+| fi58 的 panic 屏带定时复位 | 同段 `mrs x9,cntpct_el0` 循环 + `mov w0,#9; smc #0`（PSCI SYSTEM_RESET） |
+| fi58 与 fi73 的差异集中在 panic blob 与 arm_init 尾部 | 逐字节比对 94,552,064 B，586 个差异区间；`0x44F2EEC–0x44F3027` = panic blob，`0x44728F0/0x44734F4…` = `_arm_init` |
+| `_machine_startup` 未被 nop | fi77 `0xB477550: bl _machine_startup`；`0xB477534: bl _early_random`；`0xB47751C: bl _kptimer` 均保留 |
+| `--zero-physmap-slide` 与 `--keep-early-random` 不冲突 | 前者改 `_arm_vm_init` 内的 `bl _early_random`（算 physmap slide），后者针对 `_arm_init` 尾部的调用；两个不同调用点 |
+
+### 外部同类项目（联网查证，2026-11-13）
+
+- **[ios-topaz / ios-sweet](https://github.com/MakrSas/ios-topaz)**：Redmi Note 12 4G（SM6225）跑 **iOS 16.7.16 真实 iPhone X 用户态**，主屏/设置/控制中心/触摸/音量键可用，已移植多机型。**它选 iPhone X 是因为那是最后一款无 PAC 的机型**；SM6225 是 Cortex-A73（ARMv8.0，无 PAC）。内核在 **GitHub macOS runner 上编译，约 8 分钟**。
+- **[Snapintosh](https://raw.githubusercontent.com/Snapintosh/Snapintosh/refs/heads/main/docs/BOOT-CHAIN.md)**：骁龙 X2 Elite 上启动原生 XNU。**在 EL2 写 monitor 代替 SPTM/TXM**；文档明确 `856 字节 SPTM 引导结构首四字必须是 magic 0xd00f…，值错了会 spins forever`——与我们的“静默挂死”现象同型。
+- **[HackiOS](https://gigazine.net/gsc_news/en/20261023-hackios)**（OOSEX GANG）、j0sh1x 的 HTC HD2 iOS 7。
+
+### SPTM 是否为本项目障碍：不是
+
+- 本内核确有 `__DATA_SPTM` 段与 `sptm_init` 等符号（`strings` 实证），但 **UniXNU 有 `patches/xnu-12377/public-pmap-without-monitor.patch`**，配合 `XNU_MONITOR=0` 走“无 monitor”的 pmap 路径；`CONFIG_SPTM` 在 `native-4k-shared-region-slide.patch` 中作条件编译出现。
+- 结论：**不需照 Snapintosh 那样实现 SPTM monitor**。此前“SPTM 导致挂死”的推断作废。
+
+### 待办 / 下一步
+
+- 观察 fi77（panic 屏修好 + stage 蓝带 + 避开 PAC 崩溃）的真机画面。
+- uke 的 `cluster-type` 是 **CPU0..2 = E、CPU3..7 = P（8 个字段）**；本项目 ADT 只有 cpu0，目前只给 cpu0 加了 `E`。若 fi77 能画出 panic 且报 AMP/`cluster-type` 相关，则补齐 cpu1..cpu7 节点与字段。
+- `scripts/make-shennong-adt.py` 才是 ADT 的正规来源（CI 用板级 ADT 覆盖 payload 的 ADT）；`cluster-type` 应写进该脚本，而不是继续用 `patch-adt-cluster.py` 打二进制。
+- 仓库 CI（`.github/workflows/kernel.yml`，macos-26，`workflow_dispatch`）可用；github.com 与 api.github.com 均可达（HTTP 200）。用户已授权 `git commit/push`。
+
+## 2026-11-13 — 入口细粒度打点：两次自伤与修正（fi79–fi81）
+
+### 结论
+
+给 `_start_first_cpu` 加检查点这件事，前两版都栽在**我自己选的执行环境假设**上，不是内核的问题：
+
+| 版本 | 现象 | 真正原因 |
+|---|---|---|
+| fi79 | 只有蓝带，无红带 | 插桩用 `stp x0,x1,[sp,#-16]!` 保存寄存器，但 `_start_first_cpu` 在 `0xad830c0` 设的 sp 是**高 VA**，只有 MMU 打开后才有效；MMU 还关着，插桩第一条指令自己就触发访存异常 |
+| fi80 | 连蓝带都没有，10 秒看门狗复位 | cave 地址 `0xFFFFFFF00B4F8000` **不是空闲区**，pristine 内核那里是真实函数（首条 `0xD503237F` = `pacibsp`），7424 字节里 5255 个非零字节；8 段 cave 把活代码覆盖了，内核一进函数就崩 |
+| fi81 | 待测 | cave 移到 `0xFFFFFFF00B4F7A50`（panic 屏 `0xb4f6ee8+0xb5f=0xb4f7a47` 之后到 `0xb4f8000` 之间的 1456 字节，已验证全零），stride `0xB4`，8 段共 1440 字节 |
+
+### 两条硬约束（以后所有 cave 都必须遵守）
+
+1. **MMU 关闭时的代码不能用 sp 做暂存。** `_start_first_cpu` 里 sp 指向的地址是给开了 MMU 之后用的。改用 `x16`（IP0，整段 239 条指令里未使用）指向 cave 内部缓冲区，`adrp x16, scratch; add x16, x16, :lo12:scratch`，MMU 关闭时按物理 PC 计算照样指向正确位置。
+2. **cave 地址必须先验证全零。** `scripts/patch-entry-bands.py` 现在会在写入前检查整个 cave 窗口，非零直接 `SystemExit`，不会静默覆盖。
+
+### 检查点表（band = 屏幕段号，每段 1/16 屏高）
+
+| band | 站点 VA | 颜色 | 含义 |
+|---|---|---|---|
+| 3 | `0xad830d4` | 红 | 两个栈设置完成 |
+| 4 | `0xad83128` | 绿 | Mach-O 头检查通过（`flags=0x80218001` bit31=1，首条 load command `cmd=0x19` = `LC_SEGMENT_64`，已验证通过） |
+| 5 | `0xad83290` | 青 | L1/L2 页表建完 |
+| 6 | `0xad832a8` | 品红 | 即将写 `TCR_EL1` |
+| 7 | `0xad8330c` | 黄 | 即将写 `MAIR_EL1` |
+| 8 | `0xad83318` | 橙 | `TLBI`/`ic` 完成 |
+| 9 | `0xad833c4` | 紫 | 五组 PAC key 生成完 |
+| 10 | `0xad83404` | 白 | PAC key 全部写入、`ISB` 完成 |
+
+另有 stage 1（band 1，蓝，入口）和 stage 2（band 2，品红，`msr sctlr_el1`）。
+
+### 已排除的嫌疑（静态证据）
+
+- **Mach-O 头检查死循环** `0xad83108`（`b.ne` 自跳）：读 `0xFFFFFFF007184000` 得 `flags=0x80218001`、`[+0x20]=0x19`，检查通过。
+- **页表越界死循环** `0xad8328c`（`b` 自跳）：按 window 4 GiB 算需 2048 个 2 MiB 项，第一轮 509 项、之后每轮 512 项共 5 轮，用到 `x25+0x6000`，上限是 `x25+0x10000`。
+- **`SCTLR_EL1` 目标值 `0xFC54793D`**：高 6 位 `0xFC` 是 Apple 的 PAC key 使能位（对应 `native-pac-arm64-user-jop.patch` 里的 `SCTLR_PAC_KEYS_ENABLED`），loader 跳进来时是 `0x30D0198D`。若 fi81 显示白带在、品红带不在，这就是首要嫌疑；修复指令编码已备好：`0xad83410: 0xf2bf8a80 → 0xf2a61a00`（`movk x0,#0x30d0,lsl16`）、`0xad83414: 0xf28f27a0 → 0xf28331a0`（`movk x0,#0x198d`）。
+
+## 2026-11-13 晚 — 入口打点的三次自伤与最终定位（fi79–fi85）
+
+### 结论先行
+
+`_start_first_cpu` 的执行范围已经从"整个内核"压缩到 **`0xad8312c`–`0xad831d4` 这 40 条指令**（页表构建循环的前半段）。这是本项目第一次用实测数据把死点确定到几十条指令内。
+
+### 实机色带证据链
+
+| 版本 | 屏幕上的带（从上到下） | 推论 |
+|---|---|---|
+| fi77 | 蓝 | 内核入口可达 |
+| fi78 | 无蓝，10 s 黑屏 | 未查明（与 fi80 不同因） |
+| fi79 | 蓝 | stage 1 正常；其余检查点因 sp 未映射而自伤 |
+| fi80 | 无蓝，10 s 黑屏 | **我的 cave 覆盖了真实函数** |
+| fi81 | 绿(loader)+蓝+红+绿 | 执行到 `0xad83128`（Mach-O 检查通过） |
+| fi82 | 绿+蓝+红+绿 | 同上；band 5（`0xad831d4`）未出现 → 死点在 40 条内 |
+| fi83 | 只有绿 | **cave 落在 `__DATA_SPTM`（RW-，NX）**，执行即异常 |
+| fi84 | 待测（未刷） | cave 移到 `__TEXT_EXEC` 的 `0xb4f9688`（10616 B 零区） |
+| fi85 | 待测（未刷） | fi84 内核 + ADT 修正（见下） |
+
+### 我自己造成的三个 bug（全部已修）
+
+1. **fi79**：插桩用 `stp x0,x1,[sp,#-16]!` 保存寄存器，但 `_start_first_cpu` 在 `0xad830c0` 设的 sp 是**高 VA**，只有 MMU 打开后才有效。MMU 还关着，插桩第一条指令自己就触发访存异常。→ 改用 `x16` 指向 cave 内部缓冲区。
+2. **fi80**：cave 地址 `0xFFFFFFF00B4F8000` **不是空闲区**，pristine 内核那里是真实函数（首条 `0xD503237F` = `pacibsp`），7424 字节里 5255 个非零字节。8 段 cave 把活代码覆盖了。→ cave 区必须先验证全零，`patch-entry-bands.py` 现在会强制自检。
+3. **fi83**：cave 搬到 `0xFFFFFFF0083E8000`，那是 `__DATA_SPTM` 段，`initprot=3`（**RW-，不可执行**）。代码放进去必然异常。→ 只能在 `__TEXT_EXEC`（`initprot=5`，R-X）里选 cave。
+
+### 段属性表（cave 选址的硬约束）
+
+| 段 | VA 起 | vsize | initprot | 权限 | 能否放 cave |
+|---|---|---|---|---|---|
+| `__TEXT` | `0x7004000` | `0x8000` | 1 | R-- | 否 |
+| `__PRELINK_TEXT` | `0x700c000` | `0xdc4000` | 1 | R-- | 否 |
+| `__DATA_CONST` | `0x7dd0000` | `0x618000` | 1 | R-- | 否 |
+| `__DATA_SPTM` | `0x83e8000` | `0x4c000` | 3 | RW-（NX） | 否 |
+| **`__TEXT_EXEC`** | `0x8434000` | `0x30c8000` | 5 | **R-X** | **是** |
+| `__PRELINK_INFO` | `0xc620000` | `0x27c000` | 3 | RW-（NX） | 否 |
+| `__DATA` | `0xb6b0000` | `0x2f0000` | 3 | RW-（NX） | 否 |
+| `__LINKEDIT` | `0xb9a0000` | `0xc80000` | 1 | R-- | 否 |
+| `__KLDDATA` | `0xc89c000` | `0xc0000` | 3 | RW-（NX） | 否 |
+| `__BOOTDATA` | `0xc95c000` | `0xd4000` | 3 | RW-（NX） | 否 |
+
+`__TEXT_EXEC` 里可用的零区（≥ `0x748` B）：
+
+| VA | 长度 | 备注 |
+|---|---|---|
+| `0xb4f9688` | `0x2978` | **fi84/fi85 使用**，历史上探针用过 `0xb4f9700` |
+| `0xb4f6ee4` | `0x111c` | panic 屏占用 `0xb4f6ee8`+`0xb5f` |
+| `0xad80090` | `0xf71` | |
+| `0xad8148c` | `0xb77` | stage 1 cave 占用 |
+| `0xad82784` | `0x87c` | |
+
+### 页表构建循环的完整反汇编（`0xad83128`–`0xad831d4`）
+
+```asm
+0xad83128: sub  x24, x24, x18        ; x24 = memSize - delta
+0xad8312c: add  x22, x22, x18
+0xad83130: add  x23, x23, x18
+0xad83134: mov  x4, x0               ; x4 = virtBase
+0xad83138: mov  x14, x22
+0xad8313c: mov  x15, x23
+0xad83140: mov  x1, x25              ; x1 = 页表区基址
+0xad83144: add  x3, x1, #1, lsl #12  ; x3 = L2 表起点
+0xad83148: mov  x2, x3
+0xad8314c: lsr  x5, x24, #0x15       ; x5 = memSize >> 21（2 MiB 页数）
+0xad83150: and  x6, x0, #0x3fe00000
+0xad83154: lsr  x6, x6, #0x15        ; x6 = L1 索引
+0xad83158: mov  x10, #0x200
+0xad8315c: sub  x6, x10, x6          ; x6 = 512 - 索引
+0xad83160: add  x2, x2, #0x1000      ; 下一个 L2 页
+0xad83164: add  x10, x25, #0x10000   ; 页表区上限（16 页）
+0xad83168: cmp  x2, x10
+0xad8316c: b.hs 0xad8328c            ; 越界 → 死循环
+0xad83170: and  x10, x0, #0x3fffffffff
+0xad83174: lsr  x10, x10, #0x1e
+0xad83178: lsl  x10, x10, #3
+0xad8317c: add  x10, x1, x10
+0xad83180: mov  x11, #3
+0xad83184: and  x12, x2, #0xfffffffff000
+0xad83188: orr  x12, x11, x12
+0xad8318c: str  x12, [x10]           ; 写 L1 表项
+0xad83190: cmp  x5, x6
+0xad83194: csel x6, x5, x6, lt
+0xad83198: and  x10, x0, #0x3fe00000
+0xad8319c: lsr  x10, x10, #0x15
+0xad831a0: lsl  x10, x10, #3
+0xad831a4: add  x10, x2, x10
+0xad831a8: mov  x11, #0x601
+0xad831ac: orr  x11, x11, #0x40000000000000
+0xad831b0: and  x12, x4, #0xffffffe00000
+0xad831b4: orr  x12, x11, x12
+0xad831b8: mov  x11, x6
+0xad831bc: mov  x13, #0x200000
+0xad831c0: str  x12, [x10], #8       ; 写 L2 表项（内层循环）
+0xad831c4: add  x12, x12, x13
+0xad831c8: subs x11, x11, #1
+0xad831cc: b.ne 0xad831c0
+0xad831d0: subs x5, x5, x6           ; band 5 站点
+0xad831d4: b.eq 0xad831ec
+```
+
+### 已排除的静态嫌疑
+
+- **页表越界**：memSize = window = 4 GiB → `x5 = 0x800 = 2048` 项；第一轮 `x6 = 512 - 384 = 128`，之后每轮 512，共 5 轮，用到 `x25+0x6000 < x25+0x10000`，**不会触发 `0xad8328c`**。
+- **两条 `str` 的地址**：`x10 = x25 = 0x8C58B4000`（L1）与 `x2 + 0xC00 = 0x8C58B6C00`（L2），均落在 12 GiB DRAM（`0x8C0000000`–`0x8F0000000`）内，且 `x25` 所在 `__KLDDATA` 是 `RW-` 可写。
+- **TCR_EL1 目标值** `0x00080022A51A251A`：T0SZ=26、T1SZ=26、TG0/TG1=4 KiB、**IPS=0b010 = 40 位 PA（1 TB）**，35 GB 的 DRAM 在范围内。
+- **`0xad832b4` 的 `bl`**：目标是 `set_ttbr0`（`dsb ish; msr ttbr0_el1, x0; isb; ret`），只影响 TTBR0，不影响 EL1 取指。
+- **`0xad83290` 的 `dsb ish`**：不是分支，可作插桩点（此前误判为 `b`）。
+
+### 发现但尚未验证的配置错误
+
+`build/*/adt-src-*.adt` 里：
+
+| 字段 | 值 | 问题 |
+|---|---|---|
+| `dram-base` | `0x80000000`（2 GB） | 内核实际加载在 `0x8C0004000`（35 GB），**差 33 GB**；该值抄自 iPhone16,1 的 ADT |
+| `dram-size` | `0x300000000`（12 GB） | 与设备相符 |
+| `darwinboot-memory-size` | 原 `0x100000000`（4 GB） | 4 GB window 从 `0x8C0004000` 延伸到 `0x9C0004000`，**越过 12 GB DRAM 末尾 `0x8F0000000`** |
+
+fi85 已按 `dram-base = 0x8C0000000`、`window = 0x80000000`（2 GB，覆盖 framebuffer 的 1.09 GiB 偏移且不越界）重建，`verify: ok`，尚未上机验证。
+
+### 工程改进（已落地）
+
+- `scripts/patch-entry-bands.py`：写入前强制校验整个 cave 窗口在 pristine 内核里全零，非零直接 `SystemExit`；允许在 `0xad8328c` 的 `b .` 死循环上插桩。
+- `scripts/patch-adt-window.py`：新增 `--dram-base`，可同时修正 `dram-base`、`dram-size`、`window` 三个字段，写入前校验记录名与长度。

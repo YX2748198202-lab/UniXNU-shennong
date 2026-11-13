@@ -56,8 +56,12 @@ def main():
     p.add_argument('--data-ramdisk', action='store_true',
                    help='Hand a dense APFS Data seed to the standard XNU RAMDisk path')
     args = p.parse_args()
-    if args.dram_size != 0x10000000 or args.owned_memory_size != 0x10000000:
-        p.error('First-entry profile requires a 256 MiB handoff window')
+    # DarwinWindowSizeValid accepts 256 MiB..8 GiB in 2 MiB steps. XNU builds its physmap from
+    # this window (boot_args->MemorySize), so anything bigger than the framebuffer's offset from
+    # the window base is what makes the frame buffer reachable - and 256 MiB is not enough VM for
+    # kernel_bootstrap on a 94 MiB prelinked kernel any way.
+    if not (0x10000000 <= args.owned_memory_size <= 0x200000000) or (args.owned_memory_size & 0x1FFFFF):
+        p.error('window must be 256 MiB..8 GiB in 2 MiB steps')
     u32 = lambda x: struct.pack('<I', x)
     u64 = lambda x: struct.pack('<Q', x)
     tree = node('device-tree', [
@@ -80,8 +84,12 @@ def main():
                                  ([('TrustCache', bytes(16))] if args.trust_cache else []) +
                                  ([('RootPolicies', bytes(16))] if args.root_policies else [])),
               node('manifest-properties')]),
+        # cluster-type is not optional: this kernel is built with __ARM_AMP__ / CONFIG_SCHED_EDGE=1,
+        # and the AMP classifier rejects a CPU that lacks it (the panic string never reaches the
+        # screen, so it shows up as a silent hang). Same finding in UniXNU-uke's PROGRESS.md.
         node('cpus', children=[node('cpu0', [('state', b'running\0'), ('reg', u32(0)),
              ('device_type', b'cpu\0'), ('compatible', b'qcom,kryo\0'),
+             ('cluster-type', b'E'),
              ('timebase-frequency', u32(19200000))])]),
         node('defaults', [('sleep-disabled', u32(1))]), node('options'),
         node('product', [('product-name', b'Xiaomi 14 Pro\0'), ('model', b'23116PN5BC\0')]),

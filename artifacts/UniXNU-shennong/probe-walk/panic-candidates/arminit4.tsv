@@ -1,0 +1,102 @@
+name	fmt_va	call_site_va	text
+_IORWLockUnlock+0x228	0xfffffff0071dda11	0xfffffff00ab8784c	%s:%d Assertion failed: %s : state=0x%x, owner=%p
+_OUTLINED_FUNCTION_9+0x1c	0xfffffff0071e2732	0xfffffff00abb0430	%s() called with NO_EVENT @%s:%d
+_PE_get_random_seed.cold.1+0x28	0xfffffff0072d6d60	0xfffffff00b4ef034	no random seed @%s:%d
+_SecureDTGetPropertyInternal+0x164	0xfffffff0072d6a34	0xfffffff00b3a01a0	Device tree property overflow: prop %p, length 0x%x @%s:%d
+_SecureDTInit+0x68	0xfffffff0072d6993	0xfffffff00b39f7f4	DeviceTree overflow: %p, size %#zx @%s:%d
+___kmem_entry_not_found_panic+0x2c	0xfffffff0072003df	0xfffffff00b45b2d8	kmem(map=%p) no entry found at %p @%s:%d
+___kmem_invalid_size_panic+0x30	0xfffffff0072005ea	0xfffffff00b45b350	kmem(map=%p, flags=0x%x): invalid size %zd @%s:%d
+___lck_spin_invalid_panic+0x68	0xfffffff007220381	0xfffffff00b478110	%s spinlock %p: <0x%016lx 0x%16lx> @%s:%d
+___lck_ticket_not_owned_panic+0x30	0xfffffff0071dea17	0xfffffff00b44107c	Ticket lock %p is unexpectedly not owned by thread %p @%s:%d
+___stack_chk_fail+0x28	0xfffffff0072bf505	0xfffffff00b4e4b60	Kernel stack memory corruption detected @%s:%d
+___strncpy_chk+0xc8	0xfffffff007218a53	0xfffffff00ad3f980	__strncpy_chk object size check failed: dst %p, src %p, (%zu < %zu) @%s:%d
+_arm_init+0xcc8	0xfffffff00721f0d8	0xfffffff00b4775b8	%s: Unable to find 'chosen' DT node @%s:%d
+_arm_init+0xcf0	0xfffffff00721f1b9	0xfffffff00b4775e0	%s: Unable to find 'dram-base' entry in the 'chosen' DT node @%s:%d
+_arm_init+0xd18	0xfffffff00721f207	0xfffffff00b477608	%s: Unable to find 'dram-size' entry in the 'chosen' DT node @%s:%d
+_arm_vm_init.cold.18+0x50	0xfffffff00721fe3e	0xfffffff00b477a68	segLOWESTAuxKC (%p) not equal to segLOWEST (%p). auxkc_mh: %p, auxkc_base: %p @%s:%d
+_arm_vm_init.cold.31+0x28	0xfffffff00721f772	0xfffffff00b477b5c	BOOTSTRAP_TABLE_SIZE too small for memory config @%s:%d
+_arm_vm_physmap_slide+0x1c0	0xfffffff00721fd91	0xfffffff00ad799c0	%s: PTOV table limit exceeded; segment va = 0x%llx, size = 0x%llx @%s:%d
+_arm_vm_prot_init.cold.4+0x34	0xfffffff00721f5b5	0xfffffff00b477820	Unexpected /chosen/memory-map/TrustCache property size %u != %zu @%s:%d
+_arm_vm_prot_init.cold.5+0x40	0xfffffff00721f5fd	0xfffffff00b477864	Unexpected location of TrustCache region: %#lx != %#lx @%s:%d
+_arm_vm_prot_init.cold.6+0x3c	0xfffffff00721f63b	0xfffffff00b4778a4	EXTRADATA is in an unexpected place: %#lx > %#lx @%s:%d
+_arm_vm_prot_init.cold.9+0x3c	0xfffffff00721f6ec	0xfffffff00b477904	auxkc_base (%p) not below segLOWEST (%p) @%s:%d
+_check_for_failure_injection+0x74	0xfffffff0071d99d0	0xfffffff00ab6adc4	Test panic at stage 0x%llx
+_coalitions_init+0x158	0xfffffff0071d85eb	0xfffffff00ab66288	%s: could not create init %s coalition: kr:%d @%s:%d
+_coalitions_init+0x18c	0xfffffff0071d8657	0xfffffff00ab662bc	%s: could not create corpse %s coalition: kr:%d @%s:%d
+_cpu_init.cold.2+0x28	0xfffffff00721ebb1	0xfffffff00b47657c	Unknown CPU subtype... @%s:%d
+_early_random_init+0x28c	0xfffffff007219e71	0xfffffff00ad551cc	ccdrbg_init() returned %d @%s:%d
+_initialize_screen.cold.1+0x28	0xfffffff0071cff09	0xfffffff00b471258	overflow detected @%s:%d
+_initialize_screen.cold.2+0x28	0xfffffff0071cff09	0xfffffff00b471284	overflow detected @%s:%d
+_kernel_bootstrap+0x860	0xfffffff0071e52f1	0xfffffff00abb7f14	kernel_bootstrap: result = %08X @%s:%d
+_kernel_debug_internal.cold.2+0x34	0xfffffff007269703	0xfffffff00b49baa8	kdebug: invalid procfilt flags %x @%s:%d
+_kernel_startup_bootstrap+0xa8	0xfffffff0071e5035	0xfffffff00b447e90	Section %s,%s missing @%s:%d
+_kernel_startup_bootstrap+0xd8	0xfffffff0071e5078	0xfffffff00b447ec0	Section %s,%s has invalid size @%s:%d
+_kmem_init+0x220	0xfffffff007200078	0xfffffff00b45c480	kmem_init(0x%llx,0x%llx): vm_map_enter(0x%llx,0x%llx) error 0x%x @%s:%d
+_lck_spin_assert+0x5c	0xfffffff0071deaf7	0xfffffff00ad7b61c	Lock not owned by current thread %p = %p @%s:%d
+_lck_spin_assert+0x94	0xfffffff00722031d	0xfffffff00ad7b654	Invalid spinlock %p @%s:%d
+_lck_spin_assert+0xb4	0xfffffff007220344	0xfffffff00ad7b674	lck_spin_assert(): invalid arg (%u) @%s:%d
+_lck_spin_assert+0xd4	0xfffffff007220ad1	0xfffffff00ad7b694	el stack pointer (probable overflow).
+_lck_spin_assert+0xf4	0xfffffff0071deb27	0xfffffff00ad7b6b4	Lock owned by current thread %p = %p @%s:%d
+_ledger_key_lookup+0xac	0xfffffff0071dce67	0xfffffff00ab7f788	Unable to find entry `%s' in %p @%s:%d
+_ledger_template_finalize+0x17c	0xfffffff0071dcdd2	0xfffffff00ab7f47c	Key `%s' has invalid features selected: %x @%s:%d
+_ledger_template_finalize.cold.4+0x28	0xfffffff0071dce04	0xfffffff00b43efe8	too many entries @%s:%d
+_ledger_template_finalize.cold.5+0x28	0xfffffff0071dce1c	0xfffffff00b43f014	too many scalable counters @%s:%d
+_load_context+0x54	0xfffffff0071e559c	0xfffffff00abb80f0	load_context @%s:%d
+_mapping_free_prime+0x48	0xfffffff00721e7cb	0xfffffff00ad6f4c8	%s: failed, no pages available? kr=%d @%s:%d
+_ml_parse_cpu_topology.cold.3+0x28	0xfffffff0072220ce	0xfffffff00b47a0cc	unable to retrieve state for cpu @%s:%d
+_ml_readprop+0x84	0xfffffff007222127	0xfffffff00ad86b04	Missing mandatory property '%s' @%s:%d
+_ml_readprop+0xec	0xfffffff0072220fe	0xfffffff00ad86b6c	CPU property '%s' has bad size %u @%s:%d
+_ml_static_vtop.cold.1+0x48	0xfffffff00721f4fd	0xfffffff00b4777b8	%s: illegal VA: %p; virt base 0x%llx, size 0x%llx @%s:%d
+_page_worker_init.cold.2+0x28	0xfffffff007209641	0xfffffff00b463ff4	Page events hash table memory allocation failed! @%s:%d
+_patch_low_glo_static_region.cold.1+0x34	0xfffffff0072203ab	0xfffffff00b478174	%s:%d Assertion failed: %s : Tried setting the Low Globals before pmap_bootstrap()
+_patch_low_glo_static_region.cold.2+0x34	0xfffffff00722043b	0xfffffff00b4781ac	%s:%d Assertion failed: %s : Tried setting the Low Globals before arm_vm_init()
+_pe_init_debug_command+0x31c	0xfffffff0072d794a	0xfffffff00b3a43d0	%s: %s: %#x-byte window at #%lx exceeds maximum size of %#x @%s:%d
+_pe_init_debug_command+0x344	0xfffffff0072d78d3	0xfffffff00b3a43f8	%s: %s: failed to read property from device tree @%s:%d
+_pe_init_debug_command+0x37c	0xfffffff0072d790b	0xfffffff00b3a4430	%s: %s: property size %u bytes is not a multiple of %lu @%s:%d
+_pe_init_debug_command.cold.1+0x48	0xfffffff0072d7a29	0xfffffff00b4ef5a8	%s: %s[%ld]: out of space in command buffer @%s:%d
+_pmap_bootstrap+0x5c8	0xfffffff00721cad3	0xfffffff00ad59e90	pmap-max-asids 0x%x too large @%s:%d
+_pmap_bootstrap.cold.2+0x28	0xfffffff00721ca9c	0xfffffff00b472b60	pmap-max-asids property is not a 32-bit integer @%s:%d
+_pmap_bootstrap.cold.5+0x28	0xfffffff00721caf8	0xfffffff00b472bb4	pmap-max-asids cannot be zero @%s:%d
+_pmap_compute_io_rgns+0x210	0xfffffff00721e48b	0xfffffff00ad6c55c	%s: %u length 0x%llx is not page-aligned @%s:%d
+_pmap_compute_io_rgns+0x240	0xfffffff00721e4bb	0xfffffff00ad6c58c	%s: %u addr 0x%llx length 0x%llx wraps around @%s:%d
+_pmap_compute_io_rgns+0x270	0xfffffff00721e448	0xfffffff00ad6c5bc	%s: %u addr 0x%llx is not page-aligned @%s:%d
+_pmap_compute_io_rgns+0x2a0	0xfffffff00721e4f0	0xfffffff00ad6c5ec	%s: I/O %u addr 0x%llx length 0x%llx overlaps physical memory @%s:%d
+_pmap_compute_pv_targets.cold.2+0x28	0xfffffff00721e0b5	0xfffffff00b475ab0	pmap-pv-count property is not a 32-bit integer @%s:%d
+_pmap_compute_pv_targets.cold.3+0x28	0xfffffff00721e0fe	0xfffffff00b475adc	pmap-kern-pv-count property is not a 32-bit integer @%s:%d
+_pmap_compute_pv_targets.cold.4+0x28	0xfffffff00721e14a	0xfffffff00b475b08	pmap-kern-pv-min property is not a 32-bit integer @%s:%d
+_pmap_init_pte_page+0x104	0xfffffff00721b84e	0xfffffff00ad62014	pmap_init_pte_page(): invalid PVH type for pte_p %p @%s:%d
+_pmap_init_pte_page+0x124	0xfffffff00721b828	0xfffffff00ad62034	pmap_init_pte_page(): pte_p %p @%s:%d
+_pmap_init_pte_page.cold.2+0x34	0xfffffff00721b7f3	0xfffffff00b474474	%s: unable to allocate PTD @%s:%d
+_pmap_map_globals+0xe4	0xfffffff0071f23f8	0xfffffff00ad64a24	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_map_high_window_bd+0x4ac	0xfffffff00721c988	0xfffffff00ad595c0	%s: PTE write is unaligned, ptep=%p, pte=%p @%s:%d
+_pmap_map_high_window_bd+0x510	0xfffffff0071f23f8	0xfffffff00ad59624	%s: Attempt to demote L%u block, tte=0x%llx, pmap=%p, target_level=%u, addr=%p @%s:%d
+_pmap_map_high_window_bd+0x540	0xfffffff00721a8ba	0xfffffff00ad59654	%s: insufficient pages, pa_start=%p, len=%p, prot=0x%x @%s:%d
+_pmap_map_high_window_bd+0x63c	0xfffffff00721a868	0xfffffff00ad59750	%s: area too large, pa_start=%p, len=%p, prot=0x%x @%s:%d
+_ptd_alloc_unlinked+0x17c	0xfffffff00721e343	0xfffffff00ad6eb3c	%s: out of PTD entries and for some reason didn't allocate more %d %p
+_read_erandom_generate+0xc4	0xfffffff007219ee7	0xfffffff00ad55ee0	read_erandom ccdrbg error %d @%s:%d
+_sched_processor_change_mode_locked.cold.13+0x30	0xfffffff0071e36cd	0xfffffff00b446ff8	unknown mode %d @%s:%d
+_serial_init+0x204	0xfffffff0072d74cb	0xfffffff00b3a39f8	Unable to find serial device driver for '%s' @%s:%d
+_serial_init+0x224	0xfffffff0072d743b	0xfffffff00b3a3a18	Unable to find a devicetree node with phandle %x @%s:%d
+_serial_init+0x244	0xfffffff0072d7592	0xfffffff00b3a3a38	Unable to find a devicetree node with the name '%s'. @%s:%d
+_serial_init.cold.1+0x28	0xfffffff0072d7508	0xfffffff00b4ef490	Unable to find the 'defaults' devicetree node. @%s:%d
+_serial_init.cold.3+0x28	0xfffffff0072d75ce	0xfffffff00b4ef4cc	The devicetree node has no phandle. This should never happen! @%s:%d
+_serial_init.cold.5+0x28	0xfffffff0072d747f	0xfffffff00b4ef508	The serial device devicetree node doesn't have a 'compatible' string @%s:%d
+_sfi_init.cold.1+0x28	0xfffffff0071e46ea	0xfffffff00b44745c	Gap in registered SFI classes @%s:%d
+_task_create_internal.cold.2+0x28	0xfffffff0071e65d3	0xfffffff00b448cbc	created task is not a member of a resource coalition @%s:%d
+_task_init.cold.2+0x28	0xfffffff0071e6157	0xfffffff00b448c80	task_init @%s:%d
+_thread_call_allocate_with_options+0xd8	0xfffffff0071e8f53	0xfffffff00abd6b30	Invalid thread call pri value: %d @%s:%d
+_thread_call_cancel+0xcc	0xfffffff0071e90cd	0xfffffff00abd7574	(%p %p) uninitialized thread call @%s:%d
+_thread_call_cancel+0xf0	0xfffffff0071e962f	0xfffffff00abd7598	(%p %p) invalid thread call index: %d @%s:%d
+_thread_deallocate_complete.cold.9+0x28	0xfffffff0071e86bd	0xfffffff00b44a330	thread_deallocate: thread not properly terminated @%s:%d
+_trap_telemetry_init+0x84	0xfffffff007219a59	0xfffffff00b47167c	Failed to allocate drain callout! @%s:%d
+_turnstiles_init.cold.2+0x28	0xfffffff0071ead45	0xfffffff00b44c750	Turnstiles hash table memory allocation failed! @%s:%d
+_turnstiles_init.cold.3+0x28	0xfffffff0071ead45	0xfffffff00b44c77c	Turnstiles hash table memory allocation failed! @%s:%d
+_vm_page_bootstrap+0xc48	0xfffffff0071cff09	0xfffffff00b4695c8	overflow detected @%s:%d
+_vm_set_page_size.cold.1+0x28	0xfffffff00720c69b	0xfffffff00b469bb8	vm_set_page_size: page size not a power of two @%s:%d
+_wfe_timeout_init+0x5c	0xfffffff0072221aa	0xfffffff00ad8823c	%s: invalid bit index (%u) @%s:%d
+_zone_bootstrap+0x1a4	0xfffffff0071ec5e1	0xfffffff00b44f90c	zone_pva_t can't pack a kernel page address in 31 bits @%s:%d
+_zone_create_ext+0xcc	0xfffffff0071edbb7	0xfffffff00abf5084	zone_create: creating zone ID %d (%s) twice @%s:%d
+_zone_create_ext+0x808	0xfffffff0071ec339	0xfffffff00abf57c0	Fragmentation greater than 10%% with elem size %d zone %s%s @%s:%d
+_zone_create_ext+0x838	0xfffffff0071ec289	0xfffffff00abf57f0	zone_create: element size too large: %zd @%s:%d
+_zone_create_ext+0x858	0xfffffff0071ecb50	0xfffffff00abf5810	xpected: %s%s) @%s:%d
+_zone_create_ext+0x878	0xfffffff0071edb86	0xfffffff00abf5830	zone_create: ID %d (%s) must be permanent @%s:%d

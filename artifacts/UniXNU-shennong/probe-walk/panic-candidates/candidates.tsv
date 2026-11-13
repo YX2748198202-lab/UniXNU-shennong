@@ -1,0 +1,5 @@
+name	fmt_va	call_site_va	text
+unsupported_memory_a	0xfffffff00721f71c	0xfffffff00b4779c8	Unsupported memory configuration %lx @%s:%d
+unsupported_memory_b	0xfffffff00706403e	0x0	Unsupported memory configuration %lx @%s:%d
+bootstrap_table_too_small	0xfffffff00721f772	0xfffffff00b477b5c	BOOTSTRAP_TABLE_SIZE too small for memory config @%s:%d
+segLOWESTAuxKC	0xfffffff00721fe3e	0xfffffff00b477a68	segLOWESTAuxKC (%p) not equal to segLOWEST (%p) ... @%s:%d
