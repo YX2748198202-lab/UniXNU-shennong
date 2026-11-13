@@ -1505,3 +1505,62 @@ fi85 已按 `dram-base = 0x8C0000000`、`window = 0x80000000`（2 GB，覆盖 fr
 
 - `scripts/patch-entry-bands.py`：写入前强制校验整个 cave 窗口在 pristine 内核里全零，非零直接 `SystemExit`；允许在 `0xad8328c` 的 `b .` 死循环上插桩。
 - `scripts/patch-adt-window.py`：新增 `--dram-base`，可同时修正 `dram-base`、`dram-size`、`window` 三个字段，写入前校验记录名与长度。
+
+## 2026-11-14 凌晨 — 日志通道打通，卡点从"黑盒"变成"可见"（fi89–fi102）
+
+### 结论先行
+fi101 **第一次让 XNU 把自己打的 panic 显示到屏幕上**。此前五天所有"静默挂死"中的一部分，
+其实是内核在 panic，只是没有 console 所以看不见。日志通道建立后，卡点从不可观测变成可读。
+
+### 已验证事实（真机照片 + 构建产物）
+| 版本 | 色带 | panic 文字 | 说明 |
+|---|---|---|---|
+| fi92 | 16 条（band 0–15） | 无 | MMU 开启成功，之后无输出 |
+| fi93 | 1 条（仅 handoff 绿） | 无 | cave 放在 post-MMU 站点导致全灭 |
+| fi94/95 | 13 条（band 0–12） | 无 | arm_init 检查点不出现 |
+| fi96 | 1 条 | 无 | 删掉 x30 的 virtBase−physBase 修正 → 栈与入口不一致 → 全灭 |
+| fi98 | 16 条 | 无 | x30 硬编码 0xFFFFFFF00B4768F0，与 fi92 齐平 |
+| fi99 | 1 条 | 无 | 检查点放在 pacibsp 之后 → PAC 验签失败 |
+| fi100 | 13 条 | 无 | 站点位移误伤 cave 池 |
+| **fi101** | **16 条** | **有（Invalid kernel stack pointer）** | **console 打通** |
+| fi102 | 16 条 | 无 | 去掉 SP 的 virtBase−physBase 修正后 panic 消失 |
+
+### fi101 的 panic 原文（真机照片，02:52）
+```
+Invalid kernel stack pointer (probable corruption or early boot)
+  at pc 0xFFFFFFF00B3A154C, lr 0xFFFFFFF00B4774DC
+  saved state: 0xFFFFFFF00CA27CB0
+  sp: 0xFFFFFFF00CA1FF30     fp: 0xFFFFFFF00CA1FFF0
+  esr: 0x000000009600004F    far: 0xFFFFFFF00C950F38
+  frames FFFFFFFF00B478394 FFFFFFFF00AD7FD14 FFFFFFFF00AD7D950 FFFFFFFF00B4774DC
+```
+
+**判读依据**：`lr = 0xFFFFFFF00B4774DC` 正是 `bl _PE_init_printf`（`0xb4774d8`）的返回地址，
+证明内核**已经执行进 `arm_init` 并跑到尾部 console 初始化**。`pc = 0xb3a154c` 在
+`_PE_init_printf` 内部。所以 arm_init 早就在跑，先前"进不去 arm_init"的判断是错的——
+只是没有屏幕输出。
+
+### 关键技术发现
+1. **`_start_first_cpu` 里 SP 与返回地址共用同一个换算**：`0xad83094` 的 `adrp x0,#0xca28000`
+   `+virtBase −physBase` 与 `0xad830c4` 的 `adrp x30,#0xb476000 +0x8f0 +virtBase −physBase`
+   完全同构。删掉修正会让栈和入口同时偏移，二者仍不一致于内核期望值 → fi96 全灭。
+2. **`pacibsp` 之后的函数体不能插入跳转型 cave**：PAC 用 SP 绑定，在函数中途跳走再回来，
+   `retabsp` 验签失败 → `brk` → 看起来像"完全没启动"（fi99）。`_start_first_cpu` 开头没有
+   PAC 序言，所以在它后半段（`0xad8341c`/`0xad8343c`）插桩是安全的。
+3. **console 恢复方法**：`patch-arm-init-tail.py` 的 `KEEP_NAMES` 支持 `serial`/`console`/`printf`。
+   把它们还原（`0xb4774c0`/`0xb4774d0`/`0xb4774d8` 的 nop → 原始 `bl`），Mu-Silicium 的
+   `FrameBufferSerialPortLib` 就会把内核 printf 画到 framebuffer。
+
+### fi102 的判读与悬而未决
+fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack pointer` **消失**，
+但仍无任何文字输出。两种可能无法从照片区分：
+- (A) SP 检查通过、arm_init 继续往下跑，随后在更深处静默挂死 —— 需要新的检查点或更多 printf；
+- (B) SP 改动让内核在到 `PE_init_printf` 之前就死了 —— 需要用 band 池确认是否仍在 arm_init 内。
+
+### 白天的下一步
+1. 在 `arm_init` 尾部 `bl _machine_startup`（`0xb4774?`）之前插一个**不破坏 PAC** 的检查点，
+   或在 `_PE_init_printf` 返回后立刻加 cave，确认 fi102 是否越过了 console 初始化。
+2. 若 (A) 成立，把 `patch-arm-init-tail.py` 里剩下的 nop 逐个还原（先 `pio`/`timebase`/`kptimer`
+   已在保留位，接着试 `cpu`/`fiq`），每还原一个看是否出现新 panic——现在有文字输出，可以一次定位一个。
+3. `saved state: 0xFFFFFFF00CA27CB0` 与 nop 后的 `0xFFFFFFF00CA28000` 相差 `0x350`：
+   若 (B) 成立，把 `0xad83094` 的 `adrp` 基址改为 `0xca27000` 并 `add #0xcb0` 精确对齐。

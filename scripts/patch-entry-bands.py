@@ -31,16 +31,19 @@ spec.loader.exec_module(probe)
 
 # (site VA, band, BGRA colour, what the checkpoint proves)
 CHECKPOINTS = [
-    (0xFFFFFFF00AD830D4, 3,  0xFFFF0000, 'stacks set up'),
-    (0xFFFFFFF00AD83128, 4,  0xFF00FF00, 'Mach-O header check passed'),
-    (0xFFFFFFF00AD83138, 5,  0xFF00FFFF, 'x4 = x0 before loop'),
-    (0xFFFFFFF00AD83150, 6,  0xFFFF00FF, 'load memSize into x5'),
-    (0xFFFFFFF00AD83164, 7,  0xFF0080FF, 'x2 advanced to next L2 page'),
-    (0xFFFFFFF00AD83174, 8,  0xFFFFFF00, 'x0 masked for L1 index'),
-    (0xFFFFFFF00AD83190, 9,  0xFF8000FF, 'ABOUT TO WRITE FIRST L1 ENTRY'),
-    (0xFFFFFFF00AD83194, 10, 0xFFFFFFFF, 'first L1 entry written'),
-    (0xFFFFFFF00AD831C4, 11, 0xFF00FF80, 'inner loop writing L2 entries'),
-    (0xFFFFFFF00AD831CC, 12, 0xFFFF0080, 'inner loop counter decremented'),
+    (0xFFFFFFF00AD830D4,  3, 0xFFFF0000, 'stacks set up'),
+    (0xFFFFFFF00AD83128,  4, 0xFF00FF00, 'Mach-O check'),
+    (0xFFFFFFF00AD83138,  5, 0xFF00FFFF, 'x4 = x0'),
+    (0xFFFFFFF00AD83150,  6, 0xFFFF00FF, 'memSize -> x5'),
+    (0xFFFFFFF00AD83164,  7, 0xFF0080FF, 'outer loop'),
+    (0xFFFFFFF00AD83174,  8, 0xFFFFFF00, 'mask L1 index'),
+    (0xFFFFFFF00AD83190,  9, 0xFF8000FF, 'first L1 write'),
+    (0xFFFFFFF00AD83194, 10, 0xFFFFFFFF, 'L1 written'),
+    (0xFFFFFFF00AD831C4, 11, 0xFF00FF80, 'inner L2 loop'),
+    (0xFFFFFFF00AD831C8, 12, 0xFFFF0080, 'inner counter'),
+    (0xFFFFFFF00AD83208, 13, 0xFF400080, 'capacity check'),
+    (0xFFFFFFF00AD83414, 14, 0xFF80FF40, 'MMU about to enable'),
+    (0xFFFFFFF00B4768F4, 15, 0xFFFF4080, 'ENTERED arm_init'),
 ]
 
 FINE_CHECKPOINTS = [
@@ -58,8 +61,8 @@ FINE_CHECKPOINTS = [
 # The 1456 bytes between the end of the panic screen blob (0xb4f7a47) and 0xb4f8000 are
 # verified all-zero in the pristine kernel; 0xb4f8000 itself is a REAL FUNCTION (starts
 # with pacibsp), which is why fi80 overwrote live code and never got as far as the blue bar.
-CAVE_BASE = 0xFFFFFFF00B4F9688
-CAVE_STRIDE = 0xB4
+CAVE_BASE = 0xFFFFFFF00AD81680
+CAVE_STRIDE = 0xB8   # must be 8-byte aligned: lld pads .text up to 8 for a 4-aligned -Ttext, shifting every branch by 4
 
 PAINT = """
   ldr x1, [x20, #0x28]
@@ -118,8 +121,15 @@ def main():
     for site, band, colour, why, _reg in points:
         word = struct.unpack_from('<I', data, probe.file_offset(site))[0]
         # 0xad8328c is `b .` - a dead loop this probe deliberately replaces, so it is exempt.
-        if (word & 0xFC000000) == 0x14000000 and site != 0xFFFFFFF00AD8328C:
-            raise SystemExit(f'{site:#x} already branches; start from a pristine kernel')
+        # A displaced branch cannot be replayed verbatim: B/BL/B.cond/CBZ/CBNZ/TBZ/TBNZ are
+        # PC-relative, so copying them into a cave retargets them at the cave neighbourhood.
+        top = word >> 26
+        is_branch = (top in (0b000101, 0b100101)          # B, BL
+                     or (word & 0xFF000000) == 0x54000000  # B.cond
+                     or (word & 0x7E000000) == 0x34000000  # CBZ, CBNZ
+                     or (word & 0x7E000000) == 0x36000000) # TBZ, TBNZ
+        if is_branch and site != 0xFFFFFFF00AD8328C:
+            raise SystemExit(f'{site:#x} already branches; pick a non-branch site')
 
     # Refuse to write over live code: the whole cave window must be zero in the input.
     window_lo = CAVE_BASE
