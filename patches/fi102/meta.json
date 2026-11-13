@@ -1,0 +1,7 @@
+{
+  "kernel_sha256_pristine": "31e33289e188085f21a63599809e7e69d75f53d5b5b8c29dddc79bb9de9af1f7",
+  "kernel_sha256_fi102": "800b4412fd125aef002035d552d4ff47af8588902a3da2de8f19ebd11f94a976",
+  "kernel_size": 94552064,
+  "changed_words": 1146,
+  "base_va": 18446744004990074880
+}
