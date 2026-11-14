@@ -1564,3 +1564,46 @@ fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack point
    已在保留位，接着试 `cpu`/`fiq`），每还原一个看是否出现新 panic——现在有文字输出，可以一次定位一个。
 3. `saved state: 0xFFFFFFF00CA27CB0` 与 nop 后的 `0xFFFFFFF00CA28000` 相差 `0x350`：
    若 (B) 成立，把 `0xad83094` 的 `adrp` 基址改为 `0xca27000` 并 `add #0xcb0` 精确对齐。
+
+## fi118–fi123：第二次 Panic 根因闭合（2026-11-14 夜）
+
+### 测量方法（本轮建立，后续复用）
+在 `__TEXT_EXEC` 的 `udf #0` 对齐填充带内插桩，落点 `0xFFFFFFF00AD70840`
+（`0xad70820` 是 `retab` + 7 条 `nop`，其后整片填 `udf #0`，永不执行；
+与故障点 `0xad73a18` 在**同一个 2 MiB 块**内，故必然已映射）。
+把 `0xFFFFFFF00AD73A14` 的 `add x20,x20,#0x1f0` 换成 `b cave`，
+cave 内**只读不写**，末尾重放该 `add` 并跳回 `0xad73a18`，
+让原本就存在的写故障把寄存器打进 panic 文本。
+> 关键教训：cave 里**绝不能**把 `mrs Xt, ttbr1_el1` 取到的值当虚拟地址解引用——
+> TTBR1 里是**物理地址**。fi120/fi121 就是这么静默死掉的（连 panic 都没出）。
+
+### 已验证结论（真机实测）
+1. `TCR_EL1 = 0x00080022A51A251A`，与 `_start_first_cpu` 里 `movk` 序列逐位一致 ⇒ 未被改动。
+   `T1SZ=26`、`TG1=2`（4 KiB），`IPS=2`。
+2. `SCTLR_EL1 = 0x00000000FC54799D`，`M=1 C=1 I=1 WXN=0` ⇒ MMU 与 cache 正常开启。
+3. `TTBR1_EL1 = 0x8C5A50000`（物理）⇒ 对应 VA `0xFFFFFFF00CA50000`，
+   **不是** `_start_first_cpu` 设的 `0xc8b5000` ⇒ **pmap 已接管并换过页表**。
+4. `slide = 0xFFFFFFE747000000`（由 `AT S1E1R` 的 PA 与 VA 反推，与 boot_args 一致）。
+5. **`AT S1E1R` 查 `0xFFFFFFF00C8C41F0` → 成功，PA = `0x8C58C4000`；
+   `AT S1E1W` 查同一地址 → 失败，`FST = 0x0F` = Permission fault, level 3。**
+   ⇒ 页表项**明确拒绝 EL1 写、允许读**。不是 TLB 残留，不是未映射。
+6. 同一次崩溃中 `str w9,[x8]` 写 `0xb783328`（`__DATA`）**成功** ⇒ `__DATA` 可写，
+   而 `__KLDDATA` 不可写，说明 pmap 有意区分两者。
+7. `__KLDDATA` 在 Mach-O 里 `maxprot=3 / initprot=3`（读写），与运行时实际权限矛盾。
+8. 建表循环产出的描述符实测为 `0x00400008C0000601`：`type=01`（2 MiB 块）、
+   `AF=1`、`SH=outer`、`AP=00`（**EL1 读写**）、`AttrIndx=0`、`bit[54]=UXN`
+   ⇒ 引导阶段自己建的映射是可写的，RO 是**后来**由 pmap 施加的。
+9. `LC_DYLD_CHAINED_FIXUPS` 的 `imports_count = 0`，且全可执行段扫描
+   **没有任何指令写 `0xb6b5e48`** ⇒ PAC panic 的 NULL 回调槽不是加载器漏修重定位。
+
+### 根因（已验证现象 / 机制属高置信推断）
+`arm_init` 解析 `jtag` / `wfe_mode` 启动参数后，把结果写进
+`__KLDDATA` 的 `0xFFFFFFF00C8C41F0`；pmap 却把该段映射成只读，
+于是 `str xzr,[x20]` 触发数据中止（`ESR=0x9600004F`），
+异常向量再调用栈检查函数 `0xad7fbbc`，后者因异常现场 SP 不在合法栈范围而报
+`Invalid kernel stack pointer` —— **栈信息是次生现象，不是原因**。
+
+### 待解决
+pmap 为何给 `__KLDDATA` 只读。段表声明是 RW，代码中无对 `0xc89c000`/`0xc95c000`/
+`0xc8c4000` 的直接引用，说明保护来自 pmap 运行时读取段信息后的判定。
+下一步需拿到 pmap 建表处对内核映像各段的处理逻辑。

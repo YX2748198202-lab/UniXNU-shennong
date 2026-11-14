@@ -109,6 +109,15 @@ scratch:
 """
 
 
+
+def decode_bl(word, site):
+    """Absolute target of a BL at `site` (imm26 is a signed word offset)."""
+    imm = word & 0x03FFFFFF
+    if imm & 0x02000000:
+        imm -= 0x04000000
+    return site + imm * 4
+
+
 def main():
     kernel = Path(sys.argv[1])
     data = bytearray(kernel.read_bytes())
@@ -128,7 +137,17 @@ def main():
                      or (word & 0xFF000000) == 0x54000000  # B.cond
                      or (word & 0x7E000000) == 0x34000000  # CBZ, CBNZ
                      or (word & 0x7E000000) == 0x36000000) # TBZ, TBNZ
-        if is_branch and site != 0xFFFFFFF00AD8328C:
+        # BL is allowed: its target is re-encoded inside the cave (see below), so the
+        # relocated copy still calls the original callee instead of the cave neighbourhood.
+        # B / B.cond / CBZ / CBNZ / TBZ / TBNZ stay banned: they never come back.
+        # ADRP/ADR compute an address relative to the PC: copying one into a cave makes it
+        # resolve against the cave neighbourhood, silently corrupting the register (fi105
+        # black screen: `adrp x8,#0xc8c4000` at 0xb476fb8 replayed from 0xad81f20).
+        is_pc_rel = (word & 0x9F000000) == 0x90000000   # ADRP
+        if is_pc_rel:
+            raise SystemExit(f'{site:#x} is ADRP/ADR (PC-relative); pick another site')
+        is_bl = (top == 0b100101)
+        if is_branch and not is_bl and site != 0xFFFFFFF00AD8328C:
             raise SystemExit(f'{site:#x} already branches; pick a non-branch site')
 
     # Refuse to write over live code: the whole cave window must be zero in the input.
@@ -149,7 +168,8 @@ def main():
                       + PAINT.format(args=reg, band=band, lo=f'{colour & 0xFFFF:#06x}',
                                      hi=f'{(colour >> 16) & 0xFFFF:#06x}')
                       + RESTORE
-                      + f'  .inst {displaced:#010x}\n'
+                      + (f'  bl {decode_bl(displaced, site):#x}\n' if is_bl
+                         else f'  .inst {displaced:#010x}\n')
                       + '  b target\n' + SCRATCH)
             code = probe.assemble(source, cave, {'target': site + 4}, Path(tmp))
             if len(code) > CAVE_STRIDE:
