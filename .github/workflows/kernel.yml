@@ -55,74 +55,23 @@ jobs:
       - name: Defconfig
         working-directory: unixnu
         run: ./unixnu defconfig shennong_defconfig -D "$UNIXNU_DEVICE"
-      - name: Keep __KLDDATA writable until lockdown
+      - name: Install resident late-constant support
         working-directory: unixnu
         run: |
-          # XNU's arm_vm_prot_init() maps __KLDDATA read-only with
-          #   arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0);
-          # and arm_vm_prot_finalize() then clears every __KLDDATA PTE. That is correct
-          # for Apple's layout, where __KLDDATA only holds bootstrap_pagetables, which is
-          # written before the MMU is switched on. It is wrong for this port: the prelink
-          # layout leaves __KLDDATA as the only native segment with room, so the linker
-          # moves __DATA_CONST,__const into it -- and __DATA_CONST is exactly where XNU
-          # keeps SECURITY_READ_ONLY_LATE state that must stay writable until lockdown
-          # (segLOWESTRO/segHIGHESTRO/seg*B/segSize* and friends in arm_vm_init.c).
-          # Measured on the device: every early write to a moved variable took a
-          # permission fault (ESR 0x9600004f, FST 0x0F, WnR=1) and killed the boot.
-          # Keep the segment RWNX during boot and leave it mapped, which is the property
-          # __DATA_CONST would have had if it had room.
-          python3 - <<'PY'
-          import glob, pathlib, sys
-          hook = '''
-
-          # --- shennong: keep __KLDDATA writable until lockdown -------------------
-          # Appended by the CI workflow. Runs after every upstream patch has been applied
-          # and before the kernel is compiled, so it cannot be undone by re-preparing the
-          # source. See docs/root-cause-kld-const-move.md.
-          def _shennong_kld_writable():
-              import glob as _g, pathlib as _p
-              root = _p.Path(__file__).resolve().parents[1]
-              hits = _g.glob(str(root / '**' / 'arm_vm_init.c'), recursive=True)
-              for f in hits:
-                  p = _p.Path(f)
-                  t = p.read_text()
-                  before = t
-                  t = t.replace(
-                      'arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0);',
-                      'arm_vm_page_granular_RWNX(segKLDDATAB, segSizeKLDDATA, 0);')
-                  t = t.replace(
-                      'va < (segKLDDATAB + segSizeKLDDATA)',
-                      'va < segKLDDATAB')
-                  if t != before:
-                      p.write_text(t)
-                      print('shennong: __KLDDATA kept writable ->', p)
-                  else:
-                      print('shennong: WARNING no __KLDDATA pattern in', p)
-
-          try:
-              _shennong_kld_writable()
-          except Exception as _e:  # never mask a failure silently
-              print('shennong: __KLDDATA hook failed:', _e)
-              raise
-          # --- end shennong ---------------------------------------------------------
-          '''
-          patched = 0
-          targets = glob.glob('scripts/prepare-xnu-source.py')
-          targets += glob.glob('out/shennong/*/*/shennong/tree/scripts/prepare-xnu-source.py')
-          for t in targets:
-              p = pathlib.Path(t)
-              text = p.read_text()
-              if 'shennong_kld_writable' in text:
-                  print('kld hook: already present in', t)
-                  patched += 1
+          python3 - <<'PYHOOK'
+          import os, pathlib, subprocess, sys
+          roots = [pathlib.Path('.')]
+          roots += sorted(pathlib.Path('out/shennong').glob('*/shennong/tree'))
+          seen = set()
+          for root in roots:
+              key = root.resolve(strict=True)
+              if key in seen:
                   continue
-              p.write_text(text + hook)
-              print('kld hook: appended to', t)
-              patched += 1
-          if not patched:
-              print('::error::kld hook: prepare-xnu-source.py not found')
-              sys.exit(1)
-          PY
+              seen.add(key)
+              subprocess.run([sys.executable, os.environ['UNIXNU_DEVICE'] +
+                              '/scripts/apply-port-const.py', 'install',
+                              '--tree', str(key)], check=True)
+          PYHOOK
       - name: Build kernel
         working-directory: unixnu
         env:
@@ -154,33 +103,21 @@ jobs:
           # crypto come from two archives the upstream build script never adds to the
           # kernel link: it only knows the archives behind its own switches. Force-load
           # them when they are there, before the first pass.
-          # This kernelcache leaves no slack for the native constant segment. Apple's own
-          # kernel fills __DATA_CONST (0xdc000) plus the __LASTDATA_CONST page exactly, so
-          # only 0xe0000 bytes exist between the collection's __DATA_CONST start and the
-          # first retained kext constant (com.apple.kec.pthread at +0xe0000). XNU requires
-          # the kext constants to start at the end of the kernel's __LASTDATA_CONST
-          # (arm_init_sptm: segPLKDATACONSTB = segLASTDATACONSTB + segSizeLASTDATACONST),
-          # so the DEVELOPMENT kernel's __const cannot simply be placed at the start.
-          # Move that section into __KLDDATA at link time: the prelink layout allocates
-          # __KLDDATA past the end of the file, where it has unlimited room. Every other
-          # native segment (__DATA_CONST, __DATA, __BOOTDATA) is pinned to an exact slot in
-          # the reference file set, and growing one makes XnuPrelink abort with "Native
-          # <seg> overlaps a retained segment" (fileset_layout.py:208) -- measured on
-          # 2026-11-17 when this was retargeted to __DATA. __KLDDATA is therefore the only
-          # segment with room, even though arm_vm_prot_init() maps it read-only
-          # (arm_vm_page_granular_RNX) and arm_vm_prot_finalize() clears its PTEs; the
-          # kernel is patched at runtime to keep it writable (docs/root-cause-kld-const-move.md).
-          # Probe the linker first; fall back to the classic linker, and warn instead of
-          # failing the build when neither accepts the flag.
+          # Native __const exceeds the retained collection's DATA_CONST hole.
+          # Keep it resident in a separate PORT_CONST segment: boot RWNX, final RNX.
+          # Do not mix it with reclaimable KLDDATA or alter KLDDATA's lifecycle.
+          # apply-port-const.py installs explicit placement and VM handling first.
           export XNU_CONST_RENAME=""
           cat > /tmp/linkcheck.c <<'EOF'
-          static const char *const linkcheck_table[] = { "a", "b" };
-          int main(void) { return linkcheck_table[0][0]; }
+          __attribute__((used, section("__DATA_CONST,__const"))) static const char *const linkcheck_table[] = { "a", "b" };
+          volatile unsigned linkcheck_index;
+          int main(void) { return linkcheck_table[linkcheck_index & 1][0]; }
           EOF
           for _variation in \
-            "-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const" \
-            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"; do
-            if xcrun --sdk macosx clang /tmp/linkcheck.c -o /tmp/linkcheck $_variation >/tmp/linkcheck.log 2>&1; then
+            "-Wl,-rename_section,__DATA_CONST,__const,__PORT_CONST,__const,-segprot,__PORT_CONST,rw-,rw-,-add_split_seg_info" \
+            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__PORT_CONST,__const,-segprot,__PORT_CONST,rw-,rw-,-add_split_seg_info"; do
+            if xcrun --sdk macosx clang -arch arm64 /tmp/linkcheck.c -o /tmp/linkcheck $_variation >/tmp/linkcheck.log 2>&1 && \
+               python3 "$UNIXNU_DEVICE/scripts/audit-port-const-kernel.py" --native /tmp/linkcheck --probe >>/tmp/linkcheck.log 2>&1; then
               export XNU_CONST_RENAME="$_variation"
               break
             fi
@@ -190,7 +127,8 @@ jobs:
           if [ -n "$XNU_CONST_RENAME" ]; then
             echo "const section move: linker accepts $XNU_CONST_RENAME"
           else
-            echo "::warning::no linker support for -rename_section; kernel constant move unavailable"
+            echo "::error::no linker support for resident PORT_CONST relocation"
+            exit 1
           fi
           python3 - "$SRC_SCRIPT" <<'PY'
           import os
@@ -225,31 +163,8 @@ jobs:
                       script.write_text(text.replace(anchor, inject + anchor, 1))
                       print('const section move: applied', flag)
           PY
-          # The prelink kit relocates native split-segment references through
-          # LC_SEGMENT_SPLIT_INFO. A kernel linked without that command has no such
-          # references at all, so its absence is not an error: every pointer still moves
-          # through the chained-fixup pass in relocate_native. Only the case where the
-          # image has neither records nor chained fixups is a real failure.
-          python3 - kits/XnuPrelink/fileset_layout.py <<'PY'
-          import sys
-          from pathlib import Path
-          OLD = "        raise ValueError('Native image has no split-segment relocation information')"
-          NEW = ("        if not image.fixups():\n"
-                 "            raise ValueError('Native image has neither split-segment records nor chained fixups')\n"
-                 "        return")
-          path = Path(sys.argv[1])
-          if not path.is_file():
-              print('::warning::split-segment tolerance: kit not at', path)
-          else:
-              text = path.read_text()
-              if NEW in text:
-                  print('split-segment tolerance: already present')
-              elif OLD in text:
-                  path.write_text(text.replace(OLD, NEW, 1))
-                  print('split-segment tolerance: applied')
-              else:
-                  print('::warning::split-segment tolerance: pattern not found')
-          PY
+          # Keep upstream split-segment validation strict. Chained pointer fixups
+          # do not relocate instruction references to an independently moved segment.
           if ./unixnu build kernel; then
             FIRST_RC=0
             echo "first pass rc=0"
@@ -624,6 +539,22 @@ jobs:
           ls -la out/shennong/*/shennong/kernel/ 2>&1 | head -8 | sed 's/^/::error::/'
           ls -la "$TREE"/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf 2>&1 | sed 's/^/::error::/'
           exit 0
+      - name: Audit resident constant segments
+        working-directory: unixnu
+        run: |
+          python3 - <<'PYAUDIT'
+          import os, pathlib, subprocess, sys
+          trees = sorted(pathlib.Path('out/shennong').glob('*/shennong/tree'))
+          if len(trees) != 1:
+              raise SystemExit('Expected one shennong build tree, got %d' % len(trees))
+          tree = trees[0]
+          native = tree / 'build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837.unstripped.noctf'
+          fileset = tree.parent / 'kernel/kernel.macho'
+          subprocess.run([sys.executable, os.environ['UNIXNU_DEVICE'] +
+                          '/scripts/audit-port-const-kernel.py', '--native', str(native),
+                          '--fileset', str(fileset), '--out',
+                          str(fileset.parent / 'port-const-audit.json')], check=True)
+          PYAUDIT
       - name: Measure the storage bindings
         if: always()
         working-directory: unixnu
@@ -1078,6 +1009,10 @@ jobs:
             exit 0
           fi
           tail -20 /tmp/kextprobe.out | sed 's/^/::error::/'
+      - name: Record resident constant build evidence
+        if: always()
+        working-directory: unixnu
+        run: python3 "$UNIXNU_DEVICE/scripts/record-port-const-evidence.py" --framework . --out "$GITHUB_WORKSPACE/port-const-evidence"
       - name: Upload kernel
         if: always()
         uses: actions/upload-artifact@v4
@@ -1086,6 +1021,7 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
           path: |
+            port-const-evidence/
             unixnu/build/xnu/ios-obj/DEVELOPMENT_ARM64_BCM2837/mach.development.bcm2837*
             unixnu/out/shennong/*/shennong/tree/build/xnu/ios-obj/*/mach.development.bcm2837*
             unixnu/out/shennong/*/shennong/build/xnu/ios-obj/*/mach.development.bcm2837*

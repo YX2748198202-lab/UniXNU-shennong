@@ -1,0 +1,17 @@
+version: 1
+targets:
+  - id: V1
+    source: E4
+    observation: "fi134 照片中的 PC/FAR/ESR 与旧基线一致"
+    measured: "PC=0xfffffff00ad73a18 FAR=0xfffffff00c8c41f0 ESR=0x9600004f"
+    status: observed
+  - id: V2
+    source: E5
+    observation: "fi133 菜单残留后黑屏；不将残留画面视为仍在菜单执行的证据"
+    measured: "用户观察几秒后黑屏，未计时"
+    status: observed
+  - id: V3
+    source: E10
+    observation: "fi135 启动阶段或完整异常输出"
+    measured: "fi135 照片：PC=0xfffffff00ad73a18 FAR=0xfffffff00c8c41f0 ESR=0x9600004f；与 fi134 一致"
+    status: observed

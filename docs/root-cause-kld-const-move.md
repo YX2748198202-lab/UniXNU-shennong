@@ -2,8 +2,7 @@
 
 ## 结论
 
-`-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const` 是早期启动
-"权限错误 + 写入"panic 的唯一根因。
+现有源码、段内容与实机故障共同支持：将 `__DATA_CONST,__const` 搬到启动期只读的 `__KLDDATA`，造成了变量生命周期与段保护的冲突。这是目前有证据支持的故障解释，**“唯一根因”及“修改后已修复”尚未通过等价实机对照验证**。
 
 ## 源码证据（apple-oss-distributions/xnu, osfmk/arm64/arm_vm_init.c）
 
@@ -35,12 +34,9 @@ fi131 证明这是**一类**写（多个位置）而不是单点，与该结论�
 `__KLDDATA` 文件内容 39.7% 非零、开头是 chained-fixup 指针表 ⇒ 里面装的确实是
 `__DATA_CONST,__const` 的内容。
 
-## 修复
+## 历史修复尝试（均未完成验收）
 
-把 rename 目标改为 `__DATA,__const`（`prot_init` 里 RWNX，永久可写）。
-
-代价：这批常量在内核运行期可写，W^X 强度低于 Apple 原生布局；属于 bring-up 期
-的取舍，等启动打通后再考虑用内核补丁把 `__KLDDATA` 改成"finalize 前可写"。
+曾尝试把 rename 目标改为 `__DATA,__const`，该轮 CI 随后因与保留段重叠失败，见下面的演进记录。另一个旧方案把整个 `__KLDDATA` 保持可写且跳过 unmap；它既未进入当时的实际编译树，也没有处理 OSKext 后续回收该段内存的问题，现已弃用。
 
 ## 未验证
 
@@ -65,3 +61,11 @@ fi131 证明这是**一类**写（多个位置）而不是单点，与该结论�
 `arm_vm_init.c` 里 `segLOWESTRO / segHIGHESTRO / seg*B / segSize*` 都是
 `SECURITY_READ_ONLY_LATE`，本该在 `__DATA_CONST`（prot_init 里 RWNX）里活到 lockdown。
 搬家把它们送进了提前 RNX 的 `__KLDDATA`，所以早期写一律权限错误。
+
+## 2026-11-18 fi135 及正式修复方向
+
+fi135 实际照片再次显示 `PC=0xfffffff00ad73a18 / FAR=0xfffffff00c8c41f0 / ESR=0x9600004f`。对应指令是 `str xzr, [x20]`，目标在原生 `__KLDDATA,__const` 中。旧故障仍在，之前的源码钩子并未改变两轮 CI 的可执行段。
+
+本轮进一步查到 `OSKext.cpp:1214–1254` 会调用段析构并释放 KLDDATA，因而跳过一次 unmap 并不足以修复生命周期。经批准实现独立 `__PORT_CONST`：只把搬移的 `__const` 放入常驻新段，启动 RWNX、finalize RNX，KLDDATA 原有保护和回收不改。补丁明确针对 `.cache/xnu-work`，同时接入预链接分配、split-segment 严格校验及最终产物审计。
+
+本地 20 项测试通过；真实源码副本补丁应用、重复应用检查通过。完整 Xcode 编译和实机效果尚未验证。见 `docs/research/port-const-2026-11-18/EVIDENCE.md` 与 `P0-EXEC.yml`。

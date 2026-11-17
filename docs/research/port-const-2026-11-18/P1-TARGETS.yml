@@ -1,0 +1,11 @@
+version: 1
+targets:
+  - id: V1
+    source: E1
+    observation: "fi135 故障照片与 fi134 的 PC/FAR/ESR 一致"
+    measured: "PC=0xfffffff00ad73a18 FAR=0xfffffff00c8c41f0 ESR=0x9600004f"
+    status: observed
+  - id: V2
+    observation: "新源码内核的实际启动阶段及初始化/finalize 页表权限"
+    measured: null
+    status: pending

@@ -1,0 +1,64 @@
+version: 1
+summary:
+  total: 7
+  passed: 7
+  failed: 0
+checks:
+- id: C1
+  source: E6
+  assert: 全部登记输入文件的哈希保持不变
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C1 pass; changed_inputs=0
+  measured: '{"changed_inputs": 0, "input_count": 9}'
+  result: pass
+- id: C2
+  source: E2
+  assert: 完整 fi115 本地补丁集迁移且原字节无冲突
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C2 pass; migrated_bytes=4045; preimage_conflicts=0
+  measured: '{"migrated_bytes": 4045, "preimage_conflicts": 0}'
+  result: pass
+- id: C3
+  source: E1
+  assert: 迁移后 __TEXT_EXEC 与 fi115 完全一致
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C3 pass; code_difference_bytes=0
+  measured: '{"code_difference_bytes": 0}'
+  result: pass
+- id: C4
+  source: E7
+  assert: 迁移范围外保持新 CI 内核的全部字节
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C4 pass; unexpected_difference_bytes=0
+  measured: '{"unexpected_difference_bytes": 0}'
+  result: pass
+- id: C5
+  source: E8
+  assert: FAT 回读内核与生成内核完全一致
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C5 pass; kernel_sha256_match=true
+  measured: '{"kernel_sha256_match": true, "sha256": "b392b9e106cbe295b4887d5513e6825d45a56fbd0809601aa948e87450956743"}'
+  result: pass
+- id: C6
+  source: E8
+  assert: Android boot v0 镜像布局与现有打包工具校验通过
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C6 pass; boot_layout_errors=0
+  measured: '{"boot_layout_errors": 0, "dtb_size": 1238463, "errors": [], "kernel_size":
+    2389419, "os_version": 0, "payload_offset": 2396160, "ramdisk_size": 201326592,
+    "total": 203722752}'
+  result: pass
+- id: C7
+  source: E8
+  assert: 最终镜像内 payload 与校验过的 FAT 完全一致
+  run: python3 scripts/rebase-kernel-diagnostics.py verify out/diagnostics/fi135-equivalent
+    --all
+  expect: C7 pass; embedded_payload_sha256_match=true
+  measured: '{"embedded_payload_sha256_match": true, "sha256": "5af58773c283ecdbac09fb5a063ef93e30db2b7d804f52bf95101e38f85862b1"}'
+  result: pass

@@ -1825,7 +1825,7 @@ bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些
 05:50:13  == kernel: bootstrap pass
 05:54:45  make -C .cache/xnu-work ...                       ← 之后才复制进编译目录
 ```
-⇒ 补丁在复制进编译目录之前写入，进的就是最终镜像里的内核。
+**2026-11-17 更正：上述推论撤回。** `make -C .cache/xnu-work` 是编译命令，并非此刻才复制源码。与 CI 固定提交匹配的 `build-xnu-4k-baseline.sh:25–58` 显示，克隆发生在调用 `prepare-xnu-source.py` 之前。钩子的 `glob('**/arm_vm_init.c', recursive=True)` 默认跳过隐藏目录，只修改到 `refer/xnu`；这条打印不能证明实际编译树或最终内核已修改。本轮逐段比较确认，两轮 CI 原始内核的整个 `__TEXT_EXEC` 完全一致。
 
 ### 真机结果（用户观察，2026-11-17 约 21:05）
 - `fastboot boot Mu-shennong-fi132.img`：Sending OKAY 5.045s → Booting OKAY
@@ -1833,8 +1833,7 @@ bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些
 - 之后设备脱离 fastboot/adb（fastboot devices 与 adb devices 均空）
 
 ### 判读（含未验证项）
-- **已验证**：`Invalid kernel stack pointer` + `esr 0x9600004f` + `far 0xc8c41f0/0xc8dfbf8`
-  那条 panic **没再出现** ⇒ 那一类 `__KLDDATA` 写权限错误已消除
+- **已撤回**：“没有显示旧 panic ⇒ 写权限错误已消除”。fi132 缺少与 fi115 等价的日志补丁，未显示异常不构成修复证据；fi134（fi115 内核 + 新 payload）照片再次显示 `pc 0xfffffff00ad73a18 / far 0xfffffff00c8c41f0 / esr 0x9600004f`。新内核对应故障是否改变尚待等价观测。
 - **不可比**：fi132 是全新 CI 构建，**没有**套本地 `patch-entry-bands.py` /
   `patch-arm-init-tail.py` / panic-screen 那套探针补丁，而 fi115 有
   ⇒ 绿带数量与 fi115 的 16 带**不能直接对比**
@@ -1842,5 +1841,21 @@ bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些
 
 ### 下一步
 - 复现一次（同镜像再刷），确认不是抖动
-- 需要给新内核重建可读的进度通道（新构建里 `arm_vm_init.c` 的改动会移动后续代码地址，
-  旧的按地址打点的探针补丁不能直接复用）
+- **更正**：两轮原始内核的可执行段完全相同，未测得所谓“源码补丁引起的后续代码位移”。fi133 与 fi115 的代码差异来自不等价的本地补丁集，而不是已证实的两行源码回归。
+- fi115 相对旧原始内核的完整本地补丁集为 4045 个修改字节；在新原始内核上原字节校验冲突为 0。按已批准计划生成 fi135 等价诊断镜像，并对 FAT 实际载荷回读验收。详细证据见 `docs/research/fi135-equivalent-2026-11-17/EVIDENCE.md`。
+- 此前记录包含黑屏/复位现象；复位原因、是否经过内核 panic 尚未验证。触屏无响应或 USB 枚举为空不足以证明 SoC 挂死。
+
+## 2026-11-18 fi135：等价诊断确认旧故障仍在
+
+- 原始新 CI 内核完整迁移 fi115 本地补丁集：4045 字节，原字节冲突 0，代码段与 fi115 差异 0；本地 7/7 项容器/载荷验收通过。
+- 镜像 SHA-256 `2f9b4161ba53af3cf30a1f6cdf3eb73a64267b1b0d02a4c98aa8db4a9a426374`，203722752 字节；对序列号 `9f72e95c` 单次 fastboot boot 成功，命令总时间 6.590 s。
+- 用户照片 sha256 `06c1cfe2bca750794520543fa709b792d780e790ed0e22e607fd26f5dc7b52a0`：PC `0xfffffff00ad73a18`、FAR/x20 `0xfffffff00c8c41f0`、ESR `0x9600004f`，与 fi134 一致。反汇编为 `str xzr, [x20]`，目标在原生 `__KLDDATA,__const` 中。
+- 结论：异常显示恢复，旧故障仍在；本地验收不代表内核启动成功。
+
+### 独立常驻段修复（代码已实现，CI/实机待验）
+
+- 新增 `scripts/apply-port-const.py`，只改实际 `.cache/xnu-work`；新段 `__PORT_CONST` 与可回收 KLDDATA 分离，初始 RWNX、finalize RNX，保留原有 KLDDATA 回收、PAC、栈检查和异常路径。
+- 进一步发现 `OSKext.cpp:1214–1254` 回收 KLDDATA 内存，弃用旧的整段可写/跳过 unmap 方案。
+- 新增产物审计和编译证据归档；移除“指针链足以代替缺失 split-segment 记录”的宽容钩子。新增段涉及指令引用，保留上游严格重定位检查。
+- 本地测试 20/20、跳过 0；工作流 shell 20 段语法检查通过；Python 4 文件语法检查通过；真实源码 2 文件重复应用变化数 0；git diff --check 通过。
+- 用户已明确允许提交、推送并运行一轮 CI；本节写入时尚未触发该轮构建。结果另行补录。

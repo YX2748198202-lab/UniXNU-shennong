@@ -1,0 +1,192 @@
+version: 1
+summary:
+  total: 20
+  passed: 20
+  failed: 0
+checks:
+- id: C1
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_executable_segment_is_rejected: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_executable_segment_is_rejected
+- id: C2
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_missing_split_is_rejected: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_missing_split_is_rejected
+- id: C3
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_non_v2_split_is_rejected: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_non_v2_split_is_rejected
+- id: C4
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_original_fi135_has_no_new_segment: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_original_fi135_has_no_new_segment
+- id: C5
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_prepare_failure_does_not_partially_write:
+    ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_prepare_failure_does_not_partially_write
+- id: C6
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_segment_order_patch_is_idempotent: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_segment_order_patch_is_idempotent
+- id: C7
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_truncated_commands_are_rejected: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_truncated_commands_are_rejected
+- id: C8
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.AuditTests.test_valid_segment_and_split_payload: ok'
+  result: pass
+  assert: test_port_const.AuditTests.test_valid_segment_and_split_payload
+- id: C9
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.LayoutTests.test_no_new_segment_is_exact_regression:
+    ok'
+  result: pass
+  assert: test_port_const.LayoutTests.test_no_new_segment_is_exact_regression
+- id: C10
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.LayoutTests.test_overlap_is_rejected: ok'
+  result: pass
+  assert: test_port_const.LayoutTests.test_overlap_is_rejected
+- id: C11
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.LayoutTests.test_resident_segment_precedes_bootdata_without_overlap:
+    ok'
+  result: pass
+  assert: test_port_const.LayoutTests.test_resident_segment_precedes_bootdata_without_overlap
+- id: C12
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.LayoutTests.test_translation_section_and_file_mapping:
+    ok'
+  result: pass
+  assert: test_port_const.LayoutTests.test_translation_section_and_file_mapping
+- id: C13
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.LayoutTests.test_unclassified_segment_is_rejected: ok'
+  result: pass
+  assert: test_port_const.LayoutTests.test_unclassified_segment_is_rejected
+- id: C14
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_ambiguous_context_fails: ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_ambiguous_context_fails
+- id: C15
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_complete_idempotent_transform: ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_complete_idempotent_transform
+- id: C16
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_missing_compile_tree_never_falls_back:
+    ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_missing_compile_tree_never_falls_back
+- id: C17
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_missing_context_fails: ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_missing_context_fails
+- id: C18
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_obsolete_hook_fails_closed: ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_obsolete_hook_fails_closed
+- id: C19
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_prepare_uses_hidden_compile_tree_only:
+    ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_prepare_uses_hidden_compile_tree_only
+- id: C20
+  source: E6
+  run: PORT_CONST_LAYOUT_SOURCE=/home/yoox/android/workspace/UniXNU-pin/kits/XnuPrelink/fileset_layout.py
+    PORT_CONST_KERNEL=out/diagnostics/fi135-equivalent/kernel.macho python3 -m unittest
+    discover -s tests -p test_port_const.py -v
+  expect: test passes; no skip
+  measured: 'test_port_const.SourceTests.test_preserves_kld_unmap_and_readonly: ok'
+  result: pass
+  assert: test_port_const.SourceTests.test_preserves_kld_unmap_and_readonly
