@@ -46,3 +46,22 @@ fi131 证明这是**一类**写（多个位置）而不是单点，与该结论�
 
 - `__DATA` 是否有足够空间容纳该 section（链接期才能知道；若失败，CI 日志会显示）
 - 修复后内核能否越过 `0xb082cd4`
+
+## 修复方案演进（2026-11-17）
+
+1. 先把 rename 目标从 `__KLDDATA` 改成 `__DATA`（prot_init 里 RWNX）。
+   **失败**：预链接套件 `fileset_layout.py:208` 报 `Native __DATA overlaps a retained
+   segment`——原生段在参考文件集里是固定槽位，`__DATA` 装不下搬过去的常量。
+2. 改回 `__KLDDATA`（唯一有空间的段），改为**在 CI 里给 XNU 打源码钩子**：
+   在 `prepare-xnu-source.py` 末尾追加一段，把
+   - `arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0)` → `RWNX`
+   - `va < (segKLDDATAB + segSizeKLDDATA)` → `va < segKLDDATAB`（跳过 finalize 的 unmap）
+
+   位置选在"所有上游补丁应用完之后、编译之前"，且用 glob 找 `arm_vm_init.c`，
+   不依赖任何脚本变量名。
+
+## 为什么是这两处
+
+`arm_vm_init.c` 里 `segLOWESTRO / segHIGHESTRO / seg*B / segSize*` 都是
+`SECURITY_READ_ONLY_LATE`，本该在 `__DATA_CONST`（prot_init 里 RWNX）里活到 lockdown。
+搬家把它们送进了提前 RNX 的 `__KLDDATA`，所以早期写一律权限错误。

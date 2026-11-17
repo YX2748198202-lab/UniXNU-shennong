@@ -55,6 +55,74 @@ jobs:
       - name: Defconfig
         working-directory: unixnu
         run: ./unixnu defconfig shennong_defconfig -D "$UNIXNU_DEVICE"
+      - name: Keep __KLDDATA writable until lockdown
+        working-directory: unixnu
+        run: |
+          # XNU's arm_vm_prot_init() maps __KLDDATA read-only with
+          #   arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0);
+          # and arm_vm_prot_finalize() then clears every __KLDDATA PTE. That is correct
+          # for Apple's layout, where __KLDDATA only holds bootstrap_pagetables, which is
+          # written before the MMU is switched on. It is wrong for this port: the prelink
+          # layout leaves __KLDDATA as the only native segment with room, so the linker
+          # moves __DATA_CONST,__const into it -- and __DATA_CONST is exactly where XNU
+          # keeps SECURITY_READ_ONLY_LATE state that must stay writable until lockdown
+          # (segLOWESTRO/segHIGHESTRO/seg*B/segSize* and friends in arm_vm_init.c).
+          # Measured on the device: every early write to a moved variable took a
+          # permission fault (ESR 0x9600004f, FST 0x0F, WnR=1) and killed the boot.
+          # Keep the segment RWNX during boot and leave it mapped, which is the property
+          # __DATA_CONST would have had if it had room.
+          python3 - <<'PY'
+          import glob, pathlib, sys
+          hook = '''
+
+          # --- shennong: keep __KLDDATA writable until lockdown -------------------
+          # Appended by the CI workflow. Runs after every upstream patch has been applied
+          # and before the kernel is compiled, so it cannot be undone by re-preparing the
+          # source. See docs/root-cause-kld-const-move.md.
+          def _shennong_kld_writable():
+              import glob as _g, pathlib as _p
+              root = _p.Path(__file__).resolve().parents[1]
+              hits = _g.glob(str(root / '**' / 'arm_vm_init.c'), recursive=True)
+              for f in hits:
+                  p = _p.Path(f)
+                  t = p.read_text()
+                  before = t
+                  t = t.replace(
+                      'arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0);',
+                      'arm_vm_page_granular_RWNX(segKLDDATAB, segSizeKLDDATA, 0);')
+                  t = t.replace(
+                      'va < (segKLDDATAB + segSizeKLDDATA)',
+                      'va < segKLDDATAB')
+                  if t != before:
+                      p.write_text(t)
+                      print('shennong: __KLDDATA kept writable ->', p)
+                  else:
+                      print('shennong: WARNING no __KLDDATA pattern in', p)
+
+          try:
+              _shennong_kld_writable()
+          except Exception as _e:  # never mask a failure silently
+              print('shennong: __KLDDATA hook failed:', _e)
+              raise
+          # --- end shennong ---------------------------------------------------------
+          '''
+          patched = 0
+          targets = glob.glob('scripts/prepare-xnu-source.py')
+          targets += glob.glob('out/shennong/*/*/shennong/tree/scripts/prepare-xnu-source.py')
+          for t in targets:
+              p = pathlib.Path(t)
+              text = p.read_text()
+              if 'shennong_kld_writable' in text:
+                  print('kld hook: already present in', t)
+                  patched += 1
+                  continue
+              p.write_text(text + hook)
+              print('kld hook: appended to', t)
+              patched += 1
+          if not patched:
+              print('::error::kld hook: prepare-xnu-source.py not found')
+              sys.exit(1)
+          PY
       - name: Build kernel
         working-directory: unixnu
         env:
@@ -93,26 +161,25 @@ jobs:
           # the kext constants to start at the end of the kernel's __LASTDATA_CONST
           # (arm_init_sptm: segPLKDATACONSTB = segLASTDATACONSTB + segSizeLASTDATACONST),
           # so the DEVELOPMENT kernel's __const cannot simply be placed at the start.
-          # Move that section into __DATA at link time. It must NOT go to __KLDDATA:
-          # arm_vm_init.c's arm_vm_prot_init() maps __KLDDATA with
-          # arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0) -- read-only from the
-          # first instruction after the segment list is read -- and arm_vm_prot_finalize()
-          # then clears every __KLDDATA PTE outright. __DATA_CONST only survives boot
-          # because prot_init maps it RWNX ("Can DATACONST start out and stay RNX?"), which
-          # is exactly the property SECURITY_READ_ONLY_LATE data needs until lockdown.
-          # An earlier revision renamed into __KLDDATA and every early write to a moved
-          # pointer table faulted (ESR 0x9600004f, FST 0x0F) -- see docs/agent-progress.md.
-          # __DATA is mapped RWNX for the lifetime of the kernel, so it is the safe landing
-          # segment. Probe the linker first; fall back to the classic linker, and warn
-          # instead of failing the build when neither accepts the flag.
+          # Move that section into __KLDDATA at link time: the prelink layout allocates
+          # __KLDDATA past the end of the file, where it has unlimited room. Every other
+          # native segment (__DATA_CONST, __DATA, __BOOTDATA) is pinned to an exact slot in
+          # the reference file set, and growing one makes XnuPrelink abort with "Native
+          # <seg> overlaps a retained segment" (fileset_layout.py:208) -- measured on
+          # 2026-11-17 when this was retargeted to __DATA. __KLDDATA is therefore the only
+          # segment with room, even though arm_vm_prot_init() maps it read-only
+          # (arm_vm_page_granular_RNX) and arm_vm_prot_finalize() clears its PTEs; the
+          # kernel is patched at runtime to keep it writable (docs/root-cause-kld-const-move.md).
+          # Probe the linker first; fall back to the classic linker, and warn instead of
+          # failing the build when neither accepts the flag.
           export XNU_CONST_RENAME=""
           cat > /tmp/linkcheck.c <<'EOF'
           static const char *const linkcheck_table[] = { "a", "b" };
           int main(void) { return linkcheck_table[0][0]; }
           EOF
           for _variation in \
-            "-Wl,-rename_section,__DATA_CONST,__const,__DATA,__const" \
-            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__DATA,__const"; do
+            "-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const" \
+            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"; do
             if xcrun --sdk macosx clang /tmp/linkcheck.c -o /tmp/linkcheck $_variation >/tmp/linkcheck.log 2>&1; then
               export XNU_CONST_RENAME="$_variation"
               break
