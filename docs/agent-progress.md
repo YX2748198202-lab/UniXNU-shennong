@@ -1762,3 +1762,47 @@ pmap 为何给 `__KLDDATA` 只读。段表声明是 RW，代码中无对 `0xc89c
 配合：`0x8C5A51000 − 0x8C58B4000 = 0x19D000`，与 adrp 目标 `0xc8b4000`
 到实际表区 VA `0xca50000` 的差值 `0x19C000` 接近但不相等 —— **仍未闭合**，
 不再用于下结论。
+
+## 2026-11-17 重大修正：__KLDDATA 只读是设计如此
+
+### 已推翻的旧结论（本轮自查纠正）
+前面把「`__KLDDATA` 整段只读」当成根因，**错了**。公开 XNU 源码
+（`osfmk/arm64/arm_vm_init.c`）里写得清清楚楚：
+
+```c
+/* We explicitly place this in const, as it is not const from a language
+ * perspective, but it is only modified before we actually switch away from
+ * the bootstrap page tables. */
+SECURITY_READ_ONLY_LATE(uint8_t) bootstrap_pagetables[BOOTSTRAP_TABLE_SIZE]
+    __attribute__((aligned(ARM_PGBYTES)));
+```
+
+`start.s` 里 `adrp x25, EXT(bootstrap_pagetables)` —— 我们反汇编看到的
+`adrp x25, #0xc8b4000` 就是它，位于 `__KLDDATA` 内（段基址 +0x28000）。
+`SECURITY_READ_ONLY_LATE` ⇒ 该段天生只读，**这是正确行为，不是缺陷**。
+
+### 已验证（fi127/fi128/fi131）
+- `__KLDDATA` 四页跨段实测写翻译全部 `0x81f`（FST=0x0F）⇒ 段级只读，符合设计
+- `__KLDDATA` 的 Mach-O `initprot=3`、`sg_flags=0`、无 section ⇒ 只读来自代码而非元数据
+- `__PRELINK_INFO` 里没有段权限表（0 处 `__KLDDATA` / `KernelSegmentInfo`）
+- 两句 `Invalid kernel stack pointer ...` 字符串相邻的文案是
+  `Panic lockdown initiated` / `recovered_kernel_trap` / `Ptrauth failure` /
+  `Undefined kernel instruction` ⇒ 属 `osfmk/arm64/exception.c` 异常子系统
+
+### fi131 实验结果：panic 位置后移，证明这是"一类"写而不是一个点
+把 `0xad73a10` 的 `adrp x20,#0xc8c4000` 改成 `#0xb783000`（落点挪进可写的 `__DATA`）后：
+
+| | fi115 基线 | fi131 |
+|---|---|---|
+| pc | `0xad73a18` | `0xb082cd4` |
+| far | `0xc8c41f0` | `0xc8dfbf8` |
+| esr | `0x9600004f` | `0x9600004f`（同型：写+权限错 L3） |
+
+⇒ 第一处写让过去了，**另一处代码又在写 `__KLDDATA` 的另一偏移（+0x43BF8）**。
+逐点打补丁不可行。
+
+### 当前判断（推断，非结论）
+早期启动有多处代码在**按设计**写 `SECURITY_READ_ONLY_LATE` 区（该区"在切走
+bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些写更早，属于
+**顺序/时机问题**，不是某一处写错了。下一步应查 `arm_vm_init.c` 里段保护
+生效的位置与本项目补丁栈，而不是继续在二进制上试点。
