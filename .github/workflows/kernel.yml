@@ -93,19 +93,26 @@ jobs:
           # the kext constants to start at the end of the kernel's __LASTDATA_CONST
           # (arm_init_sptm: segPLKDATACONSTB = segLASTDATACONSTB + segSizeLASTDATACONST),
           # so the DEVELOPMENT kernel's __const cannot simply be placed at the start.
-          # Move that section into __KLDDATA at link time: the kernel maps __KLDDATA
-          # read-only in arm_vm_init (arm_vm_page_granular_RNX) before any constant is
-          # read, and the prelink layout allocates __KLDDATA past the end of the file,
-          # where it has unlimited room. Probe the linker first; fall back to the classic
-          # linker, and warn instead of failing the build when neither accepts the flag.
+          # Move that section into __DATA at link time. It must NOT go to __KLDDATA:
+          # arm_vm_init.c's arm_vm_prot_init() maps __KLDDATA with
+          # arm_vm_page_granular_RNX(segKLDDATAB, segSizeKLDDATA, 0) -- read-only from the
+          # first instruction after the segment list is read -- and arm_vm_prot_finalize()
+          # then clears every __KLDDATA PTE outright. __DATA_CONST only survives boot
+          # because prot_init maps it RWNX ("Can DATACONST start out and stay RNX?"), which
+          # is exactly the property SECURITY_READ_ONLY_LATE data needs until lockdown.
+          # An earlier revision renamed into __KLDDATA and every early write to a moved
+          # pointer table faulted (ESR 0x9600004f, FST 0x0F) -- see docs/agent-progress.md.
+          # __DATA is mapped RWNX for the lifetime of the kernel, so it is the safe landing
+          # segment. Probe the linker first; fall back to the classic linker, and warn
+          # instead of failing the build when neither accepts the flag.
           export XNU_CONST_RENAME=""
           cat > /tmp/linkcheck.c <<'EOF'
           static const char *const linkcheck_table[] = { "a", "b" };
           int main(void) { return linkcheck_table[0][0]; }
           EOF
           for _variation in \
-            "-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const" \
-            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"; do
+            "-Wl,-rename_section,__DATA_CONST,__const,__DATA,__const" \
+            "-Wl,-ld_classic,-rename_section,__DATA_CONST,__const,__DATA,__const"; do
             if xcrun --sdk macosx clang /tmp/linkcheck.c -o /tmp/linkcheck $_variation >/tmp/linkcheck.log 2>&1; then
               export XNU_CONST_RENAME="$_variation"
               break
