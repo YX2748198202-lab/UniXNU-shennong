@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Continue'
 $tok = (Get-Content (Join-Path $env:TEMP 'unixnu-gh-token.txt') -Raw).Trim()
 $h = @{ Authorization = "token $tok"; Accept = 'application/vnd.github+json'; 'User-Agent' = 'dsh' }
-$rid = '44017646483'
+$rid = '44026143570'
 $last = ''
 for ($i = 0; $i -lt 240; $i++) {
     try { $r = Invoke-RestMethod -Uri "https://api.github.com/repos/YX2748198202-lab/UniXNU-shennong/actions/runs/$rid" -Headers $h } catch { Start-Sleep -Seconds 30; continue }

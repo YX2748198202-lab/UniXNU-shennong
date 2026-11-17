@@ -1806,3 +1806,41 @@ SECURITY_READ_ONLY_LATE(uint8_t) bootstrap_pagetables[BOOTSTRAP_TABLE_SIZE]
 bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些写更早，属于
 **顺序/时机问题**，不是某一处写错了。下一步应查 `arm_vm_init.c` 里段保护
 生效的位置与本项目补丁栈，而不是继续在二进制上试点。
+
+## 2026-11-17 fi132：__KLDDATA 可写补丁首次真机验证
+
+### 构建
+- CI run `44026143570`（分支 bringup/premmu-locate）**成功**：Build kernel / Build prelink /
+  Build payload 全过（对比上一轮 run 44017646483 因 `__DATA` 布局重叠而失败）
+- 产物 `shennong-kernel-1`（299,220,639 B），落盘
+  `artifacts/UniXNU-shennong/ci/44026143570/extracted/...`
+- fi132 镜像 `Mu-shennong-fi132.img` 203,722,752 B，payload sha256
+  `7021c051f0e5d1234d0c6452279820d934ab0e8d88064f67cb8f10833fc3c89b`，verify ok
+
+### 补丁生效证据（CI 日志时间戳）
+```
+05:50:05  git clone --shared ... feeds/xnu-3199e8bc        ← refer/xnu 落地
+05:50:13  Restored 5 omitted public headers
+05:50:13  shennong: __KLDDATA kept writable -> .../tree/refer/xnu/osfmk/arm64/arm_vm_init.c
+05:50:13  == kernel: bootstrap pass
+05:54:45  make -C .cache/xnu-work ...                       ← 之后才复制进编译目录
+```
+⇒ 补丁在复制进编译目录之前写入，进的就是最终镜像里的内核。
+
+### 真机结果（用户观察，2026-11-17 约 21:05）
+- `fastboot boot Mu-shennong-fi132.img`：Sending OKAY 5.045s → Booting OKAY
+- 屏幕：**出现绿带，几秒后黑屏，没有 panic 屏**
+- 之后设备脱离 fastboot/adb（fastboot devices 与 adb devices 均空）
+
+### 判读（含未验证项）
+- **已验证**：`Invalid kernel stack pointer` + `esr 0x9600004f` + `far 0xc8c41f0/0xc8dfbf8`
+  那条 panic **没再出现** ⇒ 那一类 `__KLDDATA` 写权限错误已消除
+- **不可比**：fi132 是全新 CI 构建，**没有**套本地 `patch-entry-bands.py` /
+  `patch-arm-init-tail.py` / panic-screen 那套探针补丁，而 fi115 有
+  ⇒ 绿带数量与 fi115 的 16 带**不能直接对比**
+- **未验证**：黑屏是静默挂死、还是又一次复位循环，还没有证据
+
+### 下一步
+- 复现一次（同镜像再刷），确认不是抖动
+- 需要给新内核重建可读的进度通道（新构建里 `arm_vm_init.c` 的改动会移动后续代码地址，
+  旧的按地址打点的探针补丁不能直接复用）
