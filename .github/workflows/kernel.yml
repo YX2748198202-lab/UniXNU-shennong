@@ -940,10 +940,13 @@ jobs:
             --cpu-regs 0 --psci-method smc \
             ${ROOT_UUID:+--root-match-volume-uuid "$ROOT_UUID"} \
             ${TC:+--trust-cache} $POLICIES_ARG
+          # Equal copies can both be wrong: enforce the ARM XNU seed contract first.
+          python3 "$GITHUB_WORKSPACE/device/scripts/patch-adt-randseed.py" "$ADT" --check
           rm -f /tmp/adt-before.bin /tmp/adt-after.bin
           mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-before.bin || true
           mcopy -o -i "$PAY" "$ADT" ::/EFI/UniXNU/Payloads/kernel.macho.adt
           mcopy -o -i "$PAY" ::/EFI/UniXNU/Payloads/kernel.macho.adt /tmp/adt-after.bin
+          python3 "$GITHUB_WORKSPACE/device/scripts/patch-adt-randseed.py" /tmp/adt-after.bin --check
           python3 - "$ADT" /tmp/adt-before.bin /tmp/adt-after.bin "$PAY" <<'PY'
           import hashlib, sys
           from pathlib import Path

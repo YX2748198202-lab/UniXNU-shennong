@@ -13,6 +13,9 @@ import struct
 import zlib
 import uuid
 
+# ARM XNU requests 4 * SHA512_DIGEST_LENGTH, unlike the x86 64-byte contract.
+BOOTLOADER_SEED_BYTES = 256
+
 def node(name, properties=(), children=()):
     props = [('name', name.encode() + b'\0'), *properties]
     result = struct.pack('<II', len(props), len(children))
@@ -69,7 +72,7 @@ def main():
         ('compatible', b'qcom,pineapple-mtp\0qcom,pineapple\0'),
         ('#address-cells', u32(2)), ('#size-cells', u32(2)),
     ], [
-        node('chosen', [('random-seed', os.urandom(64)),
+        node('chosen', [('random-seed', os.urandom(BOOTLOADER_SEED_BYTES)),
                         ('osenvironment', b'main\0'),
                         *([('ephemeral-storage', u32(1))] if args.data_ramdisk else []),
                         ('dram-base', u64(0x80000000)), ('dram-size', u64(args.dram_size)),
