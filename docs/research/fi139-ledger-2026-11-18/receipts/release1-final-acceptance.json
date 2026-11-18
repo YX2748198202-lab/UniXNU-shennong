@@ -1,0 +1,257 @@
+{
+  "recorded_at": "2026-11-18T09:35:14.861239+00:00",
+  "summary": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "assertion": "Final image identity",
+      "measured": {
+        "bytes": 203722752,
+        "sha256": "33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Android v0 page size",
+      "measured": "v0 / 4096",
+      "result": "pass"
+    },
+    {
+      "assertion": "Embedded fixed FAT volume",
+      "measured": {
+        "offset": 2396160,
+        "bytes": 201326592,
+        "sha256": "1e7b25a8b0248aeb635249f2df1c665aa4a493b070cfcf183b66095305474eb8"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "BootShim UEFI DTB kernel area unchanged",
+      "measured": 2392064,
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/DarwinBoot.efi",
+      "measured": {
+        "bytes": 27648,
+        "sha256": "cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/kernel.macho",
+      "measured": {
+        "bytes": 94584832,
+        "sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.adt",
+      "measured": {
+        "bytes": 10752,
+        "sha256": "332e958a7f7481b92b7a367a59726c58bb5cf67f2a01e0212bb3202ed7ba8fe8"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.crypto-hmac.json",
+      "measured": {
+        "bytes": 344,
+        "sha256": "1f3e978425e1bab71e888a0c158ff18125469a76377b37352164a7c951db05ca"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.trustcache",
+      "measured": {
+        "bytes": 94884,
+        "sha256": "a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.vroot",
+      "measured": {
+        "bytes": 1152,
+        "sha256": "280ca5d4fa9eac615626b48f38756fca8187210f656146f995fff97daf64e3fd"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Final FAT ::/EFI/UniXNU/unixnu.toml",
+      "measured": {
+        "bytes": 549,
+        "sha256": "6a4e345e9b9996fd37ca4a9cc08237de697cd68cd52d01c26e6b586dc9c43991"
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Validated native repair is actually shipped",
+      "measured": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+      "result": "pass"
+    },
+    {
+      "assertion": "Native acceptance",
+      "measured": {
+        "checks": {
+          "total": 54,
+          "passed": 54,
+          "failed": 0
+        },
+        "machine_code_cases": 3570
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Independent compiler reproduction",
+      "measured": "exact same 94584832 kernel bytes",
+      "result": "pass"
+    },
+    {
+      "assertion": "Final entropy contract",
+      "measured": {
+        "seed_bytes": 256,
+        "adt_bytes": 10752,
+        "nodes": [
+          [
+            [],
+            5,
+            6
+          ],
+          [
+            [
+              "chosen"
+            ],
+            13,
+            2
+          ],
+          [
+            [
+              "chosen",
+              "memory-map"
+            ],
+            3,
+            0
+          ],
+          [
+            [
+              "chosen",
+              "manifest-properties"
+            ],
+            1,
+            0
+          ],
+          [
+            [
+              "cpus"
+            ],
+            1,
+            1
+          ],
+          [
+            [
+              "cpus",
+              "cpu0"
+            ],
+            7,
+            0
+          ],
+          [
+            [
+              "defaults"
+            ],
+            2,
+            0
+          ],
+          [
+            [
+              "options"
+            ],
+            1,
+            0
+          ],
+          [
+            [
+              "product"
+            ],
+            3,
+            0
+          ],
+          [
+            [
+              "arm-io"
+            ],
+            5,
+            1
+          ],
+          [
+            [
+              "arm-io",
+              "intc"
+            ],
+            4,
+            0
+          ]
+        ]
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Fresh one-use seed and all other ADT records unchanged",
+      "measured": {
+        "fresh": true,
+        "unrelated_records": 44
+      },
+      "result": "pass"
+    },
+    {
+      "assertion": "Exactly five external FAT files unchanged",
+      "measured": 5,
+      "result": "pass"
+    },
+    {
+      "assertion": "Source repair regression",
+      "measured": "15 passed; no failure/error/skip",
+      "result": "pass"
+    },
+    {
+      "assertion": "Python parse build-ledger-contract-kernel.py",
+      "measured": "pass",
+      "result": "pass"
+    },
+    {
+      "assertion": "Python parse verify-complete.py",
+      "measured": "pass",
+      "result": "pass"
+    },
+    {
+      "assertion": "Python parse package.py",
+      "measured": "pass",
+      "result": "pass"
+    },
+    {
+      "assertion": "Python parse verify-final.py",
+      "measured": "pass",
+      "result": "pass"
+    },
+    {
+      "assertion": "Diff whitespace",
+      "measured": 0,
+      "result": "pass"
+    },
+    {
+      "assertion": "No previous fi139 attempt",
+      "measured": "absent before acceptance",
+      "result": "pass"
+    }
+  ],
+  "kernel_sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+  "image_sha256": "33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727",
+  "native_checks": 54,
+  "native_machine_cases": 3570,
+  "source_tests": 15
+}

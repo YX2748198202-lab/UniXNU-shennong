@@ -1,0 +1,14 @@
+version: 1
+targets:
+  - id: V1
+    source: V1
+    status: observed_inconclusive
+    photo_sha256: b89a54ee70b31344960bf91691d38e074906b4da6a13284879ee593520d81a83
+    measured: "顶部绿条、保留的UniXNU背景及小字加载器覆盖；没有可辨认的内核PC/ESR/FAR。"
+    interpretation: "不据此判断种子检查通过、返回菜单或阶段C通过；SecurityLock文字没有建立故障因果链。"
+  - id: V2
+    source: V2
+    status: not_attempted
+    target: "新的测试轮次中一次取得带来源标签的完整异常十六进制记录。"
+    expected: "至少PC/ELR、ESR、FAR、SPSR、SP和寄存器来源；区分原异常现场与记录器当前状态。"
+    restriction: "本轮离线工作不执行该测试，也不复用已经启动过的fi137种子镜像。"

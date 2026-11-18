@@ -1,0 +1,101 @@
+version: 1
+summary: { total: 14, passed: 14, failed: 0 }
+checks:
+- id: C1
+  source: E3
+  assert: 常量段契约源码回归全过，且三处调用点仍只有三处
+  run: python3 -B -m unittest discover -s tests -p test_ledger_const.py -v
+  expect: exit 0, "Ran 15 tests", "OK"
+  measured: "Ran 15 tests; OK; 0 skipped; assert source.count('\\tlt_require_data_const(')==3"
+  result: pass
+- id: C2
+  source: E3
+  assert: 三处内联检查的真实地址与原文指令与源码一一对应
+  run: python3 -B scripts/build-ledger-contract-kernel.py --kernel out/diagnostics/fi138-fatal-state/kernel-xpu.macho --source /home/yoox/android/workspace/UniXNU-pin/out/feeds/xnu-3199e8bc/osfmk/kern/ledger.c --out out/diagnostics/fi139-ledger-contract/build4-complete
+  expect: manifest.guards 三处 hook 分别为 0xab7f494 / 0xab7f62c / 0xab7f650，且每处原指令为 adrp x8,#0x7dd0000
+  measured: "finalize 0xfffffff00ab7f494 / copy_destination 0xfffffff00ab7f62c / copy_source 0xfffffff00ab7f650；三处原文均 adrp x8, #0xfffffff007dd0000"
+  result: pass
+- id: C3
+  source: E4
+  assert: 派生内核身份固定且相对已启动内核的改动量可核
+  run: python3 -c "import json;d=json.load(open('out/diagnostics/fi139-ledger-contract/build4-complete/manifest.json'));print(d['input_sha256'],d['output_sha256'],d['changed_bytes'],d['blob_bytes'])"
+  expect: 输出 = 955ae86d… c09c4b09… 359 384
+  measured: "955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5 359 384"
+  result: pass
+- id: C4
+  source: E4
+  assert: 允许名单之外没有任何字节被改动，且原生 HMAC 用真实算法重算一致
+  run: python3 -B out/diagnostics/fi139-ledger-contract/verify-complete.py
+  expect: checks 内 "Strict diff complement" 与 "Genuine native HMAC" 均 pass
+  measured: "Strict diff complement measured=0（清单外改动 0 字节）；Genuine native HMAC measured=match（__TEXT_EXEC,__text 全节重算）"
+  result: pass
+- id: C5
+  source: E5
+  assert: 两个原函数除入口分支外逐字节不变
+  run: python3 -c "import json;d=json.load(open('out/diagnostics/fi139-ledger-contract/build4-complete/manifest.json'));[print(f['name'],f['bytes'],f['hooks']) for f in d['functions']]"
+  expect: finalize 492 字节 1 处 hook；copy 496 字节 2 处 hook
+  measured: "finalize 492 bytes hooks=[0xfffffff00ab7f494] after=32a5ed4ed351；copy 496 bytes hooks=[0xfffffff00ab7f62c, 0xfffffff00ab7f650] after=6c346bf37d6c"
+  result: pass
+- id: C6
+  source: E6
+  assert: 三处检查的放行/模板非法/条目非法路由与寄存器保持
+  run: python3 -B out/diagnostics/fi139-ledger-contract/verify-complete.py
+  expect: per_guard 三处各 cases=1190，outcomes 均 252/560/378
+  measured: "finalize 1190 {0:252,1:560,2:378}; copy_destination 1190 同分布; copy_source 1190 同分布; 合计 3570"
+  result: pass
+- id: C7
+  source: E6
+  assert: copy 的目标检查与源检查串联时仍走原生路由
+  run: python3 -B out/diagnostics/fi139-ledger-contract/verify-complete.py
+  expect: "Copy destination then source native routing" measured=49, pass
+  measured: 49
+  result: pass
+- id: C8
+  source: E5
+  assert: 原「对象未初始化 / 模板已初始化」前置断言仍可达且仍终止在该断言
+  run: python3 -B out/diagnostics/fi139-ledger-contract/verify-complete.py
+  expect: "Native precondition checks retained" measured=2, pass
+  measured: 2
+  result: pass
+- id: C9
+  source: E10
+  assert: 派生链可复现：独立重编译与发布件字节完全一致
+  run: python3 -B scripts/build-ledger-contract-kernel.py --kernel out/diagnostics/fi138-fatal-state/kernel-xpu.macho --source /home/yoox/android/workspace/UniXNU-pin/out/feeds/xnu-3199e8bc/osfmk/kern/ledger.c --out out/diagnostics/fi139-ledger-contract/build5-reproduce && cmp out/diagnostics/fi139-ledger-contract/build4-complete/kernel.macho out/diagnostics/fi139-ledger-contract/build5-reproduce/kernel.macho
+  expect: cmp 无输出, exit 0
+  measured: "cmp exit 0；两份 kernel.macho 均 c09c4b09…"
+  result: pass
+- id: C10
+  source: E7
+  assert: 镜像结构、载荷、FAT 回读与内核一致性
+  run: python3 -B out/diagnostics/fi139-ledger-contract/release1/verify-final.py
+  expect: summary total=24 passed=24 failed=0
+  measured: "total 24, passed 24, failed 0；image 33b9ba83… 203722752 字节；FAT offset 2396160 载荷 1e7b25a8…"
+  result: pass
+- id: C11
+  source: E7
+  assert: 只有内核与 ADT 两个 FAT 文件变化，其余 5 个不变
+  run: python3 -c "import json;d=json.load(open('out/diagnostics/fi139-ledger-contract/release1/package.json'));print(d['changed_fat_files'],d['unchanged_fat_files']);[print(f['path'],f['before_sha256']==f['after_sha256']) for f in d['files']]"
+  expect: 2 5；仅 kernel.macho 与 kernel.macho.adt 为 False
+  measured: "changed 2 / unchanged 5；kernel.macho False、kernel.macho.adt False，其余 DarwinBoot.efi/crypto-hmac.json/trustcache/vroot/unixnu.toml 全 True"
+  result: pass
+- id: C12
+  source: E8
+  assert: 种子为新的 256 字节且除 seed 外 ADT 其余记录不变
+  run: python3 -B scripts/patch-adt-randseed.py out/diagnostics/fi139-ledger-contract/release1/seed-256.adt --check
+  expect: exit 0，报告 256 字节 seed
+  measured: "exit 0；seed 256 字节、ADT 10752 字节、11 节点；fresh_seed_not_equal_previous=True，非目标属性原始记录逐条相等"
+  result: pass
+- id: C13
+  source: E9
+  assert: 唯一一次临时启动的回执已被独占记录且不自动重试
+  run: python3 -c "import json;print(json.load(open('out/diagnostics/fi139-ledger-contract/release1/boot-result.json'))['returncode'],json.load(open('out/diagnostics/fi139-ledger-contract/release1/boot-attempt.json'))['serial'])"
+  expect: 输出 = 0 9f72e95c
+  measured: "0 9f72e95c；Sending OKAY 5.190s、Booting OKAY 0.083s、总计 6.390s、墙钟 6.447575s；boot-attempt/boot-result 均 x 模式独占创建"
+  result: pass
+- id: C14
+  source: E1
+  assert: 本轮改动没有空白或冲突残留
+  run: git diff --check
+  expect: 无输出, exit 0
+  measured: "exit 0，无输出"
+  result: pass

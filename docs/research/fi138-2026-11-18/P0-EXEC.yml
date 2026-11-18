@@ -1,0 +1,443 @@
+version: 1
+summary:
+  total: 62
+  passed: 62
+  failed: 0
+checks:
+- id: C1
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 203722752 bytes; 4274690585a8917268b1e04476d1f2a2798233cde21e7f210325ea350758cd60
+  result: pass
+  assert: Final image hash and size
+- id: C2
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: v0 / page 4096
+  result: pass
+  assert: Android header
+- id: C3
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: offset=2396160; bytes=201326592; SHA256=808d86955887f2177641cd7d0bed13de6b17127e062d21e22c2104e0e2372cdd
+  result: pass
+  assert: Embedded FAT is exact intended payload
+- id: C4
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 27648 bytes; cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/DarwinBoot.efi
+- id: C5
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 94584832 bytes; 955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/kernel.macho
+- id: C6
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 10752 bytes; 6711f0aafcec0d11ecea7d1d2b3a15344519505d9d2549d7d332db838a54d94f
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.adt
+- id: C7
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 344 bytes; 1f3e978425e1bab71e888a0c158ff18125469a76377b37352164a7c951db05ca
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.crypto-hmac.json
+- id: C8
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 94884 bytes; a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.trustcache
+- id: C9
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 1152 bytes; 280ca5d4fa9eac615626b48f38756fca8187210f656146f995fff97daf64e3fd
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/Payloads/kernel.macho.vroot
+- id: C10
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 549 bytes; 6a4e345e9b9996fd37ca4a9cc08237de697cd68cd52d01c26e6b586dc9c43991
+  result: pass
+  assert: Final FAT ::/EFI/UniXNU/unixnu.toml
+- id: C11
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe
+  result: pass
+  assert: Native kernel identity
+- id: C12
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 2936 bytes identical; 153521c4f7cc0c0067266e472d5c09c851ab3759712ff57dfba09c76d422bead
+  result: pass
+  assert: Unchanged normal function __start
+- id: C13
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 572 bytes identical; eb81090a969105c9ef58c4150709cb5a116e3a3dfa82a20adb144d2ec8394a72
+  result: pass
+  assert: Unchanged normal function _start_first_cpu
+- id: C14
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 464 bytes identical; 78182d6052aadadd8da48cba289631dadb0de9c7c113362153d8a8b35856926f
+  result: pass
+  assert: Unchanged normal function common_start
+- id: C15
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 3480 bytes identical; 8b5a3b307a16bbe597e46117610fd81ad9459638380690d1efde7c57530e7062
+  result: pass
+  assert: Unchanged normal function _arm_init
+- id: C16
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 5732 bytes identical; 5e31f3f9aafd6fb93ab5d1b49f929856c1313ec846b341eaf4bdc62de3cddbfc
+  result: pass
+  assert: Unchanged normal function _arm_vm_init
+- id: C17
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 1860 bytes identical; 1eb41ff8e8f263e5274d6341c61bd2f89bcb31434a635fc0404c21be70875c28
+  result: pass
+  assert: Unchanged normal function _arm_vm_prot_init
+- id: C18
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 376 bytes identical; 308a8ec8421707c5aded26a00446ee95cf40bfd4bc9fcb1594c3cf1f61efad6e
+  result: pass
+  assert: Unchanged normal function _arm_vm_prot_finalize
+- id: C19
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 160 bytes identical; d05eb109bb4ebeee31e9550305bda62d9538a23d307417a37bc674f63d017f28
+  result: pass
+  assert: Unchanged normal function _early_random
+- id: C20
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 728 bytes identical; 32135a226b5b895f8deda06907dc23d78707121d91f793c3ebd41d55f82ead04
+  result: pass
+  assert: Unchanged normal function _early_random_init
+- id: C21
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 44 bytes identical; 8d78fcbb663814fb177b565bb46124f7551beccc04a0baab84d946613e3d9a95
+  result: pass
+  assert: Unchanged normal function ___stack_chk_fail
+- id: C22
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 1072 bytes identical; 7f1427e9da38e024639d8f9855e8e1941960cc4f2af44cef56af8e5cc0f0903f
+  result: pass
+  assert: Unchanged normal function _kalloc_type_view_parse
+- id: C23
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 40 bytes identical; c10926f1268f636ce6eaaa15cfbfe39395c3f7ade1e4b42f19d3f5bf5c1c3200
+  result: pass
+  assert: Unchanged normal function _fleh_synchronous
+- id: C24
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 2952 bytes identical; 114fe7da4cb08d6f218e43edb1c0b6d4db8ba0ace93ec5826af07506f9b6fff2
+  result: pass
+  assert: Unchanged normal function _sleh_synchronous
+- id: C25
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 104 bytes identical; dc59a1e8c36d34ced48fc22cfe9b5c20ffca2a7a09d187cfa1612c081556801a
+  result: pass
+  assert: Unchanged normal function _sleh_synchronous_sp1
+- id: C26
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 3746 bytes; 2e9d5824e10548f41fa7024232177c04f6af30d8af8ff9e94729d619ff5f3d1b
+  result: pass
+  assert: Allowlisted fatal renderer in executable linker padding
+- id: C27
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 464 bytes; 8cef7f28f9c85072ceaa8bd54cb7621880706c69e2fbadb276681ce4e070355b
+  result: pass
+  assert: Allowlisted stackless terminal fault capture in low-vector padding
+- id: C28
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; e0179ad88237c428d699fba81226571d26da1dbb4b50b09ca2b22ce2b77b3903
+  result: pass
+  assert: 'Allowlisted fatal branch after PACIBSP: _panic'
+- id: C29
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 8b672c792ce4eb016fefff0c6f2122814580c15ecbe24b31cbdc92192ff9d67c
+  result: pass
+  assert: 'Allowlisted fatal branch after PACIBSP: _panic_trap_to_debugger'
+- id: C30
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; e496025d436b82ec483a476b884a2954baf440e79d727001b4d1923605055c69
+  result: pass
+  assert: 'Allowlisted fatal branch after PACIBSP: _panic_with_thread_kernel_state'
+- id: C31
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; a5edd236798746342e27a3913b1ba0ce1777bf578c21a9ad6642b31e259ebd0f
+  result: pass
+  assert: Allowlisted terminal low vector slot 0
+- id: C32
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; fe84139e1987ac51c6b29023f0eac07857be6e2c518276a9e10f0e56afc9b8b2
+  result: pass
+  assert: Allowlisted terminal low vector slot 1
+- id: C33
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; b7695f56fb98eda01d84fcfbca7e89563beb258321263b3bcee4b0e9b0ee589b
+  result: pass
+  assert: Allowlisted terminal low vector slot 2
+- id: C34
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 17b036b75f5ced8c0698a3774db3fcc480ac5204f7e2ff9cf7328a202ae6d560
+  result: pass
+  assert: Allowlisted terminal low vector slot 3
+- id: C35
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; f69d44d187236cbdab6a1a9c344971e736bb83b4331d5d5c883238980918a773
+  result: pass
+  assert: Allowlisted terminal low vector slot 4
+- id: C36
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 9554cc007f61562bb44833e8b5fb44bb61b0e68faef3bb4b92e710f51b529b59
+  result: pass
+  assert: Allowlisted terminal low vector slot 5
+- id: C37
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 0b87a9e4a9757db6443535e444409f0b1c0596cd2cfeba9d2b9d7e84e599a454
+  result: pass
+  assert: Allowlisted terminal low vector slot 6
+- id: C38
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 94167c8747f5ce4411859fed282b08b9e13c946099171b22c8dfd9e1098b0fc9
+  result: pass
+  assert: Allowlisted terminal low vector slot 7
+- id: C39
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 81f093cf23b222cbfbebad734847c3d9ad25fc0a94ac69014e3f05dca5e9fd56
+  result: pass
+  assert: Allowlisted terminal low vector slot 8
+- id: C40
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 73c241ee928f3b7f1aa3879e83260d771182be54219b5ff606c3e25a1e873d22
+  result: pass
+  assert: Allowlisted terminal low vector slot 9
+- id: C41
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 5776df0a180ce6e09b8bdb3b0954545524e7a5023415d3a83b00fee2532e7392
+  result: pass
+  assert: Allowlisted terminal low vector slot 10
+- id: C42
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 7f8223d7202e5cc59b7b9b62da19156c8ec23cc8e7181c22a6a8ce6593f524d7
+  result: pass
+  assert: Allowlisted terminal low vector slot 11
+- id: C43
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 45434e59742d4ec9de15b2169b1a8c3d94161c43df48d9d4e177c80ac50641a4
+  result: pass
+  assert: Allowlisted terminal low vector slot 12
+- id: C44
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 3bb4abf7efbd721cef5f10fa3fddfad820418d5e80323ea1f0b625fbf7be2aca
+  result: pass
+  assert: Allowlisted terminal low vector slot 13
+- id: C45
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 44d0dc8c759d37be6c47a792779f03c04a50c9eec8a5d4a1d4e0696925d17c25
+  result: pass
+  assert: Allowlisted terminal low vector slot 14
+- id: C46
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; b8881d6e415ea5493fe855e715ca649bf6006203d69f55c0ed7109a4463f1d99
+  result: pass
+  assert: Allowlisted terminal low vector slot 15
+- id: C47
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4 bytes; 4b8b69ef1da8082544da1b9f59b7954ef674a649236907bbf5938f1c4448ff93
+  result: pass
+  assert: Allowlisted terminal SP1 spill-failed branch
+- id: C48
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 4096 bytes; 7236d576bfd0954b4f782e07923345df3dad68309736099f463845d8f22d218e
+  result: pass
+  assert: Allowlisted fatal-only constant TTBR0 view
+- id: C49
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 32 bytes; da79fe0bf35b5aaebb1a7ae4706671dd93ec2fae7d249be6118270b020c365f8
+  result: pass
+  assert: Allowlisted recomputed genuine native HMAC
+- id: C50
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: native __text HMAC matches recomputation
+  result: pass
+  assert: Genuine native HMAC
+- id: C51
+  source: E1
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: ADT=10752 bytes; nodes=[((), 5, 6), (('chosen',), 13, 2), (('chosen',
+    'memory-map'), 3, 0), (('chosen', 'manifest-properties'), 1, 0), (('cpus',), 1,
+    1), (('cpus', 'cpu0'), 7, 0), (('defaults',), 2, 0), (('options',), 1, 0), (('product',),
+    3, 0), (('arm-io',), 5, 1), (('arm-io', 'intc'), 4, 0)]; seed=256
+  result: pass
+  assert: 256-byte seed contract
+- id: C52
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 982376d0cdde9c55afd0ff6178875412fc21e24c8bcaaf362b525de36d554c75
+  result: pass
+  assert: Frozen source fatal-state-screen.c
+- id: C53
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: ccb5aeddb4b090e15b1997617666b59b91193daf82439f85a308452d7a8af703
+  result: pass
+  assert: Frozen source fatal-state-entry.S
+- id: C54
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: a33b82247c8238169959ee6b8a8db8e986d9dd25ab6286ce3ee2dbe46d7f99ff
+  result: pass
+  assert: Frozen source fatal-record.h
+- id: C55
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: '1 byte: cpu -> xpu'
+  result: pass
+  assert: Metadata-only xpu delta
+- id: C56
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: unlisted modified bytes=0
+  result: pass
+  assert: Zero unlisted changes
+- id: C57
+  source: E5
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 6817570eda24b599f943b77671dcce8c29ec6c748ce0a46fc696c79ee895c609
+  result: pass
+  assert: Frozen baseline out/diagnostics/fi136b-fatal-only/kernel-xpu.macho
+- id: C58
+  source: E5
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: ed1caead1d645deef368b2c9af933be5f8bc052de694c8a83f3bf139584ad6b5
+  result: pass
+  assert: Frozen baseline out/diagnostics/fi136b-fatal-only/payload.img
+- id: C59
+  source: E5
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 64bfd792e51ddff46a05d41d8ea8b04f0930c0fff501c06ddacb0d6dccd58dff
+  result: pass
+  assert: Frozen baseline out/diagnostics/fi137-seed-contract/Mu-shennong-fi137.img
+- id: C60
+  source: E2
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: 17 passed; 0 failures/errors/skips; Unicorn system-register behavior modeled
+  result: pass
+  assert: Fatal-state test suite
+- id: C61
+  source: E4
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: exit 0
+  result: pass
+  assert: Whitespace check
+- id: C62
+  source: E3
+  run: python3 -B out/diagnostics/fi138-fatal-state/final-verify.py
+  expect: exit 0; assertion holds
+  measured: attempt receipt absent before acceptance
+  result: pass
+  assert: No prior fi138 boot attempt

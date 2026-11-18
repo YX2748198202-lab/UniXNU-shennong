@@ -1,0 +1,18 @@
+{
+  "state": "command_completed",
+  "returncode": 0,
+  "stdout": "",
+  "stderr": "Sending 'boot.img' (198948 KB)                     OKAY [  5.190s]\nBooting                                            OKAY [  0.083s]\nFinished. Total time: 6.390s\n",
+  "completed_at": "2026-11-18T09:36:53.787084+00:00",
+  "wall_seconds": 6.447575295009301,
+  "serial": "9f72e95c",
+  "image_sha256": "33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727",
+  "command": [
+    "fastboot",
+    "-s",
+    "9f72e95c",
+    "boot",
+    "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/release1/Mu-shennong-fi139.img"
+  ],
+  "screen_observation": "pending at command completion; no stage-C or kernel progress inferred from fastboot success"
+}

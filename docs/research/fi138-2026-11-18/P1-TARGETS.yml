@@ -1,0 +1,23 @@
+version: 1
+targets:
+  - id: V1
+    source: V1
+    status: verified_offline_fixture_only
+    measured: "真实链接ARM64代码在建模系统寄存器的Unicorn中生成1440x3200画面；已查看字段可读，明确标注OFFLINE FIXTURE，不是手机照片。"
+  - id: V2
+    source: U1
+    status: observed_kernel_assertion
+    photo_sha256: e55318a2905d4dcc30fe1e9ada932365a1a3745e917bcab7d11372f55a75d29a
+    pc: "0xfffffff00b43efac"
+    lr: "0xfffffff00ab7f4b8"
+    esr: "0x00000000f200bffc"
+    far: "0x0000000000000000"
+    source_tag: 3
+    fault_symbol: "_ledger_template_finalize.cold.2+0xc; BRK #0xbffc"
+    message: "ledger.c:349 Assertion failed: data_const_start <= (const char *)lt && (const char *)(lt + 1) <= data_const_end"
+    image_sha256: 4274690585a8917268b1e04476d1f2a2798233cde21e7f210325ea350758cd60
+    serial: 9f72e95c
+    boot_completed_at: "2026-11-18T15:44:27.967429+08:00"
+    command_result: "returncode=0; Sending=5.114s; Booting=0.083s; fastboot total=6.302s; wall=6.363558027005638s"
+    interpretation: "照片确认实际执行到ledger_template_finalize的常量段范围断言。实际机器码中arm_init先调用arm_vm_init及early_random，再进入machine_startup；这次已越过此前种子长度卡点。fi137缺少可比停点，不推断它实际停在哪；阶段C、根卷和用户态仍未通过。模板符号位于PORT_CONST，而该断言只接受DATA_CONST，构成下一步布局契约修复依据。"
+    restriction: "不重复启动本镜像，不把仿真或离线验收计为实机启动推进。"

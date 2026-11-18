@@ -1,0 +1,225 @@
+{
+  "guards": [
+    {
+      "name": "finalize",
+      "entry": "ledger_entry",
+      "input_reg": "x19",
+      "hook": "0xfffffff00ab7f494",
+      "resume": "0xfffffff00ab7f330",
+      "fail_template": "0xfffffff00ab7f4b4",
+      "fail_entries": "0xfffffff00ab7f4e8"
+    },
+    {
+      "name": "copy_destination",
+      "entry": "ledger_copy_destination",
+      "input_reg": "x19",
+      "hook": "0xfffffff00ab7f62c",
+      "resume": "0xfffffff00ab7f650",
+      "fail_template": "0xfffffff00ab7f64c",
+      "fail_entries": "0xfffffff00ab7f6a4"
+    },
+    {
+      "name": "copy_source",
+      "entry": "ledger_copy_source",
+      "input_reg": "x20",
+      "hook": "0xfffffff00ab7f650",
+      "resume": "0xfffffff00ab7f530",
+      "fail_template": "0xfffffff00ab7f670",
+      "fail_entries": "0xfffffff00ab7f6d8"
+    }
+  ],
+  "functions": [
+    {
+      "name": "finalize",
+      "va": "0xfffffff00ab7f300",
+      "bytes": 492,
+      "hooks": [
+        "0xfffffff00ab7f494"
+      ],
+      "before_sha256": "651c5175b5daa6d993b7027a686dc8e1e9239b422969850c8c547281689d74ab",
+      "after_sha256": "32a5ed4ed3519482ce5410b189b91fedbe1cb474032ea01fa09cbf471f57a151"
+    },
+    {
+      "name": "copy",
+      "va": "0xfffffff00ab7f4ec",
+      "bytes": 496,
+      "hooks": [
+        "0xfffffff00ab7f62c",
+        "0xfffffff00ab7f650"
+      ],
+      "before_sha256": "9058bb1427f4324cc66aa9ebd0ead1e2c4ba25d68670cca43d9745f3e870e01c",
+      "after_sha256": "6c346bf37d6cf03e7f43ecd62d7bd93cb85febdb4a46397dfb70d880107d41d5"
+    }
+  ],
+  "input_sha256": "955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe",
+  "output_sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+  "changes": [
+    {
+      "label": "compiled original predicates: two resident constant domains with full spans",
+      "va": "0xfffffff00ad82a00",
+      "file_offset": 64481792,
+      "size": 384,
+      "before_sha256": "a1a4f5721c1c4610af7f71078f3a68c330536d679803b0e0507ee8dc10c5dfca",
+      "after_sha256": "8e13c0bb044be1e7b0aa27a259c68339a6d420744bf371c36b3aa5c7fcb255c0"
+    },
+    {
+      "label": "replace constant-range contract: finalize",
+      "va": "0xfffffff00ab7f494",
+      "file_offset": 62370964,
+      "size": 4,
+      "before_sha256": "29840e209b90e0c75198e8970c225cf72906402384f114bd13048f4fe852c20f",
+      "after_sha256": "f04f185a4ae19e0d211bccf8e0613996d79267e25c454fbfb816b92b849020fe"
+    },
+    {
+      "label": "replace constant-range contract: copy_destination",
+      "va": "0xfffffff00ab7f62c",
+      "file_offset": 62371372,
+      "size": 4,
+      "before_sha256": "29840e209b90e0c75198e8970c225cf72906402384f114bd13048f4fe852c20f",
+      "after_sha256": "d40826b34f8200a5205b5bb43b5afe4031057b277d2fa83f45891c76ecb1b548"
+    },
+    {
+      "label": "replace constant-range contract: copy_source",
+      "va": "0xfffffff00ab7f650",
+      "file_offset": 62371408,
+      "size": 4,
+      "before_sha256": "29840e209b90e0c75198e8970c225cf72906402384f114bd13048f4fe852c20f",
+      "after_sha256": "f2cd85c307cd0ec676fde183e09883f802bded72fb855508ddc4b57cb3114b7c"
+    },
+    {
+      "label": "diagnostic build label only",
+      "va": "0xfffffff00b4f7e38",
+      "file_offset": 72302136,
+      "size": 34,
+      "before_sha256": "754fe847850444ed2c8bcb28fc91f5f899c991719651a0b41033e60da2e2ea2d",
+      "after_sha256": "7681c2ee716e63a493a603eb861e7625b3d8bc063728cb509918a4b5d774946c"
+    },
+    {
+      "label": "genuine native text HMAC recomputed",
+      "va": "0xfffffff007328de9",
+      "file_offset": 3296745,
+      "size": 32,
+      "before_sha256": "da79fe0bf35b5aaebb1a7ae4706671dd93ec2fae7d249be6118270b020c365f8",
+      "after_sha256": "4280c28cf2fa442b50014a8b6a4d3b3de3bf85af9632f04f326d805da32a5827"
+    }
+  ],
+  "changed_bytes": 359,
+  "blob_bytes": 384,
+  "symbols": {
+    "FAIL_ENTRIES_ledger_copy_destination": "0xfffffff00ab7f6a4",
+    "FAIL_ENTRIES_ledger_copy_source": "0xfffffff00ab7f6d8",
+    "FAIL_ENTRIES_ledger_entry": "0xfffffff00ab7f4e8",
+    "FAIL_TEMPLATE_ledger_copy_destination": "0xfffffff00ab7f64c",
+    "FAIL_TEMPLATE_ledger_copy_source": "0xfffffff00ab7f670",
+    "FAIL_TEMPLATE_ledger_entry": "0xfffffff00ab7f4b4",
+    "RESUME_ledger_copy_destination": "0xfffffff00ab7f650",
+    "RESUME_ledger_copy_source": "0xfffffff00ab7f530",
+    "RESUME_ledger_entry": "0xfffffff00ab7f330",
+    "SEGEND__DATA_CONST": "0xfffffff007e31958",
+    "SEGEND__PORT_CONST": "0xfffffff00c95ab08",
+    "SEGSTART__DATA_CONST": "0xfffffff007dd0000",
+    "SEGSTART__PORT_CONST": "0xfffffff00c8a0000",
+    "ledger_check": "0xfffffff00ad82ab4",
+    "ledger_copy_destination": "0xfffffff00ad82a3c",
+    "ledger_copy_source": "0xfffffff00ad82a78",
+    "ledger_entry": "0xfffffff00ad82a00"
+  },
+  "function": {
+    "va": "0xfffffff00ab7f300",
+    "bytes": 492,
+    "hook": "0xfffffff00ab7f494",
+    "resume": "0xfffffff00ab7f330",
+    "fail_template": "0xfffffff00ab7f4b4",
+    "fail_entries": "0xfffffff00ab7f4e8",
+    "before_sha256": "651c5175b5daa6d993b7027a686dc8e1e9239b422969850c8c547281689d74ab",
+    "after_sha256": "32a5ed4ed3519482ce5410b189b91fedbe1cb474032ea01fa09cbf471f57a151"
+  },
+  "ranges": {
+    "DATA_CONST": [
+      "0xfffffff007dd0000",
+      "0xfffffff007e31958"
+    ],
+    "PORT_CONST": [
+      "0xfffffff00c8a0000",
+      "0xfffffff00c95ab08"
+    ]
+  },
+  "source_sha256": "b2eb4521e9ac2b085e6f4c014eb65ff935f1977a1be167fb2eda1c4e627fc384",
+  "patched_ledger_sha256": "1d8ed37844f3fb190f3abe7a3e8de7d6b987ff60249098afe7b2a18fb65784b0",
+  "contract_sha256": "7f87c49bf8b5789e39b93ef5f44881284802f7bdd1bcb10c947510ceaedde9b5",
+  "adapter": "Only void assertion reporting adapted to statuses 1/2; exact installed span predicates retained",
+  "commands": [
+    [
+      "clang",
+      "--target=aarch64-none-elf",
+      "-march=armv8.3-a",
+      "-mbranch-protection=pac-ret+leaf+b-key+bti",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fno-pic",
+      "-mcmodel=small",
+      "-mgeneral-regs-only",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DUNIXNU_SHENNONG_PORT_CONST=1",
+      "-c",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger-check.c",
+      "-o",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/check.o"
+    ],
+    [
+      "clang",
+      "--target=aarch64-none-elf",
+      "-march=armv8.3-a",
+      "-mbranch-protection=pac-ret+leaf+b-key+bti",
+      "-ffreestanding",
+      "-fno-builtin",
+      "-fno-stack-protector",
+      "-fno-pic",
+      "-mcmodel=small",
+      "-mgeneral-regs-only",
+      "-O2",
+      "-Wall",
+      "-Wextra",
+      "-Werror",
+      "-DUNIXNU_SHENNONG_PORT_CONST=1",
+      "-c",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger-entry.S",
+      "-o",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/entry.o"
+    ],
+    [
+      "ld.lld",
+      "-T",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.ld",
+      "-e",
+      "ledger_entry",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/entry.o",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/check.o",
+      "-o",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.elf"
+    ],
+    [
+      "llvm-objcopy",
+      "-O",
+      "binary",
+      "-j",
+      ".text",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.elf",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.bin"
+    ],
+    [
+      "llvm-nm",
+      "--undefined-only",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.elf"
+    ],
+    [
+      "llvm-nm",
+      "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/build4-complete/ledger.elf"
+    ]
+  ],
+  "scope": "native binary derivative, not full XNU rebuild; hardware unverified"
+}

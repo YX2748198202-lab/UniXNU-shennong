@@ -1,0 +1,17 @@
+version: 1
+targets:
+  - id: V1
+    source: V1
+    observation: "fi135 旧故障照片"
+    measured: "PC=0xfffffff00ad73a18 FAR=0xfffffff00c8c41f0 ESR=0x9600004f"
+    status: observed
+  - id: V2
+    source: V2
+    observation: "fi136 实机启动阶段、panic 内容、resetWpar"
+    measured: "Expected 256 seed bytes from bootloader, but got 64; @prng_random.c:75; pages/free=0。异常显示已验证，尚未到后续 PORT_CONST 保护初始化。"
+    status: observed
+    photo_sha256: "5ac0ad207e48086a65b2366054c1f71243a3a71ef7d56a3377eca1af899f1291"
+    boot_receipt: "out/diagnostics/fi136b-fatal-only/boot-result.json"
+    command_result: "fastboot returncode=0; send=5.140s; boot=0.083s; total=6.436s"
+    boot_finished_local: "2026-11-18T02:20:42+08:00"
+    note: "旧 fi135 绕过 early_random，当前完整检查基线在更早的种子交接失败；该照片不证明旧写保护修复通过。fi137 仅修正 ADT 长度并单独验收。"

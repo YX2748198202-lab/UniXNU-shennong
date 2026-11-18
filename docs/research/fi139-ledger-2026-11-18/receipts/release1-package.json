@@ -1,0 +1,82 @@
+{
+  "base": "fi138",
+  "base_payload_sha256": "808d86955887f2177641cd7d0bed13de6b17127e062d21e22c2104e0e2372cdd",
+  "kernel_sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+  "seed_bytes": 256,
+  "adt_bytes": 10752,
+  "fresh_seed_not_equal_previous": true,
+  "changed_fat_files": 2,
+  "unchanged_fat_files": 5,
+  "files": [
+    {
+      "path": "::/EFI/UniXNU/Payloads/DarwinBoot.efi",
+      "index": 0,
+      "before_sha256": "cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b",
+      "after_sha256": "cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b",
+      "after_bytes": 27648
+    },
+    {
+      "path": "::/EFI/UniXNU/Payloads/kernel.macho",
+      "index": 1,
+      "before_sha256": "955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe",
+      "after_sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+      "after_bytes": 94584832
+    },
+    {
+      "path": "::/EFI/UniXNU/Payloads/kernel.macho.adt",
+      "index": 2,
+      "before_sha256": "6711f0aafcec0d11ecea7d1d2b3a15344519505d9d2549d7d332db838a54d94f",
+      "after_sha256": "332e958a7f7481b92b7a367a59726c58bb5cf67f2a01e0212bb3202ed7ba8fe8",
+      "after_bytes": 10752
+    },
+    {
+      "path": "::/EFI/UniXNU/Payloads/kernel.macho.crypto-hmac.json",
+      "index": 3,
+      "before_sha256": "1f3e978425e1bab71e888a0c158ff18125469a76377b37352164a7c951db05ca",
+      "after_sha256": "1f3e978425e1bab71e888a0c158ff18125469a76377b37352164a7c951db05ca",
+      "after_bytes": 344
+    },
+    {
+      "path": "::/EFI/UniXNU/Payloads/kernel.macho.trustcache",
+      "index": 4,
+      "before_sha256": "a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c",
+      "after_sha256": "a2a2566f41c6d3e7a48ba14a0502226c2d85eb2775587ac58c5433116b382d2c",
+      "after_bytes": 94884
+    },
+    {
+      "path": "::/EFI/UniXNU/Payloads/kernel.macho.vroot",
+      "index": 5,
+      "before_sha256": "280ca5d4fa9eac615626b48f38756fca8187210f656146f995fff97daf64e3fd",
+      "after_sha256": "280ca5d4fa9eac615626b48f38756fca8187210f656146f995fff97daf64e3fd",
+      "after_bytes": 1152
+    },
+    {
+      "path": "::/EFI/UniXNU/unixnu.toml",
+      "index": 6,
+      "before_sha256": "6a4e345e9b9996fd37ca4a9cc08237de697cd68cd52d01c26e6b586dc9c43991",
+      "after_sha256": "6a4e345e9b9996fd37ca4a9cc08237de697cd68cd52d01c26e6b586dc9c43991",
+      "after_bytes": 549
+    }
+  ],
+  "payload_sha256": "1e7b25a8b0248aeb635249f2df1c665aa4a493b070cfcf183b66095305474eb8",
+  "image_sha256": "33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727",
+  "image_bytes": 203722752,
+  "boot_image_command": [
+    "python3",
+    "/home/yoox/android/workspace/UniXNU-shennong/firmware/make-boot-image.py",
+    "--uefi",
+    "/home/yoox/android/sources/uefi-sheng",
+    "--fd",
+    "/home/yoox/android/artifacts/UniXNU-shennong/boot/SILICIUM_UEFI-fd43.fd",
+    "--payload",
+    "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/release1/payload.img",
+    "--template",
+    "/home/yoox/android/artifacts/UniXNU-shennong/boot/Mu-shennong-fd46.img",
+    "--append-dtb",
+    "/home/yoox/android/sources/uefi-sheng/Resources/DTBs/shennong.dtb",
+    "--out",
+    "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/release1/Mu-shennong-fi139.img",
+    "--verify"
+  ],
+  "scope": "One temporary boot of a source-equivalent native derivative; no full XNU rebuild or flash"
+}

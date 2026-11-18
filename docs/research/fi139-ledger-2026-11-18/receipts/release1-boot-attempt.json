@@ -1,0 +1,30 @@
+{
+  "started_at": "2026-11-18T09:36:47.335717+00:00",
+  "serial": "9f72e95c",
+  "sha256": "33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727",
+  "image": "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/release1/Mu-shennong-fi139.img",
+  "bytes": 203722752,
+  "command": [
+    "fastboot",
+    "-s",
+    "9f72e95c",
+    "boot",
+    "/home/yoox/android/workspace/UniXNU-shennong/out/diagnostics/fi139-ledger-contract/release1/Mu-shennong-fi139.img"
+  ],
+  "devices_stdout": "9f72e95c\t fastboot\n",
+  "product_stdout": "",
+  "product_stderr": "product: shennong\nFinished. Total time: 0.004s\n",
+  "native_checks": {
+    "total": 54,
+    "passed": 54,
+    "failed": 0
+  },
+  "final_checks": {
+    "total": 24,
+    "passed": 24,
+    "failed": 0
+  },
+  "machine_cases": 3570,
+  "copy_chain_cases": 49,
+  "scope": "single temporary boot; no flash; no automatic retry"
+}

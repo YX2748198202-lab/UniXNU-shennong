@@ -1,0 +1,81 @@
+version: 1
+summary:
+  total: 10
+  passed: 10
+  failed: 0
+checks:
+- id: X1
+  source: E1
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X1
+  expect: exit 0; assertion holds
+  measured: kernel=6817570e…; image=64bfd792…; 203722752 bytes
+  result: pass
+  assert: 固定输入内核和最终镜像身份
+- id: X2
+  source: E3,E5,E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X2
+  expect: exit 0; assertion holds
+  measured: 16 symbol ranges / 3579 instructions independently decoded
+  result: pass
+  assert: 反汇编记录与实际符号/指令字节一致
+- id: X3
+  source: E4,E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X3
+  expect: exit 0; assertion holds
+  measured: 16/16 low slots=B self; SP1 spill-failed=WFE+B self, no panic call
+  result: pass
+  assert: 确认低向量和 SP1 spill-failed 的终端自旋盲区
+- id: X4
+  source: E3,E5
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X4
+  expect: exit 0; assertion holds
+  measured: '{"high_vbar": "0xfffffff00ad83348", "sctlr": "0xfffffff00ad83418", "cpacr":
+    "0xfffffff00ad8343c", "return_to_arm_init": "0xfffffff00ad83450"}'
+  result: pass
+  assert: 确认冷启动 VBAR/MMU/NEON 指令顺序
+- id: X5
+  source: E3,E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X5
+  expect: exit 0; assertion holds
+  measured: 11/11 entry/vector/state/timer ranges identical to raw CI
+  result: pass
+  assert: 入口及异常路径保持原始 CI 字节
+- id: X6
+  source: E7
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X6
+  expect: exit 0; assertion holds
+  measured: 3144 bytes exactly reproduced; SHA256=e0000b5af466ba01d98c7e0e5fd9b7dcde343cb9e1289e72e939b17926480695
+  result: pass
+  assert: 冻结观察器源码精确复建已启动机器码
+- id: X7
+  source: E8
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X7
+  expect: exit 0; assertion holds
+  measured: 2 fatal hooks preserve PACIBSP; invalid geometry parks before painting;
+    cache clean occurs after formatting
+  result: pass
+  assert: 观察器仅钩 panic；显示失败会先于画屏静默停机
+- id: X8
+  source: E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X8
+  expect: exit 0; assertion holds
+  measured: saved_state flavor=0x15; PC=+0x108; LR/SP pair=+0xf8; CPSR=+0x110; FAR/ESR
+    pair=+0x118; trace precedes panic
+  result: pass
+  assert: 异常转入 panic 前有状态访问与 trace；抽取状态 ABI
+- id: X9
+  source: E10,E11
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X9
+  expect: exit 0; assertion holds
+  measured: 14/14 host/offline cases; old stale pixel guard suppresses; fresh per-boot
+    claim succeeds; ARM64 candidate 3128 bytes; not installed
+  result: pass
+  assert: 热重启旧像素抑制已复现；候选仅离线验证
+- id: X10
+  source: E2
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-entry.py --case X10
+  expect: exit 0; assertion holds
+  measured: 1 local boot-attempt receipt, unchanged image identity; original seed
+    acceptance remains 14/14; runtime stage unconfirmed
+  result: pass
+  assert: 唯一临时启动回执与原验收记录保持一致

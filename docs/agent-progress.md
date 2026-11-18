@@ -1859,3 +1859,61 @@ bootstrap 页表前"应可写）。我们的构建里保护生效时机比这些
 - 新增产物审计和编译证据归档；移除“指针链足以代替缺失 split-segment 记录”的宽容钩子。新增段涉及指令引用，保留上游严格重定位检查。
 - 本地测试 20/20、跳过 0；工作流 shell 20 段语法检查通过；Python 4 文件语法检查通过；真实源码 2 文件重复应用变化数 0；git diff --check 通过。
 - 用户已明确允许提交、推送并运行一轮 CI；本节写入时尚未触发该轮构建。结果另行补录。
+
+## 2026-11-18 fi136：源码修复进入机器码，旧短路补丁已剔除
+
+- 本轮唯一 CI 为 `44127921741`，提交 `e386db83976395b6279a6a2a3be61d550333dee1`，GitHub API 确认 `completed/success`。artifact `14351688283`：299364655 字节，SHA256 `e1b9be37c26d88c564248055562109d9fa26166e5c5882f8eac83bade29075ad`，本地一致。53 文件 CRC/路径错误 0。
+- Windows PowerShell 直连和未显式指定代理的对象存储下载发生连接重置；只读查到现有系统代理 `127.0.0.1:7890`，显式经该代理下载成功。未修改系统代理或电源设置。
+- 实际编译源及目标文件共 9 份证据哈希一致，源码 7 组补丁已进入实际编译树。原生 v2 split-info 1474120 字节；最终 PORT_CONST 为 [0xfffffff00c8a0000, +0xbc000)。旧 FAR 对应 `_ResetHandlerData`，新地址 `0xfffffff00c8c6198` 位于该常驻段。
+- 实际保护调用指令：初始化 `0xfffffff00ad776a0`，APX=0/XN=1；finalize `0xfffffff00ad77b0c`，APX=2/XN=1，随后 DSB/TLBI/DSB/ISB。证明修复进入代码，不证明运行时页表已经观测。
+- **纠正旧补丁集合的语义口径**：fi115/fi135 含 `___stack_chk_fail -> ret`、`_kalloc_type_view_parse -> mov0/ret`、TLBI -> NOP、初始化调用跳过等。旧 7/7 仅验字节迁移和容器一致，不等于保留检查，后续禁止复制该整个集合。本轮候选未继承这些短路。
+- 新 fatal-only 显示由 `scripts/build-fatal-only-screen.py` 生成；两个 fatal 分派点都在原 PACIBSP 之后，正常路径 7 函数和入口/启动 3 函数逐字节等于原始 CI。额外只使用填充区、常量页及重算 HMAC；既有 CPU xpu 元数据仅改 1 字节。动态显示仍待实测。
+- 审计器排除了未重定位 STABS 调试符号，只接受 N_SECT，回归测试增至 21/21。归档 linkarguments 是局部命令，其中没有追加的 add_split_seg_info；实际原生二进制的 v2 记录已独立验证。
+- 最终候选为 `out/diagnostics/fi136b-fatal-only/Mu-shennong-fi136.img`，203722752 字节，SHA256 `dc47bf6d914b05eda6ed70a7df635ef16bf92d752a73df2f9266c996ea55ab79`。12/12 验收通过，FAT 内核回读一致，6 个非内核 FAT 文件未变。
+- 上海时间 02:20:42 已对 `9f72e95c` 单次临时启动；发送 5.140s、Booting 0.083s、fastboot 总计 6.436s，返回 0。回执 `out/diagnostics/fi136b-fatal-only/boot-result.json`。**尚无本次屏幕证据，不判断越过旧故障，不重复启动。**
+- 本轮新增的异常观察器、审计器修正和后续验收记录仍在本地工作树，未提交/推送；不要清理这些文件。第一版未上机候选 `fi136-fatal-only` 亦保留。
+
+## 2026-11-18 fi136 照片与 fi137 启动种子契约修复
+
+- fi136 照片 `5ac0ad207e48086a65b2366054c1f71243a3a71ef7d56a3377eca1af899f1291` 显示 `Expected 256 seed bytes from bootloader, but got 64; @prng_random.c:75`，pages/free 为 0。完整检查下的异常显示已真机验证，但停止在更早的 early_random；并未证明越过旧写保护点。实际编译源 arm_vm_init.c:1895 调用 early_random，PORT_CONST 段发现和保护初始化在 2045/2165，顺序明确。
+- 根因闭环：实际 FAT ADT 10560 字节、11 节点、唯一 chosen/random-seed 为 64 字节；make-shennong-adt.py 原来生成 64。工作流只比较生成件与回读件一致，未检查 ARM 256 字节要求，也没调用旧扩展脚本。实际 PE_get_random_seed 的机器码调用 SecureDTLookupEntry/SecureDTGetProperty。
+- 已批准的修复：生成器改为系统 CSPRNG 256 字节；扩展脚本改为严格按节点路径解析、检查边界/深度/重复/完整消费，新增只读 --check 和完整 --refresh，保留既有 CLI 形状。失败输入/随机源失败不覆盖文件，写入使用预像检查和原子替换。CI 在生成后和 FAT 回读后增加两处种子守卫；未启动新 CI。
+- 新增 30 项种子/生成器/工作流测试，最终 30/30，通过 0 跳过。开发测试夹具首次有括号语法错误，已修正；最终记录不隐藏该过程，未影响任何已有镜像。原 PORT_CONST 回归 21/21、0 跳过；20 段 shell 语法与 5 个 Python 文件解析通过。
+- fi137 仅替换 fi136b 的 ADT：10560→10752 字节、64→256 字节，44 个非目标属性原始记录和全部节点头不变。直接从最终 boot 镜像的 FAT 回读，6 个非 ADT 文件完全不变；内核仍为 94584832 字节、SHA256 `6817570eda24b599f943b77671dcce8c29ec6c748ce0a46fc696c79ee895c609`，无检查短路、无新代码补丁。
+- 镜像 `out/diagnostics/fi137-seed-contract/Mu-shennong-fi137.img`：203722752 字节，SHA256 `64bfd792e51ddff46a05d41d8ea8b04f0930c0fff501c06ddacb0d6dccd58dff`。14/14 离线验收已逐行回写 `docs/research/fi137-seed-2026-11-18/P0-EXEC.yml`。原卷、fd43、DTB、v0/4096 布局和 192 MiB 载荷保持约束。
+- 上海时间 03:04:14，对已核对的 `9f72e95c` 执行本轮唯一一次临时 boot：发送 5.137s、Booting 0.083s、总计 6.379s，返回 0，无 flash。回执 `out/diagnostics/fi137-seed-contract/boot-result.json`。当前等本次画面，不能把交接成功计为越过种子检查或阶段 C 通过。
+- 内核与观察器未变，故新画面标题仍会是 fi136/full checks；以镜像 SHA 和唯一回执识别本次。256 字节为本轮单次打包的新系统随机值，不打印内容，不重复启动同一镜像；长期每次开机取熵的固件实现不冒充本轮已完成内容。
+
+## fi137 照片复核与离线加载器核对
+
+- 用户照片 `b89a54ee70b31344960bf91691d38e074906b4da6a13284879ee593520d81a83` 可见顶部绿色条、UniXNU 菜单背景、XNU native 高亮和小字加载器覆盖；底部可见 `APP screen filled`、`SecurityLock++LockType++ SOFTWARE_LOCK`、`Function: LockCapsuleInterface`。没有可辨识的内核异常正文或调用栈，细小文字不作逐字臆录。
+- 现有画面不足以确认内核实际停点或阶段 C。绿条在跳入内核之前绘制；保留菜单背景不等于返回菜单，SecurityLock 字样也没有建立故障因果链。镜像内容修复与真机阶段保持分账。
+- 已做离线交叉核对：最终 FAT 中 DarwinBoot.efi 为 27648 字节、SHA256 `cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b`；其实际 ARM64 交接代码完成绿色屏幕标记、DC CIVAC、IC IALLU、关闭 SCTLR_EL1.M/C/I、TLBI VMALLE1、`br x1`。证据 `out/diagnostics/fi137-seed-contract/loader-handoff-machine-code.json`。
+- fi137 通过 14/14 离线验收，ADT 的 256 字节只读检查通过，内核及其余文件不变；这只能证明镜像内容，不替代真机内核日志。暂不追加真机启动、不提交、不推送、不触发 CI。
+
+## fi137 入口与异常通道离线复核（2026-11-18）
+
+- [入口审计](<research/fi137-exception-path-2026-11-18/P0-EXEC.yml>) 10/10：独立重解码16个符号范围、3579条指令；11个入口/异常/时钟范围与原始CI逐字节一致。低异常向量16/16槽为B self；SP1 spill-failed为WFE+B self。它们不经过现有panic观察器。
+- 实际panic_with_thread_kernel_state在进入panic钩子前有状态读取、原子写及SoCD trace；fb_setup失败也会在绘图前静默WFE。原观察器3144字节精确重建，说明这些盲区确实存在于已启动的生成件，而非只看当前源文件猜测。
+- 另复现一处独立诊断缺陷：旧显存magic会抑制新一轮显示。已在派生目录生成每轮零初始化内存claim候选，并限制日志长度以保护末字节；14项主机/编译/不变性检查通过，ARM64候选3128字节，未合入活动生成器或任何镜像。本次手机是否触发旧magic尚未确认。
+- [完整结论与后续最小实验](<research/fi137-exception-path-2026-11-18/RESULTS-AND-NEXT.md>) 要求下次取得完整PC/ESR/FAR/SPSR及来源标签，而不是只计颜色。当前没有验证USB或ramoops回读，不把RAM记录说成已经落到pstore。
+- 原14项镜像验收已重跑，30项种子测试、21项常驻段回归、20段shell、5文件Python解析继续通过。新增设备操作、CI、提交和推送均为0；阶段C、根卷、iOS用户态仍未确认。本轮离线报告完成不等于移植完成。
+
+## 2026-11-18 fi138：越过种子门，停在 ledger 常量段断言
+
+- 镜像 `out/diagnostics/fi138-fatal-state/Mu-shennong-fi138.img`：203722752 字节，SHA256 `4274690585a8917268b1e04476d1f2a2798233cde21e7f210325ea350758cd60`；载荷 `808d86955887f2177641cd7d0bed13de6b17127e062d21e22c2104e0e2372cdd`；内核 94584832 字节、SHA256 `955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe`；诊断内核 `fc1a64c42139e801643277c448330a9a9ab5045d5eb33c33fc953644bce6bca4`，CPU xpu 元数据仍只改 1 字节。FAT 只换 2 个文件，其余 5 个不变。
+- **实机进展是真实的，但不是阶段 C**：照片 `fab529ee3868a85b079c0115eab82d20…` 显示 `source=3`、`PC=0xfffffff00b43efac`、`ESR=0x00000000f200bffc`、`FAR=0`。该 PC 就是 `_ledger_template_finalize.cold.2+0xc` 的 `BRK #0xbffc`，`LR=0xfffffff00ab7f4b8` 是 `_ledger_template_finalize+0x1b8`。报错正文为 `ledger.c:349 Assertion failed: data_const_start <= (const char *)lt && (const char *)(lt + 1) <= data_const_end`。
+- 含义：`_arm_vm_init`、`_early_random`、`_machine_startup` 三处调用点都已越过，256 字节种子门不再是当前障碍。比 fi136 的 `Expected 256 seed bytes…got 64` 更靠后，但**按历史最远位置比较仍比旧基线更早**——旧 iPadOS 基线 2026-11-05 到过根卷挂载。
+- 根因是契约不一致：前面的常驻段改造把 `_task_ledger_template 0xfffffff00c8abd40`、`_thread_ledger_template 0xfffffff00c8ac7f8`、`_coalition_ledger_template 0xfffffff00c8a0e40` 搬进 `__PORT_CONST`，而 `ledger.c:343-352` 仍然只接受 `__DATA_CONST`。修复方向因此是修契约，不是删检查。
+
+## 2026-11-18 fi139：三处常量段契约修复、新种子、唯一一次临时启动
+
+- 先按源码把调用点数清楚：`lt_require_data_const` 在 `ledger.c` 只有三处非单元测试调用——`ledger_template_finalize`（`lt`）与 `ledger_template_copy` 的 `lt`、`src`。机器码对应 `finalize+0x194=0xab7f494`、`copy+0x140=0xab7f62c`、`copy+0x164=0xab7f650`。**只修 finalize 会在 copy 处再停一次**，所以 build2（单点、264 字节）保留为对照但未上机。
+- 完整派生 `out/diagnostics/fi139-ledger-contract/build4-complete`：内核 SHA256 `c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5`，相对已启动的 fi138 内核只改 359 字节；检查+胶水 384 字节放在 `_LowExceptionVectorBase+0xa00` 的全零填充区；清单外改动 0 字节；`__fips_hmacs` 用真实算法重算通过。
+- 只改 3 条入口分支共 12 字节：`finalize` 492 字节、`copy` 496 字节，两个函数的非分支字节逐字节不变。原「对象未初始化」「模板已初始化」「条目越界」三条断言的失败调用点全部保留，仍走原来的 `BRK`，PAC 栈帧与 `retab` 返回路径未动。
+- 机器码实测：三处各 1190 组共 3570 组，分布 252 放行 / 560 模板非法 / 378 条目非法，三处完全一致；另 49 组 copy 目标+源串联、2 组原前置断言；被调用者保留寄存器与 SP 全程无漂移。`build5-reproduce` 独立重编译与发布件字节完全一致。**仿真只建模 PAC 的控制流，签名验签的硬件行为未建模，不作已完成声明。**
+- 镜像 `out/diagnostics/fi139-ledger-contract/release1/Mu-shennong-fi139.img`：203722752 字节，SHA256 `33b9ba83e1b6f2d640226e4d76ba329c9da0d385bb204a4a8025faf80b649727`；载荷 `1e7b25a8b0248aeb635249f2df1c665aa4a493b070cfcf183b66095305474eb8`。FAT 只换 `kernel.macho` 与 `kernel.macho.adt`，其余 5 个（`DarwinBoot.efi`、`crypto-hmac.json`、`trustcache`、`vroot`、`unixnu.toml`）逐字节不变；BootShim/UEFI/DTB 区域不变；种子为新的 256 字节，ADT 10752 字节，除 seed 外记录全不变。
+- 验收：源码回归 15/15，机器码 54/54，最终镜像回读 24/24，`git diff --check` 通过。逐行回写 [P0-EXEC.yml](<research/fi139-ledger-2026-11-18/P0-EXEC.yml>)，14/14。
+- 上海时间 17:36:53 对已核对的 `9f72e95c` 执行本轮唯一一次临时 boot：发送 5.190s、Booting 0.083s、总计 6.390s、墙钟 6.447575s，返回 0，无 flash。`boot-attempt.json`/`boot-result.json` 均为独占创建，不重试。
+- **不把返回 0 当进步**：fi139 实际停点仍无屏幕证据，阶段 C、根卷、iOS 用户态均未确认。另记一处未修项——`kernel.macho.crypto-hmac.json` 与已改内核不再自洽，fi139 能进内核说明当前加载路径不依赖它，本轮未改动，列入下一步。
+- 本轮未提交、未推送、未触发 CI；文档、代码与回执在本轮之后随阶段同步提交。

@@ -1,0 +1,109 @@
+version: 1
+summary:
+  total: 14
+  passed: 14
+  failed: 0
+checks:
+- id: C1
+  source: E1
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 10560 bytes; 11 nodes; seed=64; old input correctly fails --check with
+    exit 1
+  result: pass
+  assert: Old real payload reproduces the seed length contract failure
+- id: C2
+  source: E2
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: final boot image ADT 10752 bytes; 11 nodes; seed=256; check exit 0
+  result: pass
+  assert: Final image carries the exact ARM XNU seed size
+- id: C3
+  source: E8
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 44 non-target property records byte-identical; all node headers unchanged
+  result: pass
+  assert: No other ADT records or node structures changed
+- id: C4
+  source: E10
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 6 non-ADT files unchanged, read directly from final boot image FAT
+  result: pass
+  assert: All non-ADT final FAT files match the baseline
+- id: C5
+  source: E9
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 94584832 bytes; exact fi136b kernel SHA256 matched; no code/protection/check
+    changes
+  result: pass
+  assert: Kernel remains exactly the validated complete-check baseline
+- id: C6
+  source: E8
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: base payload SHA256 unchanged after assembly
+  result: pass
+  assert: Original artifact remains immutable
+- id: C7
+  source: E10
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: boot v0/4096; 201326592-byte embedded payload exact; image 203722752 bytes;
+    SHA256 matched
+  result: pass
+  assert: Final image embeds the intended fixed-size payload
+- id: C8
+  source: E10
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 192-byte shim; fd43 exact; original 1238463-byte shennong DTB exact
+  result: pass
+  assert: Board firmware and DTB remain unchanged
+- id: C9
+  source: E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 30 passed; failures=0 errors=0 skipped=0
+  result: pass
+  assert: Seed parser, failure handling and generator contract tests pass
+- id: C10
+  source: E9
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 21 passed; failures=0 errors=0 skipped=0
+  result: pass
+  assert: Resident-constant regression suite remains green
+- id: C11
+  source: E2
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 20 workflow shell blocks parse; two seed check guards covered by unit
+    tests
+  result: pass
+  assert: Workflow syntax and seed guards are valid
+- id: C12
+  source: E6
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: 5 Python files parse without writing bytecode
+  result: pass
+  assert: All touched seed build Python files parse
+- id: C13
+  source: E8
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: git diff --check exit 0
+  result: pass
+  assert: Repository diff has no whitespace errors
+- id: C14
+  source: E7
+  run: python3 -B out/diagnostics/fi137-seed-contract/verify-seed.py
+  expect: assertions pass
+  measured: only seed-free metadata logged; one FAT file changed; new full 256-byte
+    CSPRNG value
+  result: pass
+  assert: Fresh entropy operation logs metadata without seed contents

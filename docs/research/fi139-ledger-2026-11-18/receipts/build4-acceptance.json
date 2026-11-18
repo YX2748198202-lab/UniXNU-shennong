@@ -1,0 +1,361 @@
+{
+  "recorded_at": "2026-11-18T09:32:29.905778+00:00",
+  "summary": {
+    "total": 54,
+    "passed": 54,
+    "failed": 0
+  },
+  "checks": [
+    {
+      "assertion": "Frozen fi138 and complete derivative identities",
+      "result": "pass",
+      "measured": {
+        "base": "955ae86dc07a3f24b76d22e2cacf0279ab2d7823e3d77920aaee6f7f733e0fbe",
+        "output": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5"
+      }
+    },
+    {
+      "assertion": "compiled original predicates: two resident constant domains with full spans",
+      "result": "pass",
+      "measured": {
+        "bytes": 384,
+        "sha256": "8e13c0bb044be1e7b0aa27a259c68339a6d420744bf371c36b3aa5c7fcb255c0"
+      }
+    },
+    {
+      "assertion": "replace constant-range contract: finalize",
+      "result": "pass",
+      "measured": {
+        "bytes": 4,
+        "sha256": "f04f185a4ae19e0d211bccf8e0613996d79267e25c454fbfb816b92b849020fe"
+      }
+    },
+    {
+      "assertion": "replace constant-range contract: copy_destination",
+      "result": "pass",
+      "measured": {
+        "bytes": 4,
+        "sha256": "d40826b34f8200a5205b5bb43b5afe4031057b277d2fa83f45891c76ecb1b548"
+      }
+    },
+    {
+      "assertion": "replace constant-range contract: copy_source",
+      "result": "pass",
+      "measured": {
+        "bytes": 4,
+        "sha256": "f2cd85c307cd0ec676fde183e09883f802bded72fb855508ddc4b57cb3114b7c"
+      }
+    },
+    {
+      "assertion": "diagnostic build label only",
+      "result": "pass",
+      "measured": {
+        "bytes": 34,
+        "sha256": "7681c2ee716e63a493a603eb861e7625b3d8bc063728cb509918a4b5d774946c"
+      }
+    },
+    {
+      "assertion": "genuine native text HMAC recomputed",
+      "result": "pass",
+      "measured": {
+        "bytes": 32,
+        "sha256": "4280c28cf2fa442b50014a8b6a4d3b3de3bf85af9632f04f326d805da32a5827"
+      }
+    },
+    {
+      "assertion": "Strict diff complement",
+      "result": "pass",
+      "measured": 0
+    },
+    {
+      "assertion": "Original finalize all non-hook bytes intact",
+      "result": "pass",
+      "measured": {
+        "bytes": 492,
+        "branch_instructions": 1
+      }
+    },
+    {
+      "assertion": "Original copy all non-hook bytes intact",
+      "result": "pass",
+      "measured": {
+        "bytes": 496,
+        "branch_instructions": 2
+      }
+    },
+    {
+      "assertion": "Genuine native HMAC",
+      "result": "pass",
+      "measured": "match"
+    },
+    {
+      "assertion": "Normal function __start",
+      "result": "pass",
+      "measured": 2936
+    },
+    {
+      "assertion": "Normal function _start_first_cpu",
+      "result": "pass",
+      "measured": 572
+    },
+    {
+      "assertion": "Normal function common_start",
+      "result": "pass",
+      "measured": 464
+    },
+    {
+      "assertion": "Normal function _arm_init",
+      "result": "pass",
+      "measured": 3480
+    },
+    {
+      "assertion": "Normal function _arm_vm_init",
+      "result": "pass",
+      "measured": 5732
+    },
+    {
+      "assertion": "Normal function _arm_vm_prot_init",
+      "result": "pass",
+      "measured": 1860
+    },
+    {
+      "assertion": "Normal function _arm_vm_prot_finalize",
+      "result": "pass",
+      "measured": 376
+    },
+    {
+      "assertion": "Normal function _early_random",
+      "result": "pass",
+      "measured": 160
+    },
+    {
+      "assertion": "Normal function _early_random_init",
+      "result": "pass",
+      "measured": 728
+    },
+    {
+      "assertion": "Normal function ___stack_chk_fail",
+      "result": "pass",
+      "measured": 44
+    },
+    {
+      "assertion": "Normal function _kalloc_type_view_parse",
+      "result": "pass",
+      "measured": 1072
+    },
+    {
+      "assertion": "Normal function _fleh_synchronous",
+      "result": "pass",
+      "measured": 40
+    },
+    {
+      "assertion": "Normal function _sleh_synchronous",
+      "result": "pass",
+      "measured": 2952
+    },
+    {
+      "assertion": "Normal function _sleh_synchronous_sp1",
+      "result": "pass",
+      "measured": 104
+    },
+    {
+      "assertion": "Preserved fatal observer fatal renderer in executable linker padding",
+      "result": "pass",
+      "measured": 3746
+    },
+    {
+      "assertion": "Preserved fatal observer stackless terminal fault capture in low-vector padding",
+      "result": "pass",
+      "measured": 464
+    },
+    {
+      "assertion": "Preserved fatal observer fatal branch after PACIBSP: _panic",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer fatal branch after PACIBSP: _panic_trap_to_debugger",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer fatal branch after PACIBSP: _panic_with_thread_kernel_state",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 0",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 1",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 2",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 3",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 4",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 5",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 6",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 7",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 8",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 9",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 10",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 11",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 12",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 13",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 14",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal low vector slot 15",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer terminal SP1 spill-failed branch",
+      "result": "pass",
+      "measured": 4
+    },
+    {
+      "assertion": "Preserved fatal observer fatal-only constant TTBR0 view",
+      "result": "pass",
+      "measured": 4096
+    },
+    {
+      "assertion": "Machine guard finalize",
+      "result": "pass",
+      "measured": {
+        "cases": 1190,
+        "outcomes": {
+          "0": 252,
+          "1": 560,
+          "2": 378
+        }
+      }
+    },
+    {
+      "assertion": "Machine guard copy_destination",
+      "result": "pass",
+      "measured": {
+        "cases": 1190,
+        "outcomes": {
+          "0": 252,
+          "1": 560,
+          "2": 378
+        }
+      }
+    },
+    {
+      "assertion": "Machine guard copy_source",
+      "result": "pass",
+      "measured": {
+        "cases": 1190,
+        "outcomes": {
+          "0": 252,
+          "1": 560,
+          "2": 378
+        }
+      }
+    },
+    {
+      "assertion": "Copy destination then source native routing",
+      "result": "pass",
+      "measured": 49
+    },
+    {
+      "assertion": "Native precondition checks retained",
+      "result": "pass",
+      "measured": 2
+    },
+    {
+      "assertion": "No fi139 boot has occurred",
+      "result": "pass",
+      "measured": "absent"
+    }
+  ],
+  "kernel_sha256": "c09c4b0970d364dfe38b838389d47b29eeb83347cfea0f6cec5b037af4cac8c5",
+  "native_machine_cases": 3570,
+  "copy_chain_cases": 49,
+  "native_preconditions": 2,
+  "per_guard": {
+    "finalize": {
+      "cases": 1190,
+      "outcomes": {
+        "0": 252,
+        "1": 560,
+        "2": 378
+      }
+    },
+    "copy_destination": {
+      "cases": 1190,
+      "outcomes": {
+        "0": 252,
+        "1": 560,
+        "2": 378
+      }
+    },
+    "copy_source": {
+      "cases": 1190,
+      "outcomes": {
+        "0": 252,
+        "1": 560,
+        "2": 378
+      }
+    }
+  },
+  "pac_cryptography": "not modeled; instructions and control flow retained",
+  "guards": 3,
+  "blob_bytes": 384
+}

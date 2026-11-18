@@ -1,0 +1,19 @@
+version: 1
+targets:
+  - id: V1
+    source: V1
+    observation: "fi136 原始种子失败照片"
+    status: observed
+    measured: "Expected 256 seed bytes from bootloader, but got 64; @prng_random.c:75"
+    photo_sha256: "5ac0ad207e48086a65b2366054c1f71243a3a71ef7d56a3377eca1af899f1291"
+    interpretation: "完整检查基线停在 early_random，尚未到 PORT_CONST 保护初始化"
+  - id: V2
+    source: V2
+    observation: "fi137 屏幕/启动后的实际阶段"
+    status: observed
+    measured: "当前照片显示 UniXNU loader 菜单：XNU native 项目高亮；下方为 APP screen filled / SecurityLock++LockType++SOFTWARE_LOCK 等加载器输出。没有 fi136 panic 屏或内核异常正文。"
+    photo_sha256: "b89a54ee70b31344960bf91691d38e074906b4da6a13284879ee593520d81a83"
+    interpretation: "仅凭这张照片尚不能判定 fi137 是否进入 XNU；它显示的是加载器菜单/安全锁状态，不是内核 panic 屏。阶段 C 仍未确认。"
+    boot_finished_local: "2026-11-18T03:04:14+08:00"
+    boot_receipt: "out/diagnostics/fi137-seed-contract/boot-result.json"
+    image_sha256: "64bfd792e51ddff46a05d41d8ea8b04f0930c0fff501c06ddacb0d6dccd58dff"
