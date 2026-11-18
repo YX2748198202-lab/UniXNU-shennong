@@ -66,6 +66,9 @@ class SourceTests(unittest.TestCase):
             make = root/'.cache/xnu-work/makedefs/MakeInc.def'
             make.parent.mkdir(parents=True)
             make.write_text(port.MAKEDEF_OLD + '\n')
+            ledger = root/'.cache/xnu-work/osfmk/kern/ledger.c'
+            ledger.parent.mkdir(parents=True)
+            ledger.write_text(port.LEDGER_OLD + '\n')
             original = ref.read_bytes()
             port.run('prepare', root)
             first = work.read_bytes()
@@ -108,6 +111,17 @@ class AuditTests(unittest.TestCase):
         header = struct.pack('<8I', 0xfeedfacf, 0x100000c, 0, 2, 2, len(command)+len(section)+len(split), 0, 0)
         data = header + command + section + split
         return data + bytes(0x2000-len(data)) + bytes([version, 0])
+
+    def test_symbol_reader_ignores_unrelocated_stabs(self):
+        image = self.module.MachO(self.binary())
+        at = len(image.data)
+        symoff, stroff = at + 24, at + 24 + 32
+        strings = b'\0_local_state\0'
+        records = (struct.pack('<IBBHQ', 1, 0x0e, 1, 0, 0x1110) +
+                   struct.pack('<IBBHQ', 1, 0x26, 1, 0, 0x2220))
+        image.data += struct.pack('<6I', 2, 24, symoff, 2, stroff, len(strings)) + records + strings
+        image.commands[2] = at
+        self.assertEqual(image.symbols()['_local_state'], 0x1110)
 
     def test_valid_segment_and_split_payload(self):
         image = self.module.MachO(self.binary())

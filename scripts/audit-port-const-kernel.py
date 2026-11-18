@@ -78,7 +78,9 @@ class MachO:
             if end < 0:
                 raise ValueError('Unterminated symbol')
             name = self.data[stroff+index:end].decode(errors='replace')
-            if value and section:
+            # STABS debug entries may retain native, unrelocated addresses.
+            # Only N_SECT definitions describe the emitted runtime symbols.
+            if value and section and not (kind & 0xe0) and (kind & 0x0e) == 0x0e:
                 symbols[name] = value
         return symbols
 

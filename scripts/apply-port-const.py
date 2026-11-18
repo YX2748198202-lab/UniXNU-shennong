@@ -75,6 +75,61 @@ ARM_REPLACEMENTS = [
      '\treturn segDATACONSTB <= addr && addr < (segDATACONSTB + segSizeDATACONST);'),
 ]
 
+# Keep native DATA_CONST valid; accept the separate resident segment as a second
+# whole-span domain, never the interval spanning the gap between both segments.
+LEDGER_OLD = '''static void
+lt_require_data_const(ledger_template_t lt)
+{
+	extern const char data_const_start[] __SEGMENT_START_SYM("__DATA_CONST");
+	extern const char data_const_end[] __SEGMENT_END_SYM("__DATA_CONST");
+
+	assert(data_const_start <= (const char *)lt &&
+	    (const char *)(lt + 1) <= data_const_end);
+	if (lt->lt_cnt) {
+		assert(data_const_start <= (const char *)lt->lt_entries &&
+		    (const char *)(lt->lt_entries + lt->lt_cnt) <= data_const_end);
+	}
+}'''
+LEDGER_SPAN_HELPER = '''#if defined(UNIXNU_SHENNONG_PORT_CONST)
+/* Complete object/array must fit in ONE resident constant segment. */
+static bool
+lt_span_in_const_segment(const void *object, size_t count, size_t width)
+{
+	extern const char data_const_start[] __SEGMENT_START_SYM("__DATA_CONST");
+	extern const char data_const_end[] __SEGMENT_END_SYM("__DATA_CONST");
+	extern const char port_const_start[] __SEGMENT_START_SYM("__PORT_CONST");
+	extern const char port_const_end[] __SEGMENT_END_SYM("__PORT_CONST");
+	uintptr_t first = (uintptr_t)object;
+	uintptr_t dc_start = (uintptr_t)data_const_start;
+	uintptr_t dc_end = (uintptr_t)data_const_end;
+	uintptr_t pc_start = (uintptr_t)port_const_start;
+	uintptr_t pc_end = (uintptr_t)port_const_end;
+
+	/* Check multiplication first, then subtract bounds instead of adding size. */
+	if (count == 0 || width == 0 || count > (size_t)-1 / width) {
+		return false;
+	}
+	size_t bytes = count * width;
+	return (dc_start <= first && first < dc_end && bytes <= dc_end - first) ||
+	       (pc_start <= first && first < pc_end && bytes <= pc_end - first);
+}
+#endif
+'''
+LEDGER_NEW = LEDGER_SPAN_HELPER + '''static void
+lt_require_data_const(ledger_template_t lt)
+{
+#if defined(UNIXNU_SHENNONG_PORT_CONST)
+	assert(lt_span_in_const_segment(lt, 1, sizeof(*lt)));
+	if (lt->lt_cnt) {
+		assert(lt_span_in_const_segment(lt->lt_entries,
+		    lt->lt_cnt, sizeof(*lt->lt_entries)));
+	}
+#else
+''' + LEDGER_OLD.split('{\n', 1)[1].rsplit('\n}', 1)[0] + '''
+#endif
+}'''
+LEDGER_REPLACEMENTS = [('ledger-constant-span-contract', LEDGER_OLD, LEDGER_NEW)]
+
 MAKEDEF_OLD = '\t__TEXT:__DATA_CONST:__DATA_SPTM:__LINKEDIT:__TEXT_EXEC:__TEXT_BOOT_EXEC:__KLD:__PPLTEXT:__PPLTRAMP:__PPLDATA_CONST:__LASTDATA_CONST:__LAST:__PPLDATA:__KLDDATA:__DATA:__HIBDATA:__BOOTDATA'
 MAKEDEF_NEW = '\t__TEXT:__DATA_CONST:__DATA_SPTM:__LINKEDIT:__TEXT_EXEC:__TEXT_BOOT_EXEC:__KLD:__PPLTEXT:__PPLTRAMP:__PPLDATA_CONST:__LASTDATA_CONST:__LAST:__PPLDATA:__KLDDATA:__PORT_CONST:__DATA:__HIBDATA:__BOOTDATA'
 LAYOUT_OLD = "        for name in ('__KLDDATA', '__BOOTDATA'):"
@@ -111,6 +166,12 @@ def transform(text, replacements):
     return text
 
 
+def patch_ledger(text):
+    if 'lt_span_in_const_segment' in text and text.count(LEDGER_NEW) != 1:
+        raise ValueError('ledger-constant-span-contract: partial or duplicate helper')
+    return transform(text, LEDGER_REPLACEMENTS)
+
+
 def sha(data):
     return hashlib.sha256(data).hexdigest()
 
@@ -145,11 +206,15 @@ def run(mode, tree):
         if work.is_symlink() or not work.is_dir():
             raise ValueError(f'Expected a real compile source directory: {work}')
         path = work/'osfmk/arm64/arm_vm_init.c'
-        if not path.resolve(strict=True).is_relative_to(work.resolve(strict=True)):
-            raise ValueError('Compile source escaped .cache/xnu-work')
+        ledger = work/'osfmk/kern/ledger.c'
+        make = work/'makedefs/MakeInc.def'
+        for source in (path, ledger, make):
+            if not source.resolve(strict=True).is_relative_to(work.resolve(strict=True)):
+                raise ValueError('Compile source escaped .cache/xnu-work')
         changes = [
             stage_file(path, lambda t: transform(t, ARM_REPLACEMENTS)),
-            stage_file(work/'makedefs/MakeInc.def', lambda t: transform(t, [('segment-order', MAKEDEF_OLD, MAKEDEF_NEW)])),
+            stage_file(ledger, patch_ledger),
+            stage_file(make, lambda t: transform(t, [('segment-order', MAKEDEF_OLD, MAKEDEF_NEW)])),
         ]
     # All transformations and preimage checks succeeded before the first write.
     entries = []
