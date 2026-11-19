@@ -1564,3 +1564,35 @@ fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack point
    已在保留位，接着试 `cpu`/`fiq`），每还原一个看是否出现新 panic——现在有文字输出，可以一次定位一个。
 3. `saved state: 0xFFFFFFF00CA27CB0` 与 nop 后的 `0xFFFFFFF00CA28000` 相差 `0x350`：
    若 (B) 成立，把 `0xad83094` 的 `adrp` 基址改为 `0xca27000` 并 `add #0xcb0` 精确对齐。
+
+## 2026-11-20 接管复核与镜像预检修复
+
+更新时间：2026-11-20 01:55 CST（Asia/Shanghai）。阶段：iOS 27 早期 XNU / `arm_init` bring-up，未确认进入 `machine_startup` 或用户态。
+
+### Git 和 format 2
+
+- 从 `YX2748198202-lab/UniXNU-shennong` 原位恢复空目录；恢复时 `main` 与 `origin/main` 同在 `acea8aa2dd5d2d591128a572cfdc87802532728b`，干净、无设备子模块。本轮在 `bringup/2026-11-20-takeover`，提交前仅本条所列文件有变更；不 push。接手用 `git status --short --branch && git log -1 --oneline` 取实际状态。
+- 保留 `/home/yoox/android/workspace/UniXNU` 的 `main` `fa32589aa1bef4566e9f91eea9e2731eafe250bc`（相对本地 `origin/main` ahead 16，3 个修改，子模块未初始化）；也保留 `UniXNU-pin` 的 detached `3818889bccb352a8a2733ce76964aa0646ec338e`（带两个未跟踪 OS Profile，子模块已初始化）。没有 reset、覆盖或更新其工作树。
+- 独立产物目录 `R=/home/yoox/android/artifacts/UniXNU-shennong/takeover-20261120.bdkq76` 中获取官方 `origin/main` `8542980d02b4d2cc5c32ee3542de1760b2562aac` 和 CI pin `c740efb5b23e94453bb179f7801eb592baafacf6` 的框架 checkout，未初始化全套组件子模块。官网 HTTP 连接超时，审计使用该已核对官方 HEAD 内的 `docs/porting/migration.md` 与 `device-repository.md`。
+- 官方 `devices.toml` 已注册本仓库、`format = 2`，记录 `acea8aa`；设备 `board.toml` 是 `schema_version = 2`，`porting.toml` 独立使用 `schema_version = 1`。未重复迁移。官方 `python3 scripts/porting-record.py check --device "$D"` 检查通过（13 个 area）。`unixnu.lock`、`local.toml.example`、`proprietary-files.txt` 和官网所列的 packaging / porting-record 工作流仍缺；现有 `kernel.yml` 不是这些文件的等价替换。
+- `D=/home/yoox/android/workspace/UniXNU-shennong`。截至 checkout，官方 CLI 先因 SoC 未缓存失败；只获取 `feeds.toml` 现有 `a9f45dc60c035084b95463781538380f4c3606c9`，并按 CI 将两个设备自带 OS Profile 复制到隔离框架，没有替换官方 Profile。从 `$R/framework-{ci,main}` 分别执行 `./unixnu defconfig shennong_defconfig -D "$D" --out "$R/out-$label"`、`./unixnu status --json -D "$D" --out "$R/out-$label"`。实际解析结果在 `status-{ci,main}-configured.json`：arm64e / sm8550 feed / `ios-27.0.1-24A446-iphone16pro` / shennong；输出为 `$R/out-$label/shennong/ios-27.0.1-24A446-iphone16pro/shennong`。
+- 7 个组件均能解析，`ShengUfs` 依赖 `VerifiedRoot` 与 `VirtioMmioBlock`。CI 与 main 分别解析 71 / 76 个补丁；`ArmCpu`、`ShengUfs`、`RamBlock`、`XnuPrelink` pin 不同，部分 catalog ABI 只列旧供体。解析不等于源码就绪、ABI 验证或硬件兼容；不更新 CI pin 或 SoC。板级 `zzzz-diag-marks.patch` 不在实际序列，历史已验证无法直接应用；仍不启用。`dtc -I dts -O dtb -i "$SOC/dts" -o "$R/hardware.dtb" dts/shennong.dts` 出码 0，1549 条 warning 留在 `dtc.log`；板级 DTS 是 Pineapple 来源的独立树，不意味着已按官网的 SoC DTSI 分层，无实机/ADT 合格结论。
+
+### 供体、历史产物、证据差距
+
+- 缓存 `/home/yoox/android/cache/ipsw/iPhone17,1_27.0.1_24A446_Restore.ipsw`，没有重新下载。读取 ZIP 的 `BuildManifest.plist` 验证 iPhone17,1、27.0.1、24A446、d93ap → `kernelcache.release.iphone17`；压缩 IM4P 和完整 IPSW SHA-256 分别在 `sha256.txt`、`ipsw.sha256`。用本地 `ipsw img4 im4p extract --output "$R/kernelcache.decompressed" "$R/kernelcache.release.iphone17"` 解码，得到 arm64e MH_FILESET，SHA-256 `fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95`，与 board pin 一致。
+- `strings -a` 的原厂 KernelCache 版本为 **Darwin 27.0.0 / xnu-13432.2.10~2 / RELEASE_ARM64_T8140**；两个官方配置的 **native 源码** pin 为 `ac9718fb1af618d5ce8678d0dc6e8a58f252216f`（Apple tag `xnu-12377.121.6`）。CI prelink 候选同时包含 native Darwin 25.5.0 和原厂 Darwin 27.0.0 两条版本串。两者必须分别核对符号/ABI/地址；未使用 iPadOS 17.7.11 / 21H461。
+- `ci/42904596191/shennong-kernel.zip` 的 device revision `dcf7c779f8c359776ce57beb4cdeea4317e1249d`。按 `patches/fi102/meta.json` 匹配归档原始 prelinked `kernel.macho`，运行 `python3 scripts/apply-fi102-patch.py "$R/fi102-pristine.macho" "$R/fi102-replayed.macho"`（1146 words），`cmp` 与留存 `build/fi102/kernel.macho` 完全一致，SHA-256 `800b4412fd125aef002035d552d4ff47af8588902a3da2de8f19ebd11f94a976`。归档的 `kernel.json` 声明 `allow_missing=true`，且 `mapping_complete/runtime_qualified/loadable` 均 `false`（`missing` 有 11 个 bundle 条目）；CI success 只证明候选产出，不能升级 prelink 兼容性结论。
+- 留存 fi103–fi134 镜像，本轮对 fi134 实测读回：其 FAT 内 kernel SHA-256 与外部 Mach-O 一致；对照 fi102，`__TEXT_EXEC` 只有 5 个 4 字节 word 不同。fi134 恢复 VA `0xFFFFFFF00AD8309C/A0/B4/B8` 的 `add/sub`，且 VA `0xFFFFFFF00B3A154C`（对应 fi101 panic PC）在 offset `0x439d54c` 由 `str x16, [x8, #3896]` 变为 `nop`。历史 FAR `0xFFFFFFF00C950F38` 落在该 Mach-O 的 `__KLDDATA`（`initprot=maxprot=3`，有文件数据），**段声明可写并不证明 runtime 页表可写**。尚无能用镜像哈希对应的 fi134 实机结果。反汇编、VA/offset/权限、哈希在 `$R/fi134-changes-disassembled.txt`、`fi101-far-map.txt`、`sha256.txt`、`payload-adt.sha256`。
+
+### 实际改动和验证
+
+- `scripts/verify-boot-package.py`：旧版对独立 FD 及镜像分别验收、只在解压流里搜索 `_FVH`，不会比较内嵌与外部 FD。真实 fi102 镜像配一个尾字节不同、仍能被扫描器解析的 FD 副本，旧版退出 0。现检查 gzip 完整、ARM64 shim 头的地址和声明长度、由 FD 大小确定的 FV 边界；给 `--fd` 时逐字节比对。无 `--fd` 时明确跳过同一性检查。
+- `scripts/test-verify-boot-package.py` 新增匹配/不匹配 FD、错误 shim 地址、截断 gzip 测试；`AGENTS.md` 同步项目规则；`docs/STATE.md`、本文件和 `porting.toml` 更新目前证据，不修改 XNU、UEFI、DTS 源或 donor 配置。
+- `bash tools/build-lzma-decode.sh` 使用现存 Mu SDK 构建主机解码器（忽略的 `tools/bin/lzma-decode`，哈希在 `decoder.sha256`）。`python3 scripts/verify-boot-package.py --fd <缓存 FD> --payload <留存 payload> --image <留存 v0 镜像> --json <报告>` 对 fi102、fi134 均 0 failure；各确认 FD byte match、95 个模块、payload byte match；负例确认同一模块扫描仍成功但新增 `image firmware bytes` 检查失败，退出 1。`preflight-fi{102,134}.json`、`stale-fd-{before,after}.json` 可重查。
+- 主机测试：`scripts/test-entry-probe.py "$R/fi102-pristine.macho"`（此项需要真实内核参数）、`test-extract-xbl-memory-map.py`、`test-probe-walk.py`、`test-read-sheng-log.py`、`test-scan-uefi-fv.py`、`test-verify-boot-package.py`、`firmware/test-make-payload-image.py` 都通过；`git diff --check` 通过。
+- 本地 SDK 目录为空，默认 Linux `/opt/unixnu-linux` 工具链不存在，未跑完整 XNU 编译/链接或重新 prelink。CI 仍是手工 `workflow_dispatch` / macOS 26 / Xcode 26.6，并有构建时补救步骤；未触发新构建。`fastboot devices -l` 无设备；未做 `fastboot boot` 或任何分区写入。
+
+### 交接优先任务
+
+在现有分支继续。先用 `fi101` panic 的 FAR 与实际 `__KLDDATA` 页属性、对应 native/保留符号的反汇编核对 `PE_init_printf` 写点；区分原写入异常和栈诊断，不能将 fi134 的 NOP 当永久修复。复用已验证的 fi102 对照，不重复下载 IPSW、不混用供体、不重做已证伪的任意 cave / 单边 SP 滑动修改。可用手机时核对身份后只做临时启动，采集与启动镜像 SHA-256 对应的屏幕证据。并行前提未满足：Codex 与 Harness 不得同时改此工作树。

@@ -1,14 +1,21 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-14 03:20
-当前基线：**fi102**
+最后更新：2026-11-20（接管复核，未重测手机）
+当前可复现基线：**fi102**；以下实机细节来自 2026-11-14 历史记录。
+
+## 2026-11-20 复核
+
+- fi102 已从本地 CI run `42904596191` 归档的原始 Mach-O 重放；结果与留存 fi102 字节一致。归档的 prelink manifest 标记 `mapping_complete=false`、`runtime_qualified=false`、`loadable=false`；打包预检通过不等于 prelink 或实机验收通过。
+- 已核对 iPhone17,1 / 24A446 IPSW 与解码后的 arm64e KernelCache pin。**原厂供体是 `xnu-13432.2.10~2`（Darwin 27.0.0），`xnu-12377.121.6` 是 native kernel 源码 pin**，不是原厂 KernelCache 的源码版本。两套目标的符号不互换。
+- `fi103`–`fi134` 有本地留存镜像。fi134 内核相对 fi102 只差 5 条指令：4 条恢复 SP 换算，另 1 条在 fi101 panic PC `0xFFFFFFF00B3A154C` 把 `str` 换成 `nop`。预检和字节核验已通过，但没有可归属到该镜像哈希的实机证据；不升级基线，不把屏幕静默当作通过或失败。
+- 尚不能确认 fi102 是否从 `PE_init_printf` 返回。先用对应地址、段保护和日志证据区分 SP 处理与原写入故障；不要叠加 fi134 的 NOP 或重复此前失败的插桩。详细命令及证据见 [接管进度](agent-progress.md#2026-11-20-接管复核与镜像预检修复)。
 
 ## 目标
 把 XNU（iOS 27，iPhone17,1 27.0.1 24A446，device_class = d93ap）移植到小米 14 Pro
 （shennong / 23116PN5BC / SM8650 / 12GB），最终在设备上启动 XNU 并运行 iOS 用户空间。
 **不是 iPad / iPadOS。**
 
-## 现在停在哪
+## 历史实机证据截至哪里
 `arm_init` 尾部。内核已能：
 - 从 DarwinBoot 进入 `_start_first_cpu`（`0xad8305c`）
 - 建完页表、开启 MMU（`msr sctlr_el1` 成功，band 14 亮）

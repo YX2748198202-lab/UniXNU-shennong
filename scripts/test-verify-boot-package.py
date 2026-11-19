@@ -108,9 +108,41 @@ def main():
         result = run([str(VERIFY), "--board", str(good_board), *common])
         check(result.returncode == 0, f"clean package failed:\n{result.stdout}{result.stderr}")
         for line in ("payload files", "trust cache", "ADT parse", "menu config",
-                     "image append_dtb", "image payload bytes"):
+                     "image append_dtb", "image firmware layout", "image payload bytes"):
             check(f"OK   {line}" in result.stdout, f"clean package did not report OK for {line}")
         check("TrustCache" in result.stdout, "ADT slots line does not mention TrustCache")
+
+        # Check the embedded FD independently of the standalone module scan: this
+        # synthetic FD has a volume header but no compacted production modules.
+        result = run([str(VERIFY), "--board", str(good_board), "--fd", str(fd), *common])
+        check("OK   image firmware bytes" in result.stdout,
+              f"matching FD was not recognized:\n{result.stdout}{result.stderr}")
+        stale_fd = tmp / "stale.fd"
+        modified = bytearray(fd.read_bytes())
+        modified[-1] ^= 1
+        stale_fd.write_bytes(modified)
+        result = run([str(VERIFY), "--board", str(good_board), "--fd", str(stale_fd), *common])
+        check(result.returncode == 1 and "FAIL image firmware bytes" in result.stdout,
+              f"stale FD was not reported:\n{result.stdout}{result.stderr}")
+
+        # A valid gzip and an FV signature alone do not prove the shim targets
+        # the board's firmware address.
+        wrong_base = tmp / "wrong-base.toml"
+        wrong_base.write_text(good_board.read_text().replace('"0xA7100000"', '"0xA7200000"'))
+        result = run([str(VERIFY), "--board", str(wrong_base), *common])
+        check(result.returncode == 1 and "FAIL image firmware layout" in result.stdout,
+              f"wrong shim base was not reported:\n{result.stdout}{result.stderr}")
+
+        # Keep a valid header page but shorten the gzip body. zlib can produce
+        # partial data without throwing, so the verifier must check EOF.
+        incomplete = tmp / "boot-incomplete-gzip.img"
+        with boot.open("rb") as stream:
+            prefix = bytearray(stream.read(4096 + 16))
+        struct.pack_into("<I", prefix, 8, 16)
+        incomplete.write_bytes(prefix)
+        result = run([str(VERIFY), "--board", str(good_board), "--image", str(incomplete)])
+        check(result.returncode == 1 and "truncated gzip member" in result.stdout,
+              f"truncated gzip was not reported:\n{result.stdout}{result.stderr}")
 
         # 2) A payload rebuilt after packing: one flipped byte must be caught.
         broken = tmp / "boot-stale.img"

@@ -4,7 +4,7 @@ schema_version = 1
 name = "shennong"
 soc = "SM8650"
 os_profile = "ios-27.0.1-24A446-iphone16pro"
-summary = "Xiaomi 14 Pro (23116PN5BC)。UEFI 菜单稳定（v6）；iPadOS 17.7.11 供体上 XNU 走到 vfs_mountroot、UFS/SMMU/GPT/SHNGROOT 根卷已真机验证。当前供体 iPhone17,1 iOS 27.0.1（arm64e，XNU 12377.121.6）卡在开 MMU 之前的 trampoline 窗口，持久日志与实机镜像重建见 docs/agent-progress.md。"
+summary = "Xiaomi 14 Pro (23116PN5BC)。UEFI 菜单稳定（v6）；iPadOS 17.7.11 供体上 XNU 走到 vfs_mountroot、UFS/SMMU/GPT/SHNGROOT 根卷已真机验证。当前供体 iPhone17,1 iOS 27.0.1（arm64e，原厂 XNU 13432.2.10~2；native 源码 pin 12377.121.6），历史 fi101 已开启 MMU 并在 arm_init 尾部显示 panic；fi102 可离线复现，是否越过 PE_init_printf 未确认。证据见 docs/agent-progress.md。"
 
 [[area]]
 id = "configuration"

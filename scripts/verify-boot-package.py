@@ -12,8 +12,8 @@ will check in the first second:
                   board.toml, the kernel is a thin arm64 Mach-O, the ADT parses and carries the
                   /chosen/memory-map slots that match the files actually present
   boot image      v0 header constants, the gzip stream decodes, BootShim's ARM64 header sits at
-                  byte 56, _Payload points at an FV inside the stream, and the embedded FAT
-                  volume is byte-identical to the payload that was passed in
+                  byte 56, the shim header and embedded FD match the board geometry, and
+                  both embedded inputs match the supplied --fd and --payload byte-for-byte
 
 Every check prints one line; the exit status is 0 only if nothing failed.
 
@@ -291,13 +291,16 @@ def check_payload(payload_path, payload_spec, report):
     return data
 
 
-def check_image(image_path, payload_data, report):
+def check_image(image_path, payload_data, report, *, fd_base, fd_size, fd_path=None):
     if not image_path.is_file():
         report.fail("image present", f"{image_path} missing")
         return
     data = image_path.read_bytes()
     if data[:8] != b"ANDROID!":
         report.fail("image header", "no ANDROID! magic")
+        return
+    if len(data) < PAGE_SIZE:
+        report.fail("image header", "truncated header page")
         return
     (kernel_size, kernel_addr, ramdisk_size, ramdisk_addr,
      second_size, second_addr, tags_addr, page_size) = struct.unpack_from("<8I", data, 8)
@@ -324,6 +327,9 @@ def check_image(image_path, payload_data, report):
     except zlib.error as error:
         report.fail("image kernel stream", f"gzip failed: {error}")
         return
+    if not inflater.eof:
+        report.fail("image kernel stream", "truncated gzip member")
+        return
     trailing = inflater.unused_data
     if inner[56:60] != b"ARM\x64":
         report.fail("image BootShim", f"no ARM64 header magic at 56 (got {inner[56:60]!r})")
@@ -337,15 +343,28 @@ def check_image(image_path, payload_data, report):
     else:
         report.fail("image append_dtb",
                     f"{len(trailing)} trailing bytes, no DTB magic; ABL refuses such an image")
-    signature = inner.find(FV_SIGNATURE)
-    if signature > 40:
-        fd_base = signature - 40
-        shim_bytes = fd_base
-        if fd_base >= 64 and inner[fd_base - 8:fd_base - 4] == b"\x00\x00\x00\x00":
-            pass
-        report.ok("image payload pointer", f"BootShim {shim_bytes} bytes, FD starts at {fd_base} in the stream")
+    # The packer writes shim.bin + FD with nothing between them. Do not search for
+    # _FVH at an arbitrary offset: nested volumes can have the same signature.
+    fd_offset = len(inner) - fd_size
+    if fd_size < 44 or fd_offset < 64:
+        report.fail("image firmware layout", f"not enough bytes for BootShim and {fd_size:#x}-byte FD")
     else:
-        report.fail("image payload pointer", "no _FVH in the decompressed stream")
+        header_base, header_size = struct.unpack_from("<QQ", inner, 8)
+        embedded_fd = inner[fd_offset:]
+        if (header_base, header_size) != (fd_base, len(inner)):
+            report.fail("image firmware layout", f"shim base/length {header_base:#x}/{header_size:#x}, "
+                        f"expected {fd_base:#x}/{len(inner):#x}")
+        elif embedded_fd[40:44] != FV_SIGNATURE:
+            report.fail("image firmware layout", f"no _FVH at FD offset 40 (stream {fd_offset + 40:#x})")
+        else:
+            report.ok("image firmware layout", f"BootShim {fd_offset} bytes, FD {fd_size:#x} bytes")
+            if fd_path is None:
+                report.skip("image firmware bytes", "no --fd given")
+            elif fd_path.is_file():
+                if embedded_fd == fd_path.read_bytes():
+                    report.ok("image firmware bytes", f"identical to --fd, SHA-256 {sha256(embedded_fd)}")
+                else:
+                    report.fail("image firmware bytes", f"embedded FD differs from {fd_path}")
 
     # Embedded FAT volume must be the payload that was passed in.
     start = page_size + kernel_size
@@ -376,10 +395,11 @@ def main():
 
     report = Report()
     base, size, payload_spec = check_board(args.board, report)
-    scanned = check_firmware(args.fd, base, size, report, None) if args.fd else None
+    if args.fd:
+        check_firmware(args.fd, base, size, report, None)
     payload_data = check_payload(args.payload, payload_spec, report) if args.payload else None
     if args.image:
-        check_image(args.image, payload_data, report)
+        check_image(args.image, payload_data, report, fd_base=base, fd_size=size, fd_path=args.fd)
 
     report.emit()
     if args.json:
