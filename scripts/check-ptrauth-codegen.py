@@ -27,6 +27,20 @@ def body(ir, name):
     return match[1]
 
 
+def ordinary_init_copies_unsigned_null(ir, text):
+    # Apple Clang may lower the local initializer to a constant aggregate
+    # copied to the stack, instead of emitting separate field stores.
+    pattern = (r"^(@[\w.$-]+) = private unnamed_addr constant %struct\.slot "
+               r"\{ i64 42, ptr null \}(?:, align 8)?$")
+    for constant in re.findall(pattern, ir, re.M):
+        copy = re.search(rf"@llvm\.memcpy\.p0\.p0\.i64\(ptr [^,\n]*?({SSA}), "
+                         rf"ptr [^,\n]*?{re.escape(constant)}, i64 16, i1 false\)", text)
+        if copy and re.search(rf"^\s*{re.escape(copy[1])} = alloca %struct\.slot\b", text, re.M) and \
+                re.search(rf"@consume_slot\(ptr [^,\n]*{re.escape(copy[1])}\)", text):
+            return True
+    return False
+
+
 def validate(ir, *, auth_null):
     require(re.search(r'^target triple = "arm64e-apple-ios27\.0(?:\.0)?"$', ir, re.M),
             "unexpected target triple")
@@ -36,7 +50,9 @@ def validate(ir, *, auth_null):
             require(not auth_null, f"{name}: conditional path could skip pointer authentication")
         if not auth_null:
             if name in ("clear", "init"):
-                require("store ptr null," in text and "@llvm.ptrauth.sign(" not in text,
+                unsigned_null = "store ptr null," in text or (
+                    name == "init" and ordinary_init_copies_unsigned_null(ir, text))
+                require(unsigned_null and "@llvm.ptrauth.sign(" not in text,
                         f"{name}: ordinary qualifier did not store unsigned null")
             else:
                 require(re.search(r"\bicmp (?:eq|ne) ptr .*\bnull\b", text) and
@@ -133,16 +149,22 @@ def main():
             require(rc == 0, f"compiler exited {rc}; see {log}")
 
         run([args.clang, "--version"], out / "compiler.txt")
-        for name, schema in (("ordinary", 0), ("reference", 2) if args.self_test else ("auth-null", 1)):
+        variants = (("ordinary", 0), ("reference", 2) if args.self_test else ("auth-null", 1))
+        compile_errors = []
+        for name, schema in variants:
             base = [args.clang, "-target", "arm64e-apple-ios27.0", "-mkernel", "-ffreestanding",
                     "-O2", f"-DSCHEMA={schema}", "-S", str(SOURCE)]
             ir = out / f"{name}.ll"
-            run(base + ["-emit-llvm", "-o", str(ir)], out / f"{name}-ir.log")
-            run(base + ["-o", str(out / f"{name}.s")], out / f"{name}-asm.log")
-            validate(ir.read_text(), auth_null=bool(schema))
-            if schema:
-                validate_asm((out / f"{name}.s").read_text())
-            print(f"PASS {name} codegen")
+            try:
+                run(base + ["-emit-llvm", "-o", str(ir)], out / f"{name}-ir.log")
+                run(base + ["-o", str(out / f"{name}.s")], out / f"{name}-asm.log")
+                validate(ir.read_text(), auth_null=bool(schema))
+                if schema:
+                    validate_asm((out / f"{name}.s").read_text())
+                print(f"PASS {name} codegen")
+            except ValueError as exc:
+                compile_errors.append(f"{name}: {exc}")
+        require(not compile_errors, "; ".join(compile_errors))
         if args.self_test:
             def reject(ir, label):
                 try:
