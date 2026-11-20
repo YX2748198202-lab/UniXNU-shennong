@@ -1,7 +1,13 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（青色候选仍仅黄条；Platform Expert 链接修复通过针对性构建）
+最后更新：2026-11-20（原 CI prelink 字节级复现；WSL 工具链已构建，原生构建发现 PAC 编译器阻塞）
 当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+
+## 2026-11-20：prelink 对照与 console 修复验收
+
+CI `42904596191` 的 native + 精确映射 + 24A446 KernelCache 用未修改的固定 XnuPrelink 在 WSL 产出和归档同 SHA-256 的 prelink（`31e33289…`）；OS Profile 的 `early_security_init` 必须纳入重放。原产物仍有 18 处未解析闭包引用、170 个 stub，未达到 loadable/runtime-qualified。旧映射不能用于新的 native 链接产物。
+
+在固定 cctools `ld64-956.6` 上，真实 Platform Expert 声明的静态链接夹具已复现 CI 两级重命名：补丁前为 `__KLDDATA,__const`，补丁后为 `__DATA_CONST,__pe_late`。当前冻结重复色带实验。WSL 固定 Clang 已构建，隔离 iOS 27/arm64e 构建通过 `installhdrs`，随后 `libfirehose_kernel` 在 XNU 的四参数 `__ptrauth(..., "authenticates-null-values")` 失败（三参数对照通过）。需支持该语义的编译器才继续整核链接；未生成新可启动镜像，未实机验证。见 [本轮记录](agent-progress.md#2026-11-20原-ci-prelink-字节级复现wsl-开始实际整核工具链构建)。
 
 ## 2026-11-20：原哈希复跑仅黄条，检查点前移
 

@@ -2,7 +2,8 @@
 """Link the exact XNU Platform Expert declarations before and after the patch.
 
 Pass a directory with the unmodified ac9718f source files, or a complete checkout.
-This is a section-placement regression, not a kernel or fileset build.
+Use --kernel-link with the cctools linker to exercise the two CI renames
+in a static arm64e link. This does not build the kernel or fileset.
 """
 
 import argparse
@@ -36,7 +37,7 @@ def declarations(source, names):
         yield lines[i]
 
 
-def build_and_check(tree, work, mode, tools):
+def build_and_check(tree, work, mode, tools, *, kernel_link):
     clang, linker, nm = tools
     source = work / f"{mode}.c"
     source.write_text('#include "section_keywords.h"\n'
@@ -50,12 +51,16 @@ def build_and_check(tree, work, mode, tools):
                         'void entry(void) {}\n')
     obj = source.with_suffix('.o')
     image = source.with_suffix('.macho')
-    subprocess.run([clang, '--target=arm64e-apple-ios27.0', '-ffreestanding', '-I',
+    compile_mode = ['-mkernel'] if kernel_link else []
+    subprocess.run([clang, '--target=arm64e-apple-ios27.0', '-ffreestanding', *compile_mode, '-I',
                     str(tree / HEADER.rsplit('/', 1)[0]), '-c', str(source), '-o', str(obj)], check=True)
-    # Reproduce the resulting CI output-section placement of the unmodified
-    # __DATA,__const input without relying on chained rename support in ld64.lld.
-    subprocess.run([linker, '-arch', 'arm64e', '-platform_version', 'ios', '27.0', '27.0',
-                    '-e', '_entry', '-rename_section', '__DATA', '__const', '__KLDDATA', '__const',
+    # XNU first maps __DATA,__const into __DATA_CONST,__const. CI then
+    # maps that output into __KLDDATA,__const. ld64.lld fixtures express
+    # the first move directly, while cctools can run the actual sequence.
+    link_mode = ['-static', '-kernel', '-Z'] if kernel_link else []
+    first_segment = '__DATA_CONST' if kernel_link else '__KLDDATA'
+    subprocess.run([linker, *link_mode, '-arch', 'arm64e', '-platform_version', 'ios', '27.0', '27.0',
+                    '-e', '_entry', '-rename_section', '__DATA', '__const', first_segment, '__const',
                     '-rename_section', '__DATA_CONST', '__const', '__KLDDATA', '__const',
                     '-segprot', '__DATA_CONST', 'r--', 'r--', '-o', str(image), str(obj)], check=True)
     table = subprocess.check_output([nm, '-m', str(image)], text=True)
@@ -77,6 +82,8 @@ def main():
     parser.add_argument('source', type=Path)
     parser.add_argument('--clang', default='clang-18')
     parser.add_argument('--linker', default='ld64.lld-18')
+    parser.add_argument('--kernel-link', action='store_true',
+                        help='use static kernel-mode flags and chained section renames (requires cctools ld)')
     parser.add_argument('--nm', default='llvm-nm-18')
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='pexpert-late-write-') as directory:
@@ -87,10 +94,10 @@ def main():
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copyfile(args.source / rel, dest)
         tools = args.clang, args.linker, args.nm
-        build_and_check(tree, work, 'original', tools)
+        build_and_check(tree, work, 'original', tools, kernel_link=args.kernel_link)
         subprocess.run(['git', 'apply', '--check', str(PATCH)], cwd=tree, check=True)
         subprocess.run(['git', 'apply', str(PATCH)], cwd=tree, check=True)
-        build_and_check(tree, work, 'patched', tools)
+        build_and_check(tree, work, 'patched', tools, kernel_link=args.kernel_link)
     print('pexpert late write: fixture regression passed')
 
 
