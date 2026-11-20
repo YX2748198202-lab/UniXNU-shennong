@@ -1596,3 +1596,16 @@ fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack point
 ### 交接优先任务
 
 在现有分支继续。先用 `fi101` panic 的 FAR 与实际 `__KLDDATA` 页属性、对应 native/保留符号的反汇编核对 `PE_init_printf` 写点；区分原写入异常和栈诊断，不能将 fi134 的 NOP 当永久修复。复用已验证的 fi102 对照，不重复下载 IPSW、不混用供体、不重做已证伪的任意 cave / 单边 SP 滑动修改。可用手机时核对身份后只做临时启动，采集与启动镜像 SHA-256 对应的屏幕证据。并行前提未满足：Codex 与 Harness 不得同时改此工作树。
+
+## 2026-11-20 console 写入异常与链接布局回归检查
+
+更新时间：2026-11-20 10:10 CST（Asia/Shanghai）。阶段：iOS 27 `arm_init`/console，尚未证明 fi102 返回。设备分支 `bringup/2026-11-20-takeover` 从 `2ffcb7f24216f01bfb027973f199a225013edd5b` 续做；开始已有未跟踪 `.codex/`，保持不动、不提交。上游 checkout `fa32589aa1bef4566e9f91eea9e2731eafe250bc` 未修改；实际 CI pin 仍是 `c740efb5b23e94453bb179f7801eb592baafacf6`。供体仍是 iPhone17,1 27.0.1 / 24A446 / d93ap / arm64e / 原厂 `xnu-13432.2.10~2`，native 代码参考为 `xnu-12377.121.6`（`ac9718fb1af618d5ce8678d0dc6e8a58f252216f`）。只获取了公开 native 源码，没有重取 IPSW 或使用旧供体。
+
+- **历史 fi101 的原始 fault 与 panic 名称分开。** `ESR=0x9600004f` 解为当前 EL Data Abort（EC `0x25`）、写（WnR=1）、L3 权限（DFSC `0x0f`）；`_arm_init` 的 `mov w0,#0` / `bl` 对应 `_PE_init_printf(FALSE)`。实测 PC `0xFFFFFFF00B3A154C`，offset `0x439d54c`，`__TEXT_EXEC,__text`，指令字节 `10 9d 07 f9`：`str x16,[x8,#3896]`。前面的 `adrp x8` 和 offset 得到 FAR `0xFFFFFFF00C950F38`，`llvm-nm` 精确匹配 `_PE_putc`，在内层 `__KLDDATA,__const`，不是 `_PE_kputc` 或 SP 访问。
+- native 源码 `pexpert/gen/pe_gen.c` 中 FALSE 分支为 `_PE_putc` 安装 console 回调；`osfmk/arm/arm_init.c` 在 `arm_vm_init` 返回后调用它。`osfmk/arm64/arm_vm_init.c` 的 `arm_vm_prot_init` 立即把 `__KLDDATA` 设为 RNX，而 `__DATA_CONST` 先允许初始化写入、后续 finalize 才设 RNX。这与历史 ESR 一致；没有采集当时的页表或 `TPIDR_EL1`。`locore.s` 的 `CHECK_KERNEL_STACK` 在 EL1 data abort 时还会因早期 thread/stack 记录未初始化等原因走 `sleh_invalid_stack`；不能反推是栈触发最初写入故障。`saved state=0xFFFFFFF00CA27CB0` 是异常帧地址，而非预期 SP。
+- 从 CI `42904596191` 归档取得 manifest 匹配的 native Mach-O（SHA-256 `3e9fdb95035f8d1a8b9ba31d752847facc344f7e5d7d417b8e425d439f7d4dbb`）。`_PE_putc`（native VA `0xFFFFFFF007CACF38`）和 `_PE_kputc` 在 **prelink 之前** 就位于 `__KLDDATA,__const`。这与 `kernel.yml` 整段 `__DATA_CONST,__const` 搬移的设计吻合；它无法区分晚写符号与不可变常量。fi101/102/134 内 `_PE_putc` 的磁盘槽均为零，fi102 保留写指令，fi134 是 NOP；仅跳过该写会丢失这次回调安装，不能当修复。
+- 新增 `scripts/check-console-layout.py`，以真实 `llvm-nm -m` 的 section-backed 定义验收两个指针是否仍位于 `__DATA_CONST`，对过早只读、永久可写、缺失/歧义均失败；不修改内核和 CI 默认流程。新增 `scripts/test-check-console-layout.py`：本机 Clang/`ld64.lld-18` 链接四份真实小 Mach-O，复现整段误迁移、验证拆分后保持 late section 同时迁移不可变数据，并做永久可写与缺失符号负例。`python3 scripts/test-check-console-layout.py` 全通过；首次运行发现 LLVM 18 nm 不支持 `--`，已改用绝对路径参数。真实 CI native Mach-O 和 fi101/fi102/fi134 都按预期被新检查拒绝（退出 1，两个符号均落在 `__KLDDATA`）。这是已知故障的回归锁，不是完整 XNU 修复。
+- 只读复核内层 Mach-O 段预算：native/fi102 inner `__DATA_CONST=0x64000`、`__LASTDATA_CONST=0x4000`；原厂 inner 分别 `0xdc000`、`0x4000`，其后即原厂 `com.apple.kec.pthread` 常量。若维持这个供体边界，理论差额 `0x78000`（480 KiB）；不是已验证可分配容量，仍需验证节对齐、重定位和实际保留 kext 边界。原始输出 `native-fileset-data-const-budget.txt`。
+- 证据目录 `/home/yoox/android/artifacts/UniXNU-shennong/console-fault-20261120.X19KZ1`：`fi101-console-disassembly.txt`、`fi101.sha256`、`layout-{native,fi101,fi102,fi134}.txt`、`test-check-console-layout.log`、`ci-native-linkarguments.txt` 和 native 参考源码。未做完整 kernel link、prelink、固件改动或新镜像；`fastboot devices -l` 无连接，未读写设备分区。
+
+下一项：以实测段预算为上限，做符号生命周期正确的链接布局候选，在保持 VM finalization 与保护不变的前提下让两类常量分区；真实完整链接和 prelink 后都要跑新检查。Codex/Harness 同分支交接；先 `git status --short --branch && git log -1 --oneline`，不接管 `.codex/`。实机必须分别记录启动镜像哈希和观察，不能把 host 夹具当作启动成功。
