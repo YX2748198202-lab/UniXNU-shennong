@@ -1,10 +1,49 @@
 name: shennong kernel
 on:
   workflow_dispatch:
+    inputs:
+      ptrauth_probe_only:
+        description: Validate XNU authenticated-null codegen without building or publishing a kernel
+        type: boolean
+        default: false
 permissions:
-  contents: write
+  contents: read
 jobs:
+  ptrauth-probe:
+    if: inputs.ptrauth_probe_only
+    runs-on: macos-26
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      DEVELOPER_DIR: /Applications/Xcode_26.6.app/Contents/Developer
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Probe Apple Clang authenticated-null codegen
+        shell: bash
+        run: |
+          out="$RUNNER_TEMP/xnu-ptrauth"
+          mkdir -p "$out"
+          {
+            git rev-parse HEAD
+            xcodebuild -version
+            cc="$(xcrun --sdk iphoneos --find clang)"
+            shasum -a 256 "$cc" scripts/check-ptrauth-codegen.py scripts/fixtures/xnu-ptrauth-auth-null.c
+            python3 scripts/check-ptrauth-codegen.py "$cc" --out "$out/probe"
+          } 2>&1 | tee "$out/run.log"
+      - name: Preserve compiler and probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xnu-ptrauth-codegen
+          path: ${{ runner.temp }}/xnu-ptrauth/
+          if-no-files-found: error
   kernel:
+    if: ${{ !inputs.ptrauth_probe_only }}
+    permissions:
+      contents: write
     runs-on: macos-26
     timeout-minutes: 360
     env:
@@ -1055,7 +1094,7 @@ jobs:
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
   logs:
     needs: kernel
-    if: always()
+    if: ${{ always() && !inputs.ptrauth_probe_only }}
     runs-on: ubuntu-24.04
     steps:
       - run: echo "kernel job finished"

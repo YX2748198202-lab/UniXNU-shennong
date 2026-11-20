@@ -1,7 +1,11 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（原 CI prelink 字节级复现；WSL 工具链已构建，原生构建发现 PAC 编译器阻塞）
+最后更新：2026-11-20（PAC 编译器的 IR/汇编验收已落地；Apple Clang 待实测）
 当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+
+## 2026-11-20：authenticated-null 编译器验收
+
+CI 42904596191 的归档 native 已确认 `ucred.cr_label` 读取无零值旁路、清空和栈上初始化会签名零值、派生凭据按新字段地址重签名。新增 `scripts/check-ptrauth-codegen.py` 验收对应 IR 和 AArch64 汇编；已实测检查器及负例，WSL 固定 Clang 仍明确拒绝四参数，未达到整核链接。现有工作流新增 `ptrauth_probe_only=true` 的只读 macOS 路径，跳过所有历史 kernel/logs job；仅本地验证，未触发。下一项用 Xcode 路径的 Apple Clang 跑探针并收集结果，合格后才继续隔离 native 建置。手机未操作。见 [本轮记录](agent-progress.md#2026-11-20以同供体-ci-native-落实-authenticated-null-编译器验收)。
 
 ## 2026-11-20：prelink 对照与 console 修复验收
 
