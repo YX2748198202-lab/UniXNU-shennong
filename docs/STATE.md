@@ -1,7 +1,31 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（接管复核，未重测手机）
-当前可复现基线：**fi102**；以下实机细节来自 2026-11-14 历史记录。
+最后更新：2026-11-20（原哈希红带复跑仅黄条；EFI 内核跳转前候选通过主机预检）
+当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+
+## 2026-11-20：原哈希复跑仅黄条，检查点前移
+
+`6fc36e3b…` 红带原镜像 13:54 单次复跑，Bootloader 接收，照片仍只有黄条。说明新增的 post-ISB 指令不是“只看到黄条”的必要条件；历史 XNU 红带成立，但目前入口未稳定复现。下一件事是只临时启动已预检的 `Mu-shennong-fi102-pre-branch.img`（`8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`）：保留黄条，在 DarwinBoot 关 MMU、TLBI 和末尾 `isb` 之后、`br x1` 之前画一段青色。XNU、ADT、存储开关、FD 未变。当前候选尚未实机验证。
+
+## 2026-11-20：post-ISB 诊断未命中，先核验入口可复现性
+
+只做一次临时启动 `Mu-shennong-fi102-post-isb.img`（`8a71a5ea29e8cbcf660995de1cd5b5f7fc14ce3c78405e8437388f9967bd361b`）。Bootloader 接收成功；105 秒观测未见同一设备通过 USB 回来。用户明确确认无黑屏、自启，**是手动回到 Fastboot**。实机照片仅见加载器黄条和残留菜单，没有 XNU 红/蓝色带，所以这次不能用复位缺失把停点归到 `isb`，也不能证明没执行内核第一条指令。
+
+从两份最终 boot image 的内置 FAT 反向取出 Mach-O，确认入口分支与整个 red/blue 探针槽逐字节相同；EFI、ADT、菜单、存储开关及其他 FAT 文件也未变。唯一内核差异在原 `isb` 后的跳转和同页空槽的 44 字节复位探针。详见 [实验记录](agent-progress.md#2026-11-20fi102-post-isb-复位探针与入口对照)。
+
+## 2026-11-20：红色入口及 16 条主色带的实机证据
+
+`Mu-shennong-fi102-entry-red.img`（SHA-256 `6fc36e3ba510de980c437b692bff8e304a050b0274d3ebd7340d4dada91f96de`）保留黄条 EFI，新增不读取 `boot_args` 的窄红带。照片确认红带、原蓝条及完整 16 个主色带：已执行 XNU 入口，原探针成功读取 `boot_args` 并写屏；最后一条绿色（band 15）来自 `0xfffffff00ad8341c` 转入 `0xfffffff00ad81f20` 的探针，已在 `msr SCTLR_EL1, x0` 之后、该探针补执行原 `isb` 之前。不能据此确认 `isb`、进入 `_arm_init`、console 或用户态。本轮照片没有新的 XNU panic 文字。详见 `entry-red-20261120.QAqVbe` 下的两张照片、`band-sites.txt` 和反汇编。
+
+## 2026-11-20：黄色加载器标记确认缓存维护完成
+
+同一份 fi102 内核、ADT、启动参数和 FD 上，只替换 `DarwinBoot.efi` 的绘制位置及颜色。新镜像 `4eaacdc82dc9d62a981519b87560c8f8768ee2537d1a82d9911380bfffe21e42` 实机照片显示顶部黄条，未见 XNU 蓝/品红或 panic。黄条在 cache 维护与屏障序列之后，仍在关闭 MMU 和 `br x1` 之前，故当前不再将缓存维护循环视为最后可见阻塞，也不声称已进入 XNU。照片见 `handoff-late-20261120.n9SjOv`。下一项用 `__TEXT_EXEC` 已存在的第一个探针槽验证能否执行不依赖 `boot_args` 的帧缓冲写入。
+
+## 2026-11-20：初次实机对照只观察到加载器绿条
+
+`Mu-shennong-fi102-storage-off.img`（SHA-256 `a2390d819d8b6e26d769e5ceb8725b42b79cf71e86d976c96620bae5b85c28a5`）只在归档 fi102 上关闭存储探测、根卷发布与持久日志，内核不变。照片确认 UEFI 启动项已执行，出现在 `ExitBootServices` 成功后、cache/MMU 交接与 `br x1` 之前的 DarwinBoot 绿条，未见蓝/品红探针或 panic。背景菜单是残留画面，并非等待按键；主机之后只读确认设备已回 bootloader Fastboot。
+
+这轮不能判定 `br x1` 是否已执行，也不能排除早期 XNU 执行但探针没显示。先分辨加载器跳转前后；历史 fi101 的 console 写入故障仍是独立的待修问题。照片、哈希、反汇编见 [进度记录](agent-progress.md#2026-11-20-实机fi102-关闭存储诊断对照)。
 
 ## 2026-11-20：console 写入故障已定位，修复尚待完整链接
 
@@ -24,7 +48,7 @@ fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该�
 ## 历史实机证据截至哪里
 `arm_init` 尾部。内核已能：
 - 从 DarwinBoot 进入 `_start_first_cpu`（`0xad8305c`）
-- 建完页表、开启 MMU（`msr sctlr_el1` 成功，band 14 亮）
+- 走过早期页表构建，并执行 `msr SCTLR_EL1`；实际 fi102 的 band 14 在写入前，band 15 在写入后、恢复原 `isb` 前。
 - 跳进 `arm_init`（`0xb4768f0`）并跑到尾部 console 初始化（`0xb4774dc`）
 - **把自己的 panic 打到屏幕上**（fi101 首次实现）
 
@@ -52,9 +76,10 @@ fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该�
 2. **`_start_first_cpu` 里 SP 和返回地址共用同一个滑动换算**：只删一边会让栈与入口同时对不上（fi96 全灭真因）。要么都改、要么都保留。
 
 ## 下一步（按优先级）
-1. 在当前 CI 固定的 native 链接路径分离启动写入数据与真正的常量，保持 `__DATA_CONST` 在 VM finalization 后收紧；以实测 `0x78000` 理论差额为上限验证对齐和真实保留 kext 边界，再在完整链接和 prelink 后各运行 `scripts/check-console-layout.py`。
-2. 有手机时，用 SHA-256 绑定已预检对照与候选镜像，确认是否穿过 `_PE_init_printf(FALSE)` 及 `_machine_startup`。不因无输出认定已返回，不以 fi134 的 NOP 或改变栈顶作为修复。
-3. 只有在证实越过 console 后，再按单变量推进 CPU/FIQ 初始化以及 `kernel_bootstrap` / `bsd_init` / 根卷挂载。
+1. 手机手动回到 bootloader Fastboot 后，核对身份，仅临时启动一次青色 `pre-branch` 候选。若出现青色而无红带，确认 DarwinBoot 已执行到最后的 MMU/TLB 屏障后和跳转前的绘制点，下一轮查 `br x1` 的目标、取指与入口画屏；若无青色，仍区分取指、显存写入和可见性，不能凭颜色断言卡在某条屏障。不继续测试 XNU 的 `isb`，直到入口可复现。
+2. 在当前 CI 固定的 native 链接路径分离启动写入数据与真正的常量，保持 `__DATA_CONST` 在 VM finalization 后收紧；以实测 `0x78000` 理论差额为上限验证对齐和真实保留 kext 边界，再在完整链接和 prelink 后各运行 `scripts/check-console-layout.py`。
+3. 有手机时，用 SHA-256 绑定已预检对照与候选镜像，确认是否穿过 `_PE_init_printf(FALSE)` 及 `_machine_startup`。不因无输出认定已返回，不以 fi134 的 NOP 或改变栈顶作为修复。
+4. 只有在证实越过 console 后，再按单变量推进 CPU/FIQ 初始化以及 `kernel_bootstrap` / `bsd_init` / 根卷挂载。
 
 ## 设备事实
 - 序列号 `9f72e95c`，只走 `fastboot boot`，刷写分区一律不做。
@@ -71,5 +96,5 @@ python3 scripts/apply-fi102-patch.py \
 
 ## 色带语义（入口探针）
 band 0 绿 = DarwinBoot 交接；band 1 蓝 = stage-1；band 2 品红 = stage-2；
-band 3–15 = `patch-entry-bands.py` 的 13 个检查点（站点表见 `scripts/patch-entry-bands.py`）。
-判读：**三条都没出现 = 根本没进内核；只有绿色 = 入口之前出了问题。**
+band 3–15 = 入口检查点；归档 fi102 应以实际反汇编为准，不直接套用 `patch-entry-bands.py` 的默认站点表。fi102 的 band 14 位于 `0xfffffff00ad83414`（MMU 写入前），band 15 位于 `0xfffffff00ad8341c`（写入后、原 `isb` 前），不是 `_arm_init` 标记。
+判读：绿色只证明走到 `DarwinEnter` 的绘制循环（此版本在 `ExitBootServices` 成功后）；不证明已执行到 `br x1`。没有蓝/品红是未观察到 XNU 探针，不足以证明未进内核。

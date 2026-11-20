@@ -1609,3 +1609,71 @@ fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack point
 - 证据目录 `/home/yoox/android/artifacts/UniXNU-shennong/console-fault-20261120.X19KZ1`：`fi101-console-disassembly.txt`、`fi101.sha256`、`layout-{native,fi101,fi102,fi134}.txt`、`test-check-console-layout.log`、`ci-native-linkarguments.txt` 和 native 参考源码。未做完整 kernel link、prelink、固件改动或新镜像；`fastboot devices -l` 无连接，未读写设备分区。
 
 下一项：以实测段预算为上限，做符号生命周期正确的链接布局候选，在保持 VM finalization 与保护不变的前提下让两类常量分区；真实完整链接和 prelink 后都要跑新检查。Codex/Harness 同分支交接；先 `git status --short --branch && git log -1 --oneline`，不接管 `.codex/`。实机必须分别记录启动镜像哈希和观察，不能把 host 夹具当作启动成功。
+
+## 2026-11-20 实机：fi102 关闭存储诊断对照
+
+记录时间：2026-11-20 11:53 之后（UTC+08:00，WSL）。阶段：早期 `arm_init`/console，等待本轮屏幕证据。设备分支 `bringup/2026-11-20-takeover`，HEAD `1980c55e81570a8169a22afdbbe7d40d5db588fa`；开工时 tracked 干净，本轮仓库仅改本进度记录，原有未跟踪 `.codex/` 不动。上游 checkout `fa32589aa1bef4566e9f91eea9e2731eafe250bc` 未改，CI 仍固定 `c740efb5b23e94453bb179f7801eb592baafacf6`。供体 iPhone17,1 / iOS 27.0.1 / 24A446 / d93ap / arm64e，原厂 KernelCache `xnu-13432.2.10~2`；native 源码基线 `xnu-12377.121.6` (`ac9718f`)；没有新下载、内核重链或混入旧供体。
+
+- 原版 `Mu-shennong-fi102.img`（SHA-256 `3e4bf0ac2a580c04185aed19e241401209e58f35ef7826c65b7719d2ce751028`）离线预检 0 项失败，但其 FAT 实际 `unixnu.toml` 含 `sheng-log=1`，源码上可向 userdata 的保留区写诊断日志。**未向手机发送原版。** 本轮目标只到早期 console，因此不触及这项存储授权。
+- 用 `scripts/patch-payload-args.py` 对独立 FAT 副本把 `native-ufs-probe=3`、`native-source-storage=1`、`sheng-log=1` 分别改为 `0`；其他配置不变。通过 `mdir` 枚举和 `mtype` 比对，FAT 的其余 6 个文件逐字节相同，包括内核（SHA-256 `800b4412fd125aef002035d552d4ff47af8588902a3da2de8f19ebd11f94a976`）、ADT、EFI 加载器、trust cache、root policy 与 crypto-hmac 清单。`scripts/repack-v0-bootimg.py` 重包后用 `cmp -n 2396160` 验证 header 到 ramdisk 前逐字节一致（含 BootShim、FD、附加 DTB），再用 `scripts/verify-boot-package.py --board <诊断副本> --fd <归档 FD> --payload <诊断 FAT> --image <诊断镜像> --json <报告>` 验证 0 项失败。不修改仓库默认 `board.toml`。诊断镜像 `Mu-shennong-fi102-storage-off.img` SHA-256 **`a2390d819d8b6e26d769e5ceb8725b42b79cf71e86d976c96620bae5b85c28a5`**。
+- `2026-11-20T11:52:55+08:00` 再次校验镜像哈希、`fastboot devices -l`、`getvar product` = `shennong`、`getvar is-userspace` = `no`，随后只执行一次 `/usr/local/bin/fastboot -s 9f72e95c boot <诊断镜像的 Windows UNC 路径>`。`/usr/local/bin/fastboot` 指向 Windows platform-tools 的 `fastboot.exe`。传输 198948 KB `OKAY [5.181s]`，`Booting OKAY [0.083s]`，退出 0。未执行 flash、擦除、格式化、重启命令或针对分区的写入。USB 在 11:53:07/12 短暂报 `???????????? fastboot`，11:53:15/20/30 未枚举 Fastboot；这只是主机观测，不能判定内核是否运行或 console 是否返回。没有自动尝试下一版。UEFI 若停在菜单，XNU 项仍名为 `shennong XNU native UFS`。
+- 证据：`/home/yoox/android/artifacts/UniXNU-shennong/device-fi102-20261120.8JvKp6` 下 `preflight.{log,json}`、`storage-off-package.log`、`storage-off-preflight.json`、`storage-off.sha256` 和 `fastboot-run.log`；其中打包日志记录完整命令，`storage-off-config.py` 可验证参数和其他 FAT 文件未变。首次预检调用因 PowerShell/WSL 转义失败；改为经 stdin 传递 Bash 后通过，失败调用未操作手机。
+
+下一项：先把用户屏幕照片或按顺序描述的菜单、色带、文字与本镜像哈希绑定；若没有屏幕证据，不把 USB 消失、黑屏或 `Booting OKAY` 当作越过 `_PE_init_printf(FALSE)`。再推进独立的 native 链接布局修复，保留启动期可写、finalize 后只读机制；不能把 fi134 跳过回调安装视为修复，也不应依据历史保存帧地址调整 SP。Codex/Harness 接手前检查当前分支、HEAD 和此未提交文档，保持单写入者。
+
+### 屏幕回报与恢复确认（2026-11-20 11:58 UTC+08:00）
+
+- 用户提供了该次启动的照片并报告短按电源、音量上下无响应。照片中仅有横贯顶部的绿色条、DarwinBoot 交接文字和 UEFI 退出时的 `LockCapsuleInterface` 日志，未见蓝/品红检查点或 panic；菜单是残留画面，不再等待选择。原照片仅存本地证据目录 `screen-fi102-storage-off.jpg`，SHA-256 `d2903cad506e7fd50626d2931194564e1a72e664989ee9b77dc290137e7c88d5`，绑定上面的诊断启动镜像，不提交照片。
+- 从该次 FAT 提取的 `DarwinBoot.efi` SHA-256 `cd9f343a04740f836f0e5461aedce2f2d4aea8b96b78c0a2d1d8de2fb33a4e9b` 与预检一致；`llvm-objdump-18 -d` 的 `screen-DarwinBoot.disasm.txt` 确认 `0xa01c` 写绿像素，之后才执行 cache 维护（`dc civac` @ `0xa04c`）、关 MMU（`msr SCTLR_EL1` @ `0xa07c`）并经 `br x1`（`0xa090`）跳转。CI pin 源码 `DarwinBoot.c` 仅在 `ExitBootServices` 成功时调用 `DarwinEnter`。绿条证明到达绘制点；缺少后续色带不证明 `br x1` 未执行，更不能等同历史 fi102 的 16 条色带。`LockCapsuleInterface` 是固件日志，不能从这一行认定 bootloader 被重新上锁。
+- `2026-11-20T11:58:26+08:00` 主机只读确认同一序列号重新枚举，`product=shennong`、`is-userspace=no`。无第二次启动或分区写入，未重链内核。更新 `docs/STATE.md` 区分当前可观察界线与历史 console fault。Codex/Harness 下一项先核对实际入口地址、首条指令与第一个 XNU 探针，不重复原样重启，也不盲改 SP；console 链接修复另行保留。仍在原 HEAD/分支；仅两份文档有工作树改动，未推送。
+
+## 2026-11-20 实机：fi102 黄色标记到达 cache 维护之后
+
+记录时间：2026-11-20 12:14 后（UTC+08:00，WSL）。设备分支 `bringup/2026-11-20-takeover`；开工 HEAD `1980c55e81570a8169a22afdbbe7d40d5db588fa`，新源码本地检查点 `a33f4f414fe7ea4a4d660aa2cc939a32f1d1bcac`（沿用仓库现有 `Codex <codex@localhost>` 临时署名，不修改 Git 配置）。`docs/STATE.md` 和本进度仍为工作树改动，原有 `.codex/` 不动，未推送。上游 `fa32589aa1bef4566e9f91eea9e2731eafe250bc` 不变；CI `c740efb5b23e94453bb179f7801eb592baafacf6` 所引用的 DarwinBoot `3c75734014cdab0acd9541e88057b7606ee7ae08`。供体 iPhone17,1 / iOS 27.0.1 / 24A446 / d93ap / arm64e，原厂 KernelCache `xnu-13432.2.10~2`，native 源码 `xnu-12377.121.6` (`ac9718f`)。本轮未改内核、未重做 prelink。
+
+- 新增 `scripts/darwin-handoff-marker.S` 和 `scripts/build-darwin-handoff-marker.py`。使用 `clang-18 --target=aarch64-none-elf` 和 `llvm-objcopy-18` 编译，先把固定提交的原版 `DarwinEnter` 汇编成与归档 EFI 等同的 0x94 字节。目标节 RX，RVA `0xa000` / 文件 `[0x6800,0x6894)`，无这段的重定位或签名。新版本仅把绘制移到 `dc civac`、`ic iallu` 和屏障完成之后并改黄色；cache 指令组和关 MMU/TLB 后 `br x1` 字节不变，只换入口函数内 23 条 4 字节指令，PE 节表与重定位报告一致。拒绝非 pin 原件、拒绝输出覆盖两项负测试通过。EFI SHA-256 `3f4683aeca36644eb715f7124b0f5129a649141b7f2b518bfedb78341b848184`。这是观察探针，不是修复。
+- 在上轮关闭存储的 FAT 副本用 `mcopy` 替换 EFI，验证其他六个文件逐字节未变（包括内核、ADT、`unixnu.toml`）。`repack-v0-bootimg.py` 后核对 boot header、shim、FD、附加 DTB 未变，`verify-boot-package.py` 报 0 项失败。`Mu-shennong-fi102-late-marker.img` SHA-256 `4eaacdc82dc9d62a981519b87560c8f8768ee2537d1a82d9911380bfffe21e42`。
+- `2026-11-20T12:08:04+08:00` 校验镜像后核对 `9f72e95c` / `shennong` / `is-userspace=no`，仅一次 `fastboot -s 9f72e95c boot <已验收镜像>`。`Sending OKAY [5.241s]` / `Booting OKAY [0.083s]` / 退出 0；12:08:24 起 host 不再枚举 Fastboot，最后一次观测 12:08:39。用户回传照片：**仅顶部黄条，无蓝/品红或 panic**。这证明已执行到 `stp` @ `0xa05c`，位于 cache 维护完成后、`msr SCTLR_EL1` @ `0xa07c` 和 `br x1` @ `0xa090` 前。不能从静止画面判定关 MMU、分支或 XNU 探针中的哪个动作停下。未发其他镜像、未刷写、未对分区执行写入；用户可手动恢复 Fastboot。
+- 证据：`/home/yoox/android/artifacts/UniXNU-shennong/handoff-late-20261120.n9SjOv`，含构建/负测试、包内对照、`fastboot-run.log`、`screen-fi102-late-marker.jpg`（SHA-256 `b9e89024aefa670daa998d51ba5018c71d1396ae4b3317dbece3038668ec43ef`）及 `entry-audit.log`/`next-entry-slot-audit.log`。实际 `LC_UNIXTHREAD`：VA `0xfffffff00ad81488`（PA `0x8c3d81488`），文件 `0x3d7d488` 首字 `1400001e` 去 stage-1 VA `0xfffffff00ad81500`，之后第一个动作是从 `x0` 解引用 `boot_args`。stage-1 槽文件 `[0x3d7d500,0x3d7d560)` 位于 `__TEXT_EXEC` RX；匹配哈希的 pristine 全零，fi102 只使用前 0x40，后 0x20 实际全零。原 stage-1 最终跳 `_start_first_cpu` VA `0xfffffff00ad8305c`。
+
+下一项：在已验证的 stage-1 槽内增加不依赖 `boot_args` 的短入口标记，保留原探针逻辑和分支目的地、保持黄色 loader 与存储开关不变。只有新入口色出现才能证明穿过 `br x1`；未出现不能单独否定物理 framebuffer 访问。该候选尚未实现、打包或发送。历史 console 权限修复仍独立待办。Codex/Harness 保持同分支单写入者，接续先看此记录和实际 Git 状态。
+
+## 2026-11-20 实机：fi102 红色 XNU 入口标记已发送，待屏幕结果
+
+记录时间：2026-11-20 12:36 后（UTC+08:00）。设备分支 `bringup/2026-11-20-takeover`，起点 `a33f4f414fe7ea4a4d660aa2cc939a32f1d1bcac`，新源码本地 HEAD `d25a69ac1f34ec8fc7085bbd76b9601e3f3ed2f8`。`docs/STATE.md` 与本进度仍是已知工作树改动，`.codex/` 原有未跟踪项未动，未推送。上游 `fa32589aa1bef4566e9f91eea9e2731eafe250bc` / CI `c740efb5b23e94453bb179f7801eb592baafacf6` 不变。供体：iPhone17,1 / iOS 27.0.1 / 24A446 / d93ap / arm64e / 原厂 `xnu-13432.2.10~2`；native 源码 `xnu-12377.121.6` (`ac9718f`)。本轮汇编诊断探针并重包归档 Mach-O，没有完整重链内核或重做 prelink。
+
+- 新增 `scripts/fi102-entry-marker.S` 和 `scripts/build-fi102-entry-marker.py`；检查 pristine、fi102、配套黄条 EFI 的 SHA-256、arm64 fileset 入口、RX `__TEXT_EXEC`、pristine 空槽、fi102 空尾和原跳转。新探针只替换文件 `[0x3d7d500,0x3d7d560)` 的既有 stage-1 槽，前置 32 字节从上轮已验证的 loader `x11` 帧缓冲游标画窄红带，不读取 `boot_args`（`x0`），不使用栈、不碰 PAC。`x1..x3` 由原探针在使用前重载；原探针前 0x3c 字节完全相同，尾 B 从 VA `0xfffffff00ad8153c` 移到 `0xfffffff00ad8155c`，机器字 `140006c8` → `140006c0`，目标仍为 `0xfffffff00ad8305c`。因板上已观测的显示几何，此标记只覆盖原黄带最末的 `[0xfc4e9400,0xfc519400)`；原蓝条位置未变。用 `aarch64-linux-gnu-objdump` 复查跳转与读写，验证槽外逐字节一致；错误 loader、错误 pristine、拒绝输出覆盖三项负测试通过。内核 SHA-256 `2a3df2dc544b69e1446e346349cc1159f9fc457a5ce8485f01dfc70bcd7a3072`。
+- 以已在实机显示黄条的镜像为对照，只向 FAT 副本替换 `kernel.macho`。FAT 其他文件逐字节相同（包括黄条 DarwinBoot、ADT 和禁用持久日志/存储的菜单），`cmp` 校验整个 payload 前缀相同（boot header、shim、FD、附加 DTB）。`verify-boot-package.py` 0 项失败；诊断镜像 SHA-256 `6fc36e3ba510de980c437b692bff8e304a050b0274d3ebd7340d4dada91f96de`。
+- `2026-11-20T12:35:29+08:00` 核对镜像和连接设备 `9f72e95c` / `product=shennong` / `is-userspace=no`，只执行一次 `fastboot -s 9f72e95c boot <诊断镜像>`；`Sending OKAY [5.247s]` / `Booting OKAY [0.083s]`，退出 0。12:35:49 起直到 12:36:04 没有 Fastboot 枚举。未执行刷写、擦除或其他持久分区操作；未自动重试。没有本轮屏幕证据，不能把 host 交接判作内核执行。日志、命令、反汇编、SHA 和预检报告位于 `/home/yoox/android/artifacts/UniXNU-shennong/entry-red-20261120.QAqVbe`。
+
+下一项先收与本镜像哈希绑定的屏幕照片：黄条下沿出现窄红带证明已执行到 XNU 的指令，之后无蓝条仍需检查 `boot_args` 读取或原蓝条写屏；若红、蓝都无，仍区分分支/取指和关 MMU 后的 framebuffer 写入。不要因无色带直接定论，也不反复试同一镜像。历史 console 权限修复另行保留。
+
+### 屏幕回报：红带、蓝带及最高 band 15 均已实机观察
+
+- 用户连发两张实机照片，绑上面 `6fc36e3b…` 镜像，均见顶部黄带下沿的窄红带和原蓝带。第一张仍留有部分菜单画面；第二张 16 个主色带位置均可见（band 0 底部叠红条），下方为 band 15 绿色，未见新 panic。仅据照片不判定第一张缺带的时序或成因。两张原件仅在本地 `entry-red-20261120.QAqVbe` 保存：`screen-entry-red-partial.jpg` SHA-256 `09c3ceeb93dfaeccc8043fa85c5fd618c89ff79044b325873379d8ca23825422`、`screen-entry-red-full.jpg` SHA-256 `ec6896d2ec485ae975c59eca0448dfc25b8b0d2add0d62131717fac6b2603eee`。红带确证 `br x1` 后进入 XNU；蓝带证明原 stage-1 已从 `boot_args` 读出显示地址和尺寸并写屏。
+- 按实际诊断 Mach-O SHA-256 校验，从 `_start_first_cpu`/`_arm_init` 扫描分支、解码真实探针的 band 号及 BGRA、反汇编 band 2/14/15。band 14 的站点 `0xfffffff00ad83414` 在控制寄存器写入前，实际色 `0xffffff80`；band 2 绘制后在 `0xfffffff00ad8159c` 执行 `msr SCTLR_EL1,x0`；band 15（`0xff80ff00`，站点 `0xfffffff00ad8341c`）的 `stp` 在 `0xfffffff00ad81f64`，原 `isb` 晚于绘制，位于 `0xfffffff00ad81f84`，返回 `0xfffffff00ad83420`。实机证明抵达写入之后，不能证明执行了原 `isb` 或进入 `_arm_init`；实际 `_arm_init` `0xfffffff00b4768f0` 此镜像仍是 `pacibsp`，其后原 `sub sp`，与通用脚本默认 band 15 站点不同。完整证据 `band-sites.txt` 与 `band-sites.disasm.txt`。同步修正 `docs/STATE.md` 的旧色带语义。
+- 接续：当前日志/文档修改，不改源码，HEAD 仍 `d25a69ac1f34ec8fc7085bbd76b9601e3f3ed2f8`。仅复核归档，没发新镜像，无新增设备操作。下一优先在实际 `isb` 及 `_start_first_cpu` 尾段的下一边界定位（现有自旋检查在 `0xfffffff00ad83434`）；不根据最后色带推断静止位置，不重复入口探针，不在 PAC 序言内注入。历史 fi101 console 写权限故障仍另处理。
+
+
+## 2026-11-20：fi102 post-ISB 复位探针与入口对照
+
+更新时间：2026-11-20T13:51:45+08:00（Asia/Shanghai）。阶段：XNU 入口至 `_start_first_cpu` 尾部，当前候选没有复现入口可见标记。设备分支 `bringup/2026-11-20-takeover`，修改基线 `d25a69ac1f34ec8fc7085bbd76b9601e3f3ed2f8`；上游 `fa32589aa1bef4566e9f91eea9e2731eafe250bc`（原有工作区改动不动），CI pin `c740efb5b23e94453bb179f7801eb592baafacf6`；未推送，`.codex/` 原有未跟踪项不动。供体仍为 iPhone17,1 / iOS 27.0.1 / 24A446 / d93ap / arm64e，原厂 `xnu-13432.2.10~2`、native 源码 `xnu-12377.121.6` (`ac9718f`)；本轮未重链 XNU 或重做 prelink。
+
+- 新增 `scripts/build-fi102-post-isb-probe.py`。仅接受实测红带控制 Mach-O 与匹配 pristine 的固定 SHA，确认 `__TEXT_EXEC` 为 RX、原 `isb` 和原继续跳转、同页空槽在两份输入均为零。保持到 `0xfffffff00ad81f84` 的探针路径，将 `0xfffffff00ad81f88` 处继续 B 从 `0x14000526` 改为 `0x14000012`，目标 `0xfffffff00ad81fd0`，避开 `[0x…1f90,0x…1fd0)` 暂存内存。44 字节代码只使用寄存器与 generic counter，等待 `CNTFRQ_EL0 × 16` 后请求 PSCI SYSTEM_RESET，不访问栈、显存、PAC 或页表；若 SMC 返回则原地停住，不返回正常启动。该镜像是诊断工具，不是引导修复。
+- 用 `clang-18`/`llvm-objcopy-18` 汇编，`aarch64-linux-gnu-objdump` 核对指令；内核只有 `[0x3d7df88,0x3d7df8c)` 和 `[0x3d7dfd0,0x3d7dffc)` 两处允许变化，SHA-256 `b508af03e1c0fd6e9092b133d578b152145f24acd88e8be8365dfe2ec9dc2258`。拒绝错误红带、错误 pristine、覆盖现有输出三项测试通过。FAT 内容仅替换 `kernel.macho`，其余文件逐字节相同；对照与候选 boot header、BootShim、FD、DTB 前缀相同，且菜单继续 `native-ufs-probe=0 native-source-storage=0 sheng-log=0`。`verify-boot-package.py` 0 项失败；`python3 scripts/test-verify-boot-package.py` 通过。镜像 SHA-256 `8a71a5ea29e8cbcf660995de1cd5b5f7fc14ce3c78405e8437388f9967bd361b`。
+- 13:10:57（北京时间）核实 `9f72e95c` / `product=shennong` / `is-userspace=no` 后，执行一次 `fastboot -s 9f72e95c boot <候选镜像>`，13:11:03 `Booting OKAY`、退出 0。从可用观测 t+12s 至 t+105s 无 Fastboot 或 ADB 枚举。Windows PnP 在 13:48:03 重新发现该 Android Bootloader 接口；用户明确确认没有黑屏或自动重启，是自己手动回到 Fastboot，**不得计为探针命中**。未刷写、未擦除、未重复下发。
+- 实机照片只有黄色加载器条及退出 UEFI 时的残留菜单、文字，未见 XNU 窄红带、蓝带或更后色带。归档 `screen-post-isb.jpg` SHA-256 `235cc20dc948cea0bc564dd9c6cb595fe5835b635ba9b144c9c3a2ec74bfb765`。从两份最终 boot image 的 FAT `0x249000` 提取内核，确认真实入口指令 `1e000014` 以及完整 96 字节红/蓝探针槽完全相同（`embedded-entry-audit.log`）。本次只确认到黄条，既不能证明没进 XNU，也不能将差异归因于 `isb` 或复位调用。上一张红带对照的 XNU 执行证据仍成立。
+- `docs/bringup.md` 更正了 `cmp x0,x1` 的旧解释：当前路径没有 `mrs` 回读 `SCTLR_EL1`，不能把 RES1/RAZ 差异当作自旋原因；`docs/STATE.md` 更新当前证据和优先级。命令、日志、哈希、反汇编、原始照片和 `preflight.json` 均在 `/home/yoox/android/artifacts/UniXNU-shennong/post-isb-20261120.yxMQ5R`（不入 Git）。
+
+下一优先是 **单次复跑原哈希 `6fc36e3b…` 的已知红带对照**，以确认早期标记能否复现。这不是重发失败的 post-ISB 候选。若对照也只黄条，先定位黄条之后的 MMU 关闭、分支与取指/显存可见性；若对照恢复，再用同基线的 pre-ISB 试验校准计时复位观测，或改用独立观测点；未确认越过 `isb` 前不推进到 `_arm_init`，不叠加 console/PAC 或页表修改。
+
+
+### 原哈希红带复跑未复现 XNU 色带；构建 EFI 跳转前青色候选
+
+更新时间：2026-11-20T13:58:45+08:00（Asia/Shanghai）。设备分支 `bringup/2026-11-20-takeover`，修改前 HEAD `d25a69ac1f34ec8fc7085bbd76b9601e3f3ed2f8`；上游 `fa32589aa1bef4566e9f91eea9e2731eafe250bc`，供体及 CI pin 同上。未修改上游、没有重新链接内核或修改供体、没有刷写及擦除。
+
+- 13:54 核对设备为 `9f72e95c` / `shennong` / `is-userspace=no`，复核原红带镜像 SHA-256 `6fc36e3ba510de980c437b692bff8e304a050b0274d3ebd7340d4dada91f96de` 和包预检（0 项失败），用 `fastboot -s 9f72e95c boot <原红带镜像>` 仅临时启动一次。13:54:07 Booting OKAY；t+10s 只见无有效序列的瞬态枚举，t+12s 到 t+45s 无 Fastboot/ADB。实机照片仅黄条，没有 XNU 窄红带或蓝带；照片 `screen-red-recheck.jpg` SHA-256 `d0a5a60aecf909d81dc516cb9de3b22debb33da1792cd5d7fbfbd621430b79e9`，实机目录 `/home/yoox/android/artifacts/UniXNU-shennong/entry-red-recheck-20261120.7fuVCW`。原镜像也能出现只黄条，排除新增 post-ISB 指令是该画面出现的必要条件；不能因此断言硬件这次一定未取 XNU 指令。
+- 新增 `scripts/build-darwin-pre-branch-marker.py`，仅基于固定的 DarwinBoot 黄条 EFI。在 `DarwinEnter` 最后 `isb` (RVA `0xa08c`) 后、原 `br x1` 位置 (`0xa090`) 插入无栈青色探针，其后在 `0xa0b0` 仍 `br x1`。保留关 MMU/TLB 路径、x0、x1、x11、SP、NZCV。沿用已实测游标，青色区 `[0xfc4a9400,0xfc4e9400)`，与 XNU 红带 `[0xfc4e9400,0xfc519400)` 不重叠。PE 末端填充全零，RX 节原始长度不变，VirtualSize 字段 `0x228` 从 `0x94` 到 `0xb4`；`llvm-readobj-18 --sections --coff-basereloc` 验证仅该字段报告改变，`llvm-objdump-18` 核对指令。拒绝错误原件和输出覆盖两项失败测试通过。
+- 以同一红带 FAT 对照打包，逐文件证明只有 `DarwinBoot.efi` 变动（EFI SHA-256 `67deba5f1f97e64757fbd319568d277236008435b7a20af244a3b44195fe6b02`）；内核、ADT、菜单、关闭存储和持久日志开关不变。boot header、shim、FD、DTB 前缀不变；`verify-boot-package.py` 0 项失败。新镜像 SHA-256 `8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`，完整命令 `build.sh`、日志、报告在 `/home/yoox/android/artifacts/UniXNU-shennong/pre-branch-20261120.cxUbGc`。构建完成时没有 Fastboot 枚举，**尚未下发青色候选**。
+
+下一步：手机手动回 Fastboot，单次临时启动青色候选。青色出现可证明最后一条 DarwinBoot `isb` 后已到达绘制点，不等于执行了 `br x1`；青色有而 XNU 红色无，优先定位间接分支/取指与 XNU 入口写屏。青色无则不把缺色直接归因到 MMU，需要独立观测。Codex/Harness 继续本分支，开工核对 `git status --short --branch` / `git rev-parse HEAD`，无 push。
