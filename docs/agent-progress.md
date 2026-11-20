@@ -1677,3 +1677,24 @@ fi102 把 SP 的 `+virtBase −physBase` 去掉后，`Invalid kernel stack point
 - 以同一红带 FAT 对照打包，逐文件证明只有 `DarwinBoot.efi` 变动（EFI SHA-256 `67deba5f1f97e64757fbd319568d277236008435b7a20af244a3b44195fe6b02`）；内核、ADT、菜单、关闭存储和持久日志开关不变。boot header、shim、FD、DTB 前缀不变；`verify-boot-package.py` 0 项失败。新镜像 SHA-256 `8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`，完整命令 `build.sh`、日志、报告在 `/home/yoox/android/artifacts/UniXNU-shennong/pre-branch-20261120.cxUbGc`。构建完成时没有 Fastboot 枚举，**尚未下发青色候选**。
 
 下一步：手机手动回 Fastboot，单次临时启动青色候选。青色出现可证明最后一条 DarwinBoot `isb` 后已到达绘制点，不等于执行了 `br x1`；青色有而 XNU 红色无，优先定位间接分支/取指与 XNU 入口写屏。青色无则不把缺色直接归因到 MMU，需要独立观测。Codex/Harness 继续本分支，开工核对 `git status --short --branch` / `git rev-parse HEAD`，无 push。
+
+
+### 青色跳转前探针：已单次下发，待确认屏幕
+
+更新时间：2026-11-20T14:02:30+08:00（Asia/Shanghai）。设备 `bringup/2026-11-20-takeover` HEAD `5a9451128d69ffa01123a6b0e60b8cbfb9c43a71`，开工仅原有未跟踪 `.codex/`；本次只更新 `docs/STATE.md`、`docs/agent-progress.md`。上游 `fa32589aa1bef4566e9f91eea9e2731eafe250bc` 未动，供体与 CI pin 同上；未重链、未推送。
+
+- 用户手动回到 Fastboot。复核 `9f72e95c` / `shennong` / `is-userspace=no`、镜像 SHA-256 `8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`，运行预检 0 项失败。14:01:06 仅一次 `fastboot -s 9f72e95c boot <青色镜像>`；14:01:12 `Booting OKAY`、退出 0。t+10s 瞬态枚举未报告有效序列；t+12s 至 t+46s 无 Fastboot/ADB。没有刷写、擦除或重试；USB 无枚举及 `Booting OKAY` 均不能验证屏幕色带或内核控制流。
+- 从实际 v0 镜像的内置 FAT 提取 EFI，核对包含青色探针的 EFI SHA-256（`67deba5f…`）、`isb` @ `0xa08c`、`br x1` @ `0xa0b0`；内嵌 Mach-O、ADT、菜单与原红带镜像逐字节相同。预检、实际命令、USB 观测、内嵌文件核验在 `/home/yoox/android/artifacts/UniXNU-shennong/pre-branch-20261120.cxUbGc`（`device-preflight.log`、`fastboot-run.log`、`embedded-handoff-audit.log`）。
+
+下一步先收并绑定 **14:01 这次**屏幕照片。青色出现证明抵达最后一道 DarwinBoot 屏障之后的绘制点，不证明已执行 `br x1`；青色与红色都出现则可确认此轮进入 XNU。若仍仅黄条，则不能区分关 MMU 后未取指和显存写入未可见；先换独立观测，不原样重复候选。
+
+
+### 青色候选仍只见黄条；转向可复现的 console 链接修复
+
+更新时间：2026-11-20T14:11:35+08:00（Asia/Shanghai）。设备 `bringup/2026-11-20-takeover` 开工 HEAD `5a9451128d69ffa01123a6b0e60b8cbfb9c43a71`，已有青色测试待回报的两份文档改动和原有未跟踪 `.codex/`（不动）。官方工作树 HEAD `fa32589aa1bef4566e9f91eea9e2731eafe250bc`（未修改），CI pin `c740efb5b23e94453bb179f7801eb592baafacf6`；iPhone17,1 / iOS 27.0.1 / 24A446 / d93ap / arm64e，原厂 `xnu-13432.2.10~2`、native `xnu-12377.121.6`。
+
+- 用户提供 14:01 青色候选 `8338b701…` 的实机照片：仅加载器黄条和残留菜单，无青色、无红色。归档 `pre-branch-20261120.cxUbGc/screen-pre-branch.jpg` SHA-256 `88d5fdfcc5ad107aa8b5e06999bfaf8f457e0c5c948164093730ee31fa9a1ec5`。这次没有确认最后屏障后的绘制点，也不能断定 MMU 屏障失败；不再让用户重复同一颜色实验。本轮未下发镜像、未操作设备分区。
+- 新增独立 `patches/experiments/pexpert-late-write-section.patch`，对 `ac9718fb1af618d5ce8678d0dc6e8a58f252216f` 的 `pexpert/gen/pe_gen.c`、`pexpert/arm/pe_kprintf.c` 保留原声明、初始化和平台 guard，仅把两文件七个显式 late-write 对象放入 `__DATA_CONST,__pe_late`，避开整段 `__const` 迁移。没有 NOP 写入，也没有令整个 `__KLDDATA` 可写。补丁尚未接入默认 series/CI，不把声明级结果当作完整内核修复。
+- 在独立源码副本执行 `git apply --check`、`git apply` 和 `git apply --reverse --check` 通过；`python3 -u scripts/test-pexpert-late-write-patch.py <原始源码目录>` 利用 Clang 18 和 ld64.lld 18 构建并链接真实源码声明的 arm64e/iOS 27 小 Mach-O。原声明的两个回调被 layout 工具拒绝；修复后七个变量都落在 `__DATA_CONST,__pe_late`，原常量仍在 `__KLDDATA,__const`，两个回调通过。此测试用直接 rename 复现 CI 的最终 section 结果，未跑 Apple 完整链接。`python3 scripts/test-check-console-layout.py`、`python3 scripts/test-verify-boot-package.py` 均通过。源码输入、哈希、构建和验证日志在 `/home/yoox/android/artifacts/UniXNU-shennong/console-fix-20261120.6AhjXh`。
+
+下一优先：有固定的构建依赖时，完整构建该实验 patch，先检查链接数据段实际端点、保留 kext 布局和 prelink 后指针归属，不能直接发镜像。它解决的是历史 fi101 最早可证实的 console 数据分类问题，不声称修好当前未稳定复现的入口。继续共用同一分支，不开启额外写入 Agent，不推送。

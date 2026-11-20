@@ -1,11 +1,11 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（原哈希红带复跑仅黄条；EFI 内核跳转前候选通过主机预检）
+最后更新：2026-11-20（青色候选仍仅黄条；Platform Expert 链接修复通过针对性构建）
 当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
 
 ## 2026-11-20：原哈希复跑仅黄条，检查点前移
 
-`6fc36e3b…` 红带原镜像 13:54 单次复跑，Bootloader 接收，照片仍只有黄条。说明新增的 post-ISB 指令不是“只看到黄条”的必要条件；历史 XNU 红带成立，但目前入口未稳定复现。下一件事是只临时启动已预检的 `Mu-shennong-fi102-pre-branch.img`（`8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`）：保留黄条，在 DarwinBoot 关 MMU、TLBI 和末尾 `isb` 之后、`br x1` 之前画一段青色。XNU、ADT、存储开关、FD 未变。当前候选尚未实机验证。
+`6fc36e3b…` 红带原镜像 13:54 单次复跑，Bootloader 接收，照片仍只有黄条。说明新增的 post-ISB 指令不是“只看到黄条”的必要条件；历史 XNU 红带成立，但目前入口未稳定复现。下一件事是只临时启动已预检的 `Mu-shennong-fi102-pre-branch.img`（`8338b7015c9d6f5cddbf5ab3a7384ccc6eb79417aebb039d30d8f3e5fbd06f6e`）：保留黄条，在 DarwinBoot 关 MMU、TLBI 和末尾 `isb` 之后、`br x1` 之前画一段青色。XNU、ADT、存储开关、FD 未变。14:01 已通过 `fastboot boot` 临时下发一次并收到照片：仍只有黄条，没有青色或红色。无法区分 MMU 关闭后未取指和显存写入不可见，暂停依赖色带的重复实验。
 
 ## 2026-11-20：post-ISB 诊断未命中，先核验入口可复现性
 
@@ -31,7 +31,7 @@
 
 历史 fi101 的原始异常是 `_PE_init_printf(FALSE)` 写 `_PE_putc` 时发生的 EL1 L3 写权限 fault；屏幕的栈报错来自异常处理，不能作为 SP 偏移的证明。归档 native Mach-O 已把 `_PE_putc` 和 `_PE_kputc` 链进 `__KLDDATA,__const`，并非 prelink 首次搬过去。该段在 `arm_vm_prot_init` 即只读，Mach-O 自身标的 `rw-` 不代表运行时。`scripts/check-console-layout.py` 可在 native 和 fileset 上验收这两个符号的保护生命周期。
 
-fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该写入，不是修复。优先在链接输入中保留 late-read-only 数据到 `__DATA_CONST`，仅搬移不需要晚写的数据，并验证布局容量、prelink 和实机。详细证据见 [进度记录](agent-progress.md#2026-11-20-console-写入异常与链接布局回归检查)。
+fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该写入，不是修复。 独立的 `patches/experiments/pexpert-late-write-section.patch` 已在固定 XNU 源码上应用并通过 arm64e Mach-O 声明级链接回归：两个回调及同两文件的五个 late 变量从 `__KLDDATA,__const` 留在 `__DATA_CONST,__pe_late`，不改段保护。补丁未启用到默认构建，尚未做整核链接、prelink 或实机验证。优先在链接输入中保留 late-read-only 数据到 `__DATA_CONST`，仅搬移不需要晚写的数据，并验证布局容量、prelink 和实机。详细证据见 [进度记录](agent-progress.md#2026-11-20-console-写入异常与链接布局回归检查)。
 
 ## 2026-11-20 基线复核
 
@@ -76,8 +76,8 @@ fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该�
 2. **`_start_first_cpu` 里 SP 和返回地址共用同一个滑动换算**：只删一边会让栈与入口同时对不上（fi96 全灭真因）。要么都改、要么都保留。
 
 ## 下一步（按优先级）
-1. 手机手动回到 bootloader Fastboot 后，核对身份，仅临时启动一次青色 `pre-branch` 候选。若出现青色而无红带，确认 DarwinBoot 已执行到最后的 MMU/TLB 屏障后和跳转前的绘制点，下一轮查 `br x1` 的目标、取指与入口画屏；若无青色，仍区分取指、显存写入和可见性，不能凭颜色断言卡在某条屏障。不继续测试 XNU 的 `isb`，直到入口可复现。
-2. 在当前 CI 固定的 native 链接路径分离启动写入数据与真正的常量，保持 `__DATA_CONST` 在 VM finalization 后收紧；以实测 `0x78000` 理论差额为上限验证对齐和真实保留 kext 边界，再在完整链接和 prelink 后各运行 `scripts/check-console-layout.py`。
+1. 暂停要求用户复跑色带或按键。当前冷暖启动是否影响交接未知；若再定位 DarwinBoot 交接，使用独立于显存的信号，并在有可验证的候选之后再约实机。
+2. 先在固定 native 构建中验证 Platform Expert 窄补丁：不启用历史失败的 device patch series；完成整核链接，检查 `__pe_late` 所占页面、`__DATA_CONST` 至保留 kext 的布局边界，再在 prelink 输出上重跑 `scripts/check-console-layout.py`。该修复针对历史已证实的 console 写权限问题，不解释当前黄条。
 3. 有手机时，用 SHA-256 绑定已预检对照与候选镜像，确认是否穿过 `_PE_init_printf(FALSE)` 及 `_machine_startup`。不因无输出认定已返回，不以 fi134 的 NOP 或改变栈顶作为修复。
 4. 只有在证实越过 console 后，再按单变量推进 CPU/FIQ 初始化以及 `kernel_bootstrap` / `bsd_init` / 根卷挂载。
 

@@ -1,0 +1,58 @@
+Subject: [SHENNONG EXPERIMENT] Preserve Platform Expert late-write data
+
+Against XNU ac9718fb1af618d5ce8678d0dc6e8a58f252216f. The shennong link
+redirects __DATA_CONST,__const to __KLDDATA, protected before these
+initializers run. Keep these explicit late writes in __DATA_CONST
+without changing the segment-wide runtime protection. Validate a full
+native link and the fileset before enabling this experiment by default.
+
+diff --git a/pexpert/gen/pe_gen.c b/pexpert/gen/pe_gen.c
+--- a/pexpert/gen/pe_gen.c
++++ b/pexpert/gen/pe_gen.c
+@@ -42,5 +42,6 @@
+
+ #if defined(__arm64__)
+-SECURITY_READ_ONLY_LATE(static uint32_t) gPEKernelConfigurationBitmask;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++static uint32_t gPEKernelConfigurationBitmask;
+ #else
+ static uint32_t gPEKernelConfigurationBitmask;
+@@ -127,5 +128,6 @@
+ PE_putc_t PE_putc;
+ #else
+-SECURITY_READ_ONLY_LATE(PE_putc_t) PE_putc;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++PE_putc_t PE_putc;
+ #endif
+
+diff --git a/pexpert/arm/pe_kprintf.c b/pexpert/arm/pe_kprintf.c
+--- a/pexpert/arm/pe_kprintf.c
++++ b/pexpert/arm/pe_kprintf.c
+@@ -16,5 +16,6 @@
+ /* Globals */
+ typedef void (*PE_kputc_t)(char);
+-SECURITY_READ_ONLY_LATE(PE_kputc_t) PE_kputc;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++PE_kputc_t PE_kputc;
+
+ /**
+@@ -22,11 +23,15 @@
+  * except for SPTM based early panic serial output via `sptm_serial_putc()`.
+  */
+-SECURITY_READ_ONLY_LATE(bool) disable_serial_output = true;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++bool disable_serial_output = true;
+ // disable_kprintf_output only disables kprintf().
+-SECURITY_READ_ONLY_LATE(bool) disable_kprintf_output = true;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++bool disable_kprintf_output = true;
+ // disable_iolog_serial_output only disables IOLog, controlled by
+ // SERIALMODE_NO_IOLOG.
+-SECURITY_READ_ONLY_LATE(bool) disable_iolog_serial_output = false;
+-SECURITY_READ_ONLY_LATE(bool) enable_dklog_serial_output = false;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++bool disable_iolog_serial_output = false;
++__attribute__((section("__DATA_CONST,__pe_late"), used))
++bool enable_dklog_serial_output = false;
+
+ static SIMPLE_LOCK_DECLARE(kprintf_lock, 0);
