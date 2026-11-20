@@ -1,11 +1,15 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（Apple Clang 通过 PAC 探针；待 macOS 独立整核链接）
-当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+最后更新：2026-11-20 16:27（UTC+08:00；macOS 整核 native 链接与本地验收通过）
+当前实机可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
 
-## 2026-11-20：Apple Clang 已通过，待隔离整核链接
+## 2026-11-20：Platform Expert 整核实验通过 native 链接
 
-只读 CI `44695901726` 上 Xcode 26.6 / Apple Clang `2100.1.1.101` 通过真正四参数 `authenticates-null-values` 的 IR 与 AArch64 汇编验收（普通对照也通过）；旧 `kernel` / `logs` 未运行。`scripts/run-console-native-experiment.sh` 已在 WSL 离线通过 pin / format 2 / 72 项 patch / 树组装验收，macOS `build` 模式待执行。**没有新 native 链接产物或实机结果**。本轮远端只更新专用开发分支，主分支不变。见 [本轮记录](agent-progress.md#2026-11-20apple-clang-探针通过隔离-native-链接入口可复现)。
+只读 macOS CI `44700013688` 在专用开发分支 `9b2abf9` 上完成 `./unixnu build kernel --skip-prelink`；任务 `136165821120` 成功，`kernel` / `logs` / `ptrauth-probe` 跳过。Xcode 26.6（17F113）和 Apple Clang `2100.1.1.101` 在同次构建重新通过四参数 PAC 探针。输出 24,885,856 字节 arm64e DEVELOPMENT `MH_EXECUTE`，SHA-256 `cf3f7b7c0671a2cd0edfd2f81f28ccc0c27404e0034e59bb076fc385ff756556`。
+
+下载后用本地严格验收确认七个 late-write 对象均在 `__DATA_CONST,__pe_late`（32 字节，落在同一 16 KiB 页），两个 console 回调的实际 `ADRP`/`STR` 和 split-segment 记录吻合。解码 432,623 条 split-segment 引用、104,260 条 chained fixup；在精确匹配的 24A446 KernelCache 上干跑 segment 布局，内核常量末端到首个保留 kext 常量尚有 `0xbb578` 字节。此为静态布局结果，不证明加载成功或实际页权限。
+
+**没有生成 prelink、payload 或可启动镜像，没有实机测试。** 当前黄条之后的交接问题仍未稳定定位；这次验收不能解释该现象。详见 [构建与交接证据](agent-progress.md#2026-11-20platform-expert-整核-native-实验验收通过)。
 
 ## 2026-11-20：authenticated-null 编译器验收
 
@@ -91,7 +95,7 @@ fi102 仍包含同一写入，但是否执行到该点未知；fi134 跳过该�
 
 ## 下一步（按优先级）
 1. 暂停要求用户复跑色带或按键。当前冷暖启动是否影响交接未知；若再定位 DarwinBoot 交接，使用独立于显存的信号，并在有可验证的候选之后再约实机。
-2. 先在固定 native 构建中验证 Platform Expert 窄补丁：不启用历史失败的 device patch series；完成整核链接，检查 `__pe_late` 所占页面、`__DATA_CONST` 至保留 kext 的布局边界，再在 prelink 输出上重跑 `scripts/check-console-layout.py`。该修复针对历史已证实的 console 写权限问题，不解释当前黄条。
+2. 在另行准许的隔离环境用固定 Xcode 工具链生成同源 RELEASE reference，按新 native / reference / 24A446 KernelCache 哈希重新生成映射；禁止复用旧映射。先验证闭包、PAC/fixup、`__pe_late` 边界以及 `scripts/check-console-layout.py --experiment`，未达到可加载要求不得打包。该实验针对历史 console 写权限问题，不解释当前黄条。
 3. 有手机时，用 SHA-256 绑定已预检对照与候选镜像，确认是否穿过 `_PE_init_printf(FALSE)` 及 `_machine_startup`。不因无输出认定已返回，不以 fi134 的 NOP 或改变栈顶作为修复。
 4. 只有在证实越过 console 后，再按单变量推进 CPU/FIQ 初始化以及 `kernel_bootstrap` / `bsd_init` / 根卷挂载。
 
