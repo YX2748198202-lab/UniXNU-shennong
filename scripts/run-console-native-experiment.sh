@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 # Staged DEVELOPMENT link, optionally with a RELEASE mapping reference.
-# No IPSW, prelink, boot packaging or device writes.
+# Resident modes retain __DATA_CONST,__const; no IPSW, prelink, packaging or writes.
 set -euo pipefail
 
-if [[ $# -lt 3 || $# -gt 4 || ! $1 =~ ^(plan|build)(-reference)?$ ]]; then
-    echo "usage: $0 {plan|build|plan-reference|build-reference} FRAMEWORK_CHECKOUT NEW_ARTIFACT_DIR [EXISTING_FEEDS_CACHE]" >&2
+if [[ $# -lt 3 || $# -gt 4 || ! $1 =~ ^(plan|build)(-(resident-)?reference)?$ ]]; then
+    echo "usage: $0 {plan|build|plan-reference|build-reference|plan-resident-reference|build-resident-reference} FRAMEWORK_CHECKOUT NEW_ARTIFACT_DIR [EXISTING_FEEDS_CACHE]" >&2
     exit 2
 fi
-mode=${1%%-reference}
+mode=${1%%-*}
 reference=no
+const_layout=legacy-rename
 if [[ $1 == *-reference ]]; then reference=yes; fi
+if [[ $1 == *-resident-reference ]]; then const_layout=resident; fi
 framework=$(cd "$2" && pwd -P)
 out="$3"
 cache=${4:-}
@@ -44,7 +46,7 @@ head=$(git -C "$device" rev-parse HEAD)
 git -C "$framework" cat-file -e "$pin^{commit}"
 mkdir "$out"  # Fail rather than reuse an earlier experiment.
 exec > >(tee "$out/run.log") 2>&1
-printf 'mode=%s reference=%s jobs=%s device=%s framework=%s\n' "$mode" "$reference" "$jobs" "$head" "$pin"
+printf 'mode=%s reference=%s const_layout=%s jobs=%s device=%s framework=%s\n' "$mode" "$reference" "$const_layout" "$jobs" "$head" "$pin"
 date -u +%FT%TZ
 mkdir "$out/device" "$out/build"
 git -C "$device" archive "$head" | tar -x -C "$out/device"
@@ -67,7 +69,7 @@ fi
 cp -R "$out/device/profiles/os/$profile" "$out/framework/profiles/os/$profile"
 if [[ -n $cache ]]; then cp -R "$cache" "$out/build/feeds"; fi
 
-python3 - "$out/device" "$reference" <<'PY'
+python3 - "$out/device" "$reference" "$const_layout" <<'PY'
 from pathlib import Path
 import sys
 
@@ -84,8 +86,9 @@ if sys.argv[2] == "no":
     edit(board, '  "build-fileset-release-reference.py --tree . --lto",\n', '')
 edit(board, '"os:patches/xnu/series"]',
      '"os:patches/xnu/series", "device:patches/experiments/console-native.series"]')
-edit(cfg, 'CONFIG_XNU_EXTRA_LD_ARCHIVES=""',
-     'CONFIG_XNU_EXTRA_LD_ARCHIVES="-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"')
+if sys.argv[3] == 'legacy-rename':
+    edit(cfg, 'CONFIG_XNU_EXTRA_LD_ARCHIVES=""',
+         'CONFIG_XNU_EXTRA_LD_ARCHIVES="-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"')
 patch_dir = device/'patches/experiments'
 (patch_dir/'console-native.series').write_text('pexpert-late-write-section.patch\n')
 PY
@@ -96,7 +99,7 @@ if [[ $mode == plan ]]; then export GIT_ALLOW_PROTOCOL=file; fi
 args=(-D "$out/device" --out "$out/build" -j "$jobs")
 ./unixnu defconfig shennong_defconfig "${args[@]}"
 ./unixnu status --json "${args[@]}" > "$out/status.json"
-python3 - "$out/status.json" "$xnu" "$soc" "$reference" <<'PY'
+python3 - "$out/status.json" "$xnu" "$soc" "$reference" "$const_layout" <<'PY'
 import json
 from pathlib import Path
 import sys
@@ -118,7 +121,8 @@ if references != expected or (expected and archives[-1] != recipe):
     sys.exit('unexpected RELEASE reference archive plan')
 cfg = Path(status['config_path']).read_text()
 for name, value in {
-    'XNU_EXTRA_LD_ARCHIVES': '"-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"',
+    'XNU_EXTRA_LD_ARCHIVES': ('""' if sys.argv[5] == 'resident' else
+                             '"-Wl,-rename_section,__DATA_CONST,__const,__KLDDATA,__const"'),
     'XNU_KERNEL_CHAINED_FIXUPS': 'y',
 }.items():
     if [line for line in cfg.splitlines() if line.startswith(f'CONFIG_{name}=')] != [f'CONFIG_{name}={value}']:
@@ -127,7 +131,8 @@ actual = {m['name']: m['revision'] for m in status['modules'] if m['kind'] == 's
 if actual.get('sm8550') != sys.argv[3]:
     sys.exit('unexpected SoC feed revision')
 print('verified format 2 / 24A446 / arm64e / 72 patches / '
-      + ('RELEASE LTO reference last' if expected else 'no RELEASE reference'))
+      + ('RELEASE LTO reference last' if expected else 'no RELEASE reference')
+      + f' / {sys.argv[5]} const layout')
 PY
 if [[ $mode == plan ]]; then
     ./unixnu tree "${args[@]}"
@@ -145,10 +150,12 @@ shasum -a 256 "$native" "$work/kernel/kernel.json" "$work/xnu-inputs.json"
 xcrun otool -l "$native" > "$out/native-load-commands.txt"
 grep -qw LC_SEGMENT_SPLIT_INFO "$out/native-load-commands.txt"
 grep -qw LC_DYLD_CHAINED_FIXUPS "$out/native-load-commands.txt"
-python3 "$out/device/scripts/check-console-layout.py" --experiment "$native" --nm "$(xcrun --find nm)"
+check=(--experiment)
+if [[ $const_layout == resident ]]; then check+=(--check-metaclass-lifetime); fi
+python3 "$out/device/scripts/check-console-layout.py" "${check[@]}" "$native" --nm "$(xcrun --find nm)"
 if [[ $reference == yes ]]; then
     ref="$work/tree/build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf"
-    python3 - "$out" "$work" "$ref" "$head" "$pin" <<'PYTHON'
+    python3 - "$out" "$work" "$ref" "$head" "$pin" "$const_layout" <<'PYTHON'
 import hashlib
 import json
 from pathlib import Path
@@ -188,6 +195,7 @@ pair = {
     'device_revision': sys.argv[4],
     'framework_revision': sys.argv[5],
     'xnu_revision': os_profile['xnu_revision'],
+    'constant_layout': sys.argv[6],
     'build': status['board']['ipsw']['build'],
     'native_sha256': native_digest,
     'release_reference_sha256': ref_digest,

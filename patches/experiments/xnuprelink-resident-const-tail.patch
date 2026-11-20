@@ -1,0 +1,265 @@
+diff --git a/fileset_layout.py b/fileset_layout.py
+index 28b899d..8339b51 100644
+--- a/fileset_layout.py
++++ b/fileset_layout.py
+@@ -77,10 +77,15 @@ class Layout:
+         self.roots = {s['name']: dict(s) for s in cache.segments}
+         self.occupied = []
+         self.retained_code = []
++        self.retained_file = []
+         for name, (_, offset) in cache.entries.items():
+             if name == 'com.apple.kernel' or closure is not None and name not in closure:
+                 continue
++            sizeofcmds, = struct.unpack_from('<I', cache.data, offset + 20)
++            self.retained_file.append((offset, offset + 32 + sizeofcmds))
+             for segment in Image(cache.data, offset).segments:
++                if segment['filesize']:
++                    self.retained_file.append((segment['fileoff'], segment['fileoff'] + segment['filesize']))
+                 if segment['size'] and segment['name'] != '__LINKEDIT':
+                     self.occupied.append((segment['va'], segment['va'] + segment['size']))
+                 if segment['name'] == '__TEXT_EXEC' and segment['filesize']:
+@@ -89,9 +94,7 @@ class Layout:
+         self.cursor = align(max(len(cache.data), max(s['va'] + s['size'] - cache.base
+                                                   for s in cache.segments)))
+         self.reserve('__TEXT', self.hole('__PRELINK_TEXT', self.segment('__TEXT')['size']))
+-        const = self.roots['__DATA_CONST']
+-        self.reserve('__DATA_CONST', const['va'])
+-        self.reserve('__LASTDATA_CONST', align(self.end('__DATA_CONST')))
++        self.place_constants()
+         # All native code follows selected kext code; XNU derives the kext-code
+         # range from the start of native __TEXT_EXEC.
+         code = self.roots['__TEXT_EXEC']
+@@ -140,6 +143,53 @@ class Layout:
+         self.size = self.cursor
+         self.validate()
+
++    def place_constants(self):
++        """Borrow only a disjoint file-backed suffix of the donor's text container."""
++        self.const_tail = None
++        const = self.roots['__DATA_CONST']
++        boundary = const['va']
++        limit = boundary + const['size']
++        first_retained = min([limit] + [max(begin, boundary) for begin, end in self.occupied
++                                         if boundary < end and begin < limit])
++        needed = (align(boundary + self.segment('__DATA_CONST')['size']) +
++                  self.segment('__LASTDATA_CONST')['size'])
++        if needed > first_retained:
++            text = self.roots['__PRELINK_TEXT']
++            shift = align(needed - first_retained)
++            start = boundary - shift
++            file_start, file_end = start - self.cache.base, boundary - self.cache.base
++            if (boundary % PAGE or text['va'] % PAGE or text['va'] + text['size'] != boundary
++                    or start <= text['va'] or start < self.end('__TEXT')
++                    or any(start < end and begin < boundary for begin, end in self.occupied)
++                    or any(file_start < end and begin < file_end for begin, end in self.retained_file)):
++                raise ValueError('Insufficient unused __PRELINK_TEXT tail for native constants')
++            for seg in (text, const):
++                maxprot, initprot = struct.unpack_from('<II', self.cache.data, seg['command_offset'] + 56)
++                if (seg['fileoff'] != seg['va'] - self.cache.base or seg['filesize'] != seg['size']
++                        or seg['fileoff'] + seg['filesize'] > len(self.cache.data)
++                        or (maxprot | initprot) & 4 or not initprot & 1):
++                    raise ValueError('Cannot repartition non-linear or executable constant containers')
++            # The only supported root section is the aggregate __text alias
++            # of __PRELINK_TEXT itself. Never truncate a named live section.
++            text_cmd, const_cmd = text['command_offset'], const['command_offset']
++            text_n, = struct.unpack_from('<I', self.cache.data, text_cmd + 64)
++            const_n, = struct.unpack_from('<I', self.cache.data, const_cmd + 64)
++            if text_n != 1 or const_n:
++                raise ValueError('Unexpected root sections in constant containers')
++            name, segname, va, size, offset, _, reloff, nreloc = struct.unpack_from(
++                '<16s16sQQ4I', self.cache.data, text_cmd + 72)
++            if ((name.rstrip(b'\0'), segname.rstrip(b'\0'), va, size, offset) !=
++                    (b'__text', b'__PRELINK_TEXT', text['va'], text['size'], text['fileoff'])
++                    or reloff or nreloc):
++                raise ValueError('Unsupported __PRELINK_TEXT root section geometry')
++            text['size'] -= shift
++            text['filesize'] -= shift
++            const.update(va=start, fileoff=file_start, size=const['size'] + shift,
++                         filesize=const['filesize'] + shift)
++            self.const_tail = (start, boundary)
++        self.reserve('__DATA_CONST', const['va'])
++        self.reserve('__LASTDATA_CONST', align(self.end('__DATA_CONST')))
++
+     def segment(self, name):
+         return next(s for s in self.native.segments if s['name'] == name)
+
+diff --git a/fileset_segmented.py b/fileset_segmented.py
+index 994b116..46d9ee2 100644
+--- a/fileset_segmented.py
++++ b/fileset_segmented.py
+@@ -15,6 +15,11 @@ from fileset_emit import inline_data_ranges, inside
+ class SegmentedEmit(Emit):
+     site_pairs = {}
+
++    def check_const_tail_reference(self, target, site):
++        tail = self.layout.const_tail
++        if tail and tail[0] <= target < tail[1]:
++            raise ValueError(f'Retained reference {site:#x} targets repurposed text tail at {target:#x}')
++
+     def rebind(self, target, site):
+         if not self.mapped(target):
+             return target
+@@ -34,6 +39,10 @@ class SegmentedEmit(Emit):
+     def place_kernel(self):
+         self.layout = Layout(self.cache, self.native, self.closure)
+         self.report['segment_layout'] = self.layout.describe()
++        if self.layout.const_tail:
++            begin, end = self.layout.const_tail
++            self.report['native_const_tail'] = {'begin': hex(begin), 'end': hex(end), 'bytes': end - begin}
++            self.data[begin - self.cache.base:end - self.cache.base] = bytes(end - begin)
+         self.fileoff = self.layout.placements['__TEXT'] - self.cache.base
+         self.data.extend(bytes(self.layout.size - len(self.data)))
+         for segment in self.native.segments:
+@@ -81,6 +90,7 @@ class SegmentedEmit(Emit):
+                         continue
+                     target_offset, auth, key, diversity, addrdiv, _ = decode(value)
+                     target = self.cache.base + target_offset
++                    self.check_const_tail_reference(target, site)
+                     if self.mapped(target):
+                         rebound = self.rebind(target, site)
+                         if rebound is None:
+@@ -148,6 +158,7 @@ class SegmentedEmit(Emit):
+                     refs.extend(chunk_refs)
+                     begin = next_begin
+                 for pc, target, _ in calls:
++                    self.check_const_tail_reference(target, pc)
+                     if not self.mapped(target):
+                         continue
+                     rebound = self.rebind(target, pc)
+@@ -164,6 +175,7 @@ class SegmentedEmit(Emit):
+                 groups = defaultdict(list)
+                 producers = set()
+                 for pc, target, kind, producer, scale in refs:
++                    self.check_const_tail_reference(target, pc)
+                     if producer is not None:
+                         producers.add(producer)
+                         groups[producer].append((pc,target,kind,scale))
+@@ -209,10 +221,20 @@ class SegmentedEmit(Emit):
+                         continue
+                     word, = struct.unpack_from('<I',blob,offset)
+                     pc = segment['va']+offset
++                    if self.layout.const_tail:
++                        # The generic scanner inventories B/BL and ADR(P). A
++                        # borrowed page cannot receive a literal load or a
++                        # shorter PC-relative branch either.
++                        if (word & 0x3b000000 == 0x18000000 or word & 0xff000000 == 0x54000000
++                                or word & 0x7e000000 == 0x34000000):
++                            self.check_const_tail_reference(pc + signed((word >> 5) & 0x7ffff, 19) * 4, pc)
++                        elif word & 0x7e000000 == 0x36000000:
++                            self.check_const_tail_reference(pc + signed((word >> 5) & 0x3fff, 14) * 4, pc)
+                     if word & 0x9f000000 != 0x90000000 or pc in producers:
+                         continue
+                     immediate = signed(((word>>5)&0x7ffff)<<2 | ((word>>29)&3),21)
+                     page = (pc & ~4095)+(immediate<<12)
++                    self.check_const_tail_reference(page, pc)
+                     if self.mapped(page):
+                         self.missing[name][page] += 1
+                         self.report['unproven_kernel_page_references'] += 1
+@@ -341,6 +363,8 @@ class SegmentedEmit(Emit):
+                     address, = struct.unpack_from('<Q', blob, s+32)
+                     fileoff, = struct.unpack_from('<I', blob, s+48)
+                     delta = segment['va'] - old_address
++                    if name == '__PRELINK_TEXT' and self.layout.const_tail:
++                        struct.pack_into('<Q', blob, s+40, segment['size'])
+                     struct.pack_into('<Q', blob, s+32, address+delta)
+                     if fileoff:
+                         struct.pack_into('<I', blob, s+48, fileoff+delta)
+diff --git a/test_fileset_layout.py b/test_fileset_layout.py
+index ed6b661..eba1bc9 100644
+--- a/test_fileset_layout.py
++++ b/test_fileset_layout.py
+@@ -3,7 +3,8 @@ import struct
+ from types import SimpleNamespace
+ import unittest
+
+-from fileset_layout import split_references, encode_uleb, relocate_native, relocate_original_stubs, Layout
++from fileset_layout import split_references, encode_uleb, relocate_native, relocate_original_stubs, Layout, PAGE
++from fileset_segmented import SegmentedEmit
+
+
+ def records(groups):
+@@ -25,6 +26,84 @@ def image_fixture(blob):
+                            command=lambda _: (0, 16), sections=[{}, {}])
+
+
++class ResidentConstantTests(unittest.TestCase):
++    def layout(self, native_size=PAGE * 4, *, maxprot=1, initprot=1, alias_size=PAGE * 6):
++        base = 0x100000000
++        text = dict(name='__PRELINK_TEXT', va=base + PAGE, size=PAGE * 6,
++                    fileoff=PAGE, filesize=PAGE * 6, command_offset=0)
++        const = dict(name='__DATA_CONST', va=base + PAGE * 7, size=PAGE * 10,
++                     fileoff=PAGE * 7, filesize=PAGE * 10, command_offset=152)
++        raw = bytearray(PAGE * 17)
++        struct.pack_into('<III', raw, 56, 1, 1, 1)
++        struct.pack_into('<16s16sQQ4I', raw, 72, b'__text', b'__PRELINK_TEXT',
++                         text['va'], alias_size, PAGE, 0, 0, 0)
++        struct.pack_into('<III', raw, 208, maxprot, initprot, 0)
++        layout = Layout.__new__(Layout)
++        layout.cache = SimpleNamespace(base=base, data=raw)
++        layout.roots = {x['name']: x for x in (text, const)}
++        layout.native = SimpleNamespace(segments=[dict(name='__TEXT', size=PAGE),
++                                                  dict(name='__DATA_CONST', size=native_size),
++                                                  dict(name='__LASTDATA_CONST', size=PAGE)])
++        layout.placements = {'__TEXT': base + PAGE * 2}
++        layout.occupied = [(base + PAGE * 3, base + PAGE * 5),
++                           (base + PAGE * 10, base + PAGE * 12)]
++        layout.retained_file = [(PAGE * 3, PAGE * 5), (PAGE * 10, PAGE * 12)]
++        return layout, base
++
++    def test_no_borrow_when_already_fits(self):
++        layout, base = self.layout(PAGE * 2)
++        layout.place_constants()
++        self.assertIsNone(layout.const_tail)
++        self.assertEqual(layout.placements['__DATA_CONST'], base + PAGE * 7)
++
++    def test_borrow_minimum_whole_pages_preserving_va_file_mapping(self):
++        layout, base = self.layout()
++        layout.place_constants()
++        self.assertEqual(layout.const_tail, (base + PAGE * 5, base + PAGE * 7))
++        text, const = (layout.roots[s] for s in ('__PRELINK_TEXT', '__DATA_CONST'))
++        self.assertEqual(text['va'] + text['size'], const['va'])
++        self.assertEqual(text['fileoff'] + text['filesize'], const['fileoff'])
++        self.assertEqual(const['va'] - base, const['fileoff'])
++        self.assertEqual(const['va'] + const['size'], base + PAGE * 17)
++        self.assertEqual(layout.end('__LASTDATA_CONST'), base + PAGE * 10)
++
++    def test_insufficient_or_physically_occupied_tail_rejected(self):
++        layout, _ = self.layout(PAGE * 5)
++        with self.assertRaisesRegex(ValueError, 'Insufficient unused __PRELINK_TEXT'):
++            layout.place_constants()
++        layout, _ = self.layout()
++        layout.retained_file.append((PAGE * 5, PAGE * 5 + 32))
++        with self.assertRaisesRegex(ValueError, 'Insufficient unused __PRELINK_TEXT'):
++            layout.place_constants()
++        layout, base = self.layout()
++        layout.placements['__TEXT'] = base + PAGE * 5
++        with self.assertRaisesRegex(ValueError, 'Insufficient unused __PRELINK_TEXT'):
++            layout.place_constants()
++
++    def test_executable_non_linear_or_named_section_rejected(self):
++        for settings, message in (({'maxprot': 5}, 'non-linear or executable'),
++                                  ({'initprot': 5}, 'non-linear or executable'),
++                                  ({'alias_size': PAGE}, 'root section geometry')):
++            layout, _ = self.layout(**settings)
++            with self.assertRaisesRegex(ValueError, message):
++                layout.place_constants()
++        layout, _ = self.layout()
++        layout.roots['__DATA_CONST']['fileoff'] += PAGE
++        with self.assertRaisesRegex(ValueError, 'non-linear or executable'):
++            layout.place_constants()
++
++    def test_retained_target_cannot_address_borrowed_page(self):
++        emit = SegmentedEmit.__new__(SegmentedEmit)
++        emit.layout, _ = self.layout()
++        emit.layout.place_constants()
++        lo, hi = emit.layout.const_tail
++        for target in (lo - 1, hi):
++            emit.check_const_tail_reference(target, 0x1c0)
++        for target in (lo, hi - 1):
++            with self.assertRaisesRegex(ValueError, 'repurposed text tail'):
++                emit.check_const_tail_reference(target, 0x1c0)
++
++
+ class SplitSegmentTests(unittest.TestCase):
+     def original_stub(self, target=0x8000, moved=0x20000, branch_target=None):
+         stub = 0x1000

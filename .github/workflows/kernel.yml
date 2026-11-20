@@ -14,11 +14,15 @@ on:
         description: Build an experimental DEVELOPMENT and RELEASE comparison pair without prelink or packaging
         type: boolean
         default: false
+      console_resident_constants:
+        description: Link DEVELOPMENT with resident constants and a RELEASE reference; no prelink or packaging
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   ptrauth-probe:
-    if: ${{ inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
+    if: ${{ inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference && !inputs.console_resident_constants }}
     runs-on: macos-26
     timeout-minutes: 10
     permissions:
@@ -49,7 +53,9 @@ jobs:
           path: ${{ runner.temp }}/xnu-ptrauth/
           if-no-files-found: error
   console-native-link:
-    if: ${{ !inputs.ptrauth_probe_only && (inputs.console_native_link != inputs.console_release_reference) }}
+    if: ${{ !inputs.ptrauth_probe_only &&
+      ((inputs.console_resident_constants && !inputs.console_native_link && !inputs.console_release_reference) ||
+      (!inputs.console_resident_constants && (inputs.console_native_link != inputs.console_release_reference))) }}
     runs-on: macos-26
     timeout-minutes: 70
     permissions:
@@ -86,7 +92,7 @@ jobs:
         env:
           # prepare-xnu-source.py reads public headers through the GitHub API.
           GITHUB_TOKEN: ${{ github.token }}
-          BUILD_MODE: ${{ inputs.console_release_reference && 'build-reference' || 'build' }}
+          BUILD_MODE: ${{ inputs.console_resident_constants && 'build-resident-reference' || inputs.console_release_reference && 'build-reference' || 'build' }}
         run: |
           out="$RUNNER_TEMP/console-native"
           rc=0
@@ -125,7 +131,7 @@ jobs:
           if-no-files-found: error
           path: ${{ runner.temp }}/console-native/build/shennong/*/shennong/kernel/kernel.macho
       - name: Preserve the comparison-only RELEASE build (not a boot image)
-        if: ${{ inputs.console_release_reference }}
+        if: ${{ inputs.console_release_reference || inputs.console_resident_constants }}
         uses: actions/upload-artifact@v4
         with:
           name: console-release-comparison
@@ -133,7 +139,7 @@ jobs:
           if-no-files-found: error
           path: ${{ runner.temp }}/console-native/build/shennong/*/shennong/tree/build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf
   kernel:
-    if: ${{ !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
+    if: ${{ !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference && !inputs.console_resident_constants }}
     permissions:
       contents: write
     runs-on: macos-26
@@ -1186,7 +1192,7 @@ jobs:
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
   logs:
     needs: kernel
-    if: ${{ always() && !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
+    if: ${{ always() && !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference && !inputs.console_resident_constants }}
     runs-on: ubuntu-24.04
     steps:
       - run: echo "kernel job finished"
