@@ -79,9 +79,18 @@ jobs:
           if ! command -v unifdef >/dev/null; then brew install unifdef; fi
       - name: Link and inspect DEVELOPMENT native Mach-O
         shell: bash
+        env:
+          # prepare-xnu-source.py reads public headers through the GitHub API.
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
+          out="$RUNNER_TEMP/console-native"
+          rc=0
           bash device/scripts/run-console-native-experiment.sh build \
-            "$GITHUB_WORKSPACE/unixnu" "$RUNNER_TEMP/console-native"
+            "$GITHUB_WORKSPACE/unixnu" "$out" || rc=$?
+          for file in "$out"/build/shennong/*/shennong/tree/.cache/sources/xnu-restored-headers.json; do
+            if [[ -f "$file" ]]; then cp "$file" "$out/xnu-restored-headers.json"; fi
+          done
+          exit "$rc"
       - name: Preserve link evidence (no donor or boot images)
         if: always()
         uses: actions/upload-artifact@v4
@@ -97,6 +106,7 @@ jobs:
             ${{ runner.temp }}/console-native/ptrauth/
             ${{ runner.temp }}/console-native/build/shennong/*/shennong/logs/*.log
             ${{ runner.temp }}/console-native/build/shennong/*/shennong/xnu-inputs.json
+            ${{ runner.temp }}/console-native/xnu-restored-headers.json
             ${{ runner.temp }}/console-native/build/shennong/*/shennong/kernel/kernel.json
       - name: Preserve the verified native build (not a boot image)
         uses: actions/upload-artifact@v4
