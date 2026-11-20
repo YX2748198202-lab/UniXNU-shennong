@@ -1,7 +1,11 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20（PAC 编译器的 IR/汇编验收已落地；Apple Clang 待实测）
+最后更新：2026-11-20（Apple Clang 通过 PAC 探针；待 macOS 独立整核链接）
 当前可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+
+## 2026-11-20：Apple Clang 已通过，待隔离整核链接
+
+只读 CI `44695901726` 上 Xcode 26.6 / Apple Clang `2100.1.1.101` 通过真正四参数 `authenticates-null-values` 的 IR 与 AArch64 汇编验收（普通对照也通过）；旧 `kernel` / `logs` 未运行。`scripts/run-console-native-experiment.sh` 已在 WSL 离线通过 pin / format 2 / 72 项 patch / 树组装验收，macOS `build` 模式待执行。**没有新 native 链接产物或实机结果**。本轮远端只更新专用开发分支，主分支不变。见 [本轮记录](agent-progress.md#2026-11-20apple-clang-探针通过隔离-native-链接入口可复现)。
 
 ## 2026-11-20：authenticated-null 编译器验收
 
