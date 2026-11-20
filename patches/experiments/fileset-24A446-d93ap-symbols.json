@@ -1,0 +1,43 @@
+{
+  "inputs": {
+    "kernelcache_sha256": "fa07057bf34f33af1ec26681ad0c87c13e5aaa548a300740eddb0e92876e5f95",
+    "entry": "com.apple.kernel"
+  },
+  "functions": [
+    {
+      "original": "0xfffffff00b3d1c74",
+      "original_size": 400,
+      "original_sha256": "2da0f6307add7975cd660fbc3cc8f1504299ec32c4b984c8bb187f69c4aff0d0",
+      "native_symbol": "_kprintf",
+      "evidence": "24A446 d93ap function start: preserves caller LR and fmt, sets up two stack va_lists, gates serial formatting on two adjacent byte flags, tries a lock with interrupts masked and restores interrupt state, then formats with an authenticated putc callback and logs fmt/va_list/stripped caller LR. Matches the variadic interface and control flow of XNU ac9718fb pexpert/arm/pe_kprintf.c:kprintf and both CI 44777423529 reference/native symbols. Ten retained kext authenticated GOT slots import this exact function start. The upstream 24A446 fixture is for a different KernelCache SHA-256 and is not used."
+    },
+    {
+      "original": "0xfffffff00abe3554",
+      "original_size": 56,
+      "original_sha256": "fc40ae160d329d2103fe9e9278509ed29d360daa7f457b36a61ddb3db9e4b7d4",
+      "native_symbol": "_printf",
+      "evidence": "AppleARMPlatform call 0xfffffff008615cfc passes the format in x0 and variadic arguments on the stack via authenticated GOT. Target builds a va_list, strips its caller LR into x2, invokes a helper that calls the logging, formatting, and console routines, and returns zero. Matches XNU osfmk/kern/printf.c:printf and both CI symbols; distinct from _IOLog and _kprintf. Eleven retained authenticated GOT sites."
+    },
+    {
+      "original": "0xfffffff00b0de1d8",
+      "original_size": 132,
+      "original_sha256": "c4d9c5197bc479af03299f2bfad6e1c52bff9caa00293d193ba4b47c17a90e78",
+      "native_symbol": "_proc_name",
+      "evidence": "CoreAnalyticsFamily call 0xfffffff009b718d0 passes a pid in w0, a stack output buffer in x1 and 255 in w2. Target implements the positive-size guard, bzero, proc_find, capped p_comm strlcpy and proc_rele sequence of XNU bsd/kern/kern_proc.c:proc_name. CI RELEASE has the same call/data flow with some operations inlined. Seven retained authenticated GOT sites."
+    },
+    {
+      "original": "0xfffffff00b36e788",
+      "original_size": 660,
+      "original_sha256": "1650a32b022dafb7a2ccc9355852ad5ba847244db29c16cc1fdd1a323884669c",
+      "native_symbol": "__ZN10IOReporter16updateAllReportsEP5OSSetP19IOReportChannelListjPvS4_",
+      "evidence": "AppleARMPlatform tail call 0xfffffff008609130 forwards the owned reporter set and remaining arguments through the authenticated stub. Donor and CI RELEASE validate x0/x1/x3/x4, accept action 1, iterate OSCollectionIterator, cast using IOReporter gMetaClass and invoke the same authenticated virtual dispatch. Distinct from configureAllReports, whose action set differs. XNU iokit/Kernel/IOReporter.cpp and both CI symbols agree. Seven retained authenticated GOT sites."
+    },
+    {
+      "original": "0xfffffff00ac20880",
+      "original_size": 140,
+      "original_sha256": "e54771629d65498f627e64abfc9938f6c6e4d86062da80bb880052884e2d3d26",
+      "native_symbol": "_task_reference",
+      "evidence": "CoreAnalyticsFamily call 0xfffffff009b71798 passes a task in x0, ignores the return and saves that task. Both donor and CI RELEASE validate the task zone, increment a 32-bit refcount at task+0x10, and check the same overflow/underflow thresholds before returning void. DEVELOPMENT aliases _task_reference to _task_reference_external, which delegates to task_reference_grp(TASK_GRP_EXTERNAL) as defined in XNU osfmk/kern/task_ref.c. Five retained authenticated GOT sites."
+    }
+  ]
+}

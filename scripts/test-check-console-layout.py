@@ -10,7 +10,7 @@ CHECK = Path(__file__).with_name("check-console-layout.py")
 
 
 def link(work, name, pointer_segment, pointer_section, *, move_const=False, omit_kputc=False,
-         misplaced_experiment_flag=False):
+         misplaced_experiment_flag=False, metaclasses=None):
     source, obj, image = (work / f"{name}{ext}" for ext in (".s", ".o", ".macho"))
     source.write_text(f"""\
 .text
@@ -35,6 +35,13 @@ _PE_putc:
                 stream.write(f".globl _{symbol}\n_{symbol}:\n    .quad 0\n")
             stream.write(".section __DATA_CONST,__const\n.globl _enable_dklog_serial_output\n"
                          "_enable_dklog_serial_output:\n    .quad 0\n")
+    if metaclasses:
+        with source.open("a") as stream:
+            stream.write(".data\n_fixture_metaclass_object:\n    .quad 0\n")
+            stream.write(f".section __DATA_CONST,{metaclasses}\n")
+            for name in ("18IOMemoryDescriptor", "12IOUserClient", "8OSObject", "12OSCollection"):
+                symbol = f"__ZN{name}9metaClassE"
+                stream.write(f".globl {symbol}\n{symbol}:\n    .quad _fixture_metaclass_object\n")
     subprocess.run(["clang", "--target=arm64-apple-macos14", "-c", str(source), "-o", str(obj)], check=True)
     linker = shutil.which("ld64.lld") or shutil.which("ld64.lld-18") or "ld64.lld"
     move = ["-rename_section", "__DATA_CONST", "__const", "__KLDDATA", "__const"] if move_const else []
@@ -71,8 +78,18 @@ def main():
         run(partial, 0, ("OK   _PE_putc", "OK   _PE_kputc"))
         run(partial, 1, ("OK   _disable_iolog_serial_output", "FAIL _enable_dklog_serial_output",
                          "(__DATA_CONST,__const); expected (__DATA_CONST,__pe_late)"), "--experiment")
+        stale = link(work, "stale-metaclasses", "__DATA_CONST", "__late_const",
+                     move_const=True, metaclasses="__const")
+        run(stale, 0, ("OK   _PE_putc", "OK   _PE_kputc"))
+        run(stale, 1, ("FAIL __ZN18IOMemoryDescriptor9metaClassE", "(__KLDDATA,__const)",
+                       "FAIL metaclass lifetime: 4 of 4"), "--check-metaclass-lifetime")
+        resident = link(work, "resident-metaclasses", "__DATA_CONST", "__late_const",
+                        move_const=True, metaclasses="__os_metaclass")
+        run(resident, 0, ("OK   metaclass lifetime: 4 slots",), "--check-metaclass-lifetime")
+        run(good, 1, ("FAIL __ZN8OSObject9metaClassE: no section-backed definition",),
+            "--check-metaclass-lifetime")
         run(work / "missing-file.macho", 2, ())
-    print("console-layout: all checks passed (5 linked fixtures and missing input)")
+    print("console-layout: all checks passed (7 linked fixtures and missing input)")
 
 
 if __name__ == "__main__":
