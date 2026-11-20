@@ -9,7 +9,8 @@ from pathlib import Path
 CHECK = Path(__file__).with_name("check-console-layout.py")
 
 
-def link(work, name, pointer_segment, pointer_section, *, move_const=False, omit_kputc=False):
+def link(work, name, pointer_segment, pointer_section, *, move_const=False, omit_kputc=False,
+         misplaced_experiment_flag=False):
     source, obj, image = (work / f"{name}{ext}" for ext in (".s", ".o", ".macho"))
     source.write_text(f"""\
 .text
@@ -25,6 +26,15 @@ _fixture_immutable:
 _PE_putc:
     .quad 0
 """ + ("" if omit_kputc else ".globl _PE_kputc\n_PE_kputc:\n    .quad 0\n"))
+    if misplaced_experiment_flag:
+        # The two callbacks and four other experimental fields are correct;
+        # preserve one incorrectly placed late write in the same segment.
+        with source.open("a") as stream:
+            for symbol in ("gPEKernelConfigurationBitmask", "disable_serial_output",
+                           "disable_kprintf_output", "disable_iolog_serial_output"):
+                stream.write(f".globl _{symbol}\n_{symbol}:\n    .quad 0\n")
+            stream.write(".section __DATA_CONST,__const\n.globl _enable_dklog_serial_output\n"
+                         "_enable_dklog_serial_output:\n    .quad 0\n")
     subprocess.run(["clang", "--target=arm64-apple-macos14", "-c", str(source), "-o", str(obj)], check=True)
     linker = shutil.which("ld64.lld") or shutil.which("ld64.lld-18") or "ld64.lld"
     move = ["-rename_section", "__DATA_CONST", "__const", "__KLDDATA", "__const"] if move_const else []
@@ -33,8 +43,8 @@ _PE_putc:
     return image
 
 
-def run(image, status, lines):
-    result = subprocess.run([sys.executable, str(CHECK), str(image)], capture_output=True, text=True)
+def run(image, status, lines, *flags):
+    result = subprocess.run([sys.executable, str(CHECK), *flags, str(image)], capture_output=True, text=True)
     if result.returncode != status or not all(line in result.stdout for line in lines):
         raise AssertionError(f"{image.name}: expected exit {status} and {lines}; got {result.returncode}\n"
                              f"{result.stdout}{result.stderr}")
@@ -56,8 +66,13 @@ def main():
         run(data, 1, ("FAIL _PE_putc", "FAIL _PE_kputc", "(__DATA,__data)"))
         missing = link(work, "missing", "__DATA_CONST", "__late_const", omit_kputc=True)
         run(missing, 1, ("OK   _PE_putc", "FAIL _PE_kputc: no section-backed definition"))
+        partial = link(work, "partial-experiment", "__DATA_CONST", "__pe_late",
+                       misplaced_experiment_flag=True)
+        run(partial, 0, ("OK   _PE_putc", "OK   _PE_kputc"))
+        run(partial, 1, ("OK   _disable_iolog_serial_output", "FAIL _enable_dklog_serial_output",
+                         "(__DATA_CONST,__const); expected (__DATA_CONST,__pe_late)"), "--experiment")
         run(work / "missing-file.macho", 2, ())
-    print("console-layout: all checks passed (4 linked fixtures and missing input)")
+    print("console-layout: all checks passed (5 linked fixtures and missing input)")
 
 
 if __name__ == "__main__":

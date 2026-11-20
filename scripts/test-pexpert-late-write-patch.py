@@ -71,10 +71,11 @@ def build_and_check(tree, work, mode, tools, *, kernel_link):
         if len(defs) != 1 or expected not in defs[0]:
             raise AssertionError(f'{mode}: {name} expected {expected}, got {defs}')
         print(f'{mode}: {name}: {expected}')
-    result = subprocess.run([sys.executable, str(ROOT / 'scripts/check-console-layout.py'),
-                             '--nm', nm, str(image)], check=False)
-    if result.returncode != int(mode == 'original'):
-        raise AssertionError(f'{mode}: layout checker returned {result.returncode}')
+    for qualification in ([], ['--experiment']):
+        result = subprocess.run([sys.executable, str(ROOT / 'scripts/check-console-layout.py'),
+                                 '--nm', nm, *qualification, str(image)], check=False)
+        if result.returncode != int(mode == 'original'):
+            raise AssertionError(f'{mode}: layout checker {qualification} returned {result.returncode}')
 
 
 def main():
