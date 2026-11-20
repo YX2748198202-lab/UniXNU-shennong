@@ -1,7 +1,13 @@
 # 项目状态（权威，随阶段推进更新）
 
-最后更新：2026-11-20 16:27（UTC+08:00；macOS 整核 native 链接与本地验收通过）
+最后更新：2026-11-20 23:18（UTC+08:00；native 重定位干跑通过，RELEASE 对照构建待运行）
 当前实机可复现基线：**fi102**。当天新对照与 2026-11-14 历史实机记录分开判读。
+
+## 2026-11-20：native 重定位干跑通过；仍需 fileset 验收和上机
+
+以 CI `44700013688` 的真实 DEVELOPMENT 内核和准确匹配的 24A446 KernelCache，在内存中运行固定 XnuPrelink 的 native 重定位器：验证 328,363 处非链指针写入和 104,260 个 fixup 站点的转换，独立解码确认两处 console 写入移动后仍指向各自的回调变量。不是完整 prelink：尚未完成 donor→native 符号映射、保留 kext 引用闭包和最终 chain 重建，没有新内核启动包。
+
+`plan-reference` 已在 WSL 用官方解析器完成 72 项补丁及依赖组装；待专用分支获准后，仅 dispatch `console_release_reference=true` 的 macOS 只读任务生成 DEVELOPMENT + RELEASE 对照配对。不开启 prelink、打包或历史提交回写。上机验证仍是必须，但只在有通过预检的候选后，用一次 `fastboot boot` 验证实际启动，不先重复上次色带测试。见 [执行与交接记录](agent-progress.md#2026-11-20native-重定位干跑通过release-对照构建入口就绪)。
 
 ## 2026-11-20：Platform Expert 整核实验通过 native 链接
 

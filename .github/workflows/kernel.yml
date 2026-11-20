@@ -10,11 +10,15 @@ on:
         description: Build and check only the experimental DEVELOPMENT native console link
         type: boolean
         default: false
+      console_release_reference:
+        description: Build an experimental DEVELOPMENT and RELEASE comparison pair without prelink or packaging
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   ptrauth-probe:
-    if: ${{ inputs.ptrauth_probe_only && !inputs.console_native_link }}
+    if: ${{ inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
     runs-on: macos-26
     timeout-minutes: 10
     permissions:
@@ -45,7 +49,7 @@ jobs:
           path: ${{ runner.temp }}/xnu-ptrauth/
           if-no-files-found: error
   console-native-link:
-    if: ${{ inputs.console_native_link && !inputs.ptrauth_probe_only }}
+    if: ${{ !inputs.ptrauth_probe_only && (inputs.console_native_link != inputs.console_release_reference) }}
     runs-on: macos-26
     timeout-minutes: 70
     permissions:
@@ -77,15 +81,16 @@ jobs:
             echo "$(brew --prefix "$name")/bin" >> "$GITHUB_PATH"
           done
           if ! command -v unifdef >/dev/null; then brew install unifdef; fi
-      - name: Link and inspect DEVELOPMENT native Mach-O
+      - name: Link and inspect console experiment Mach-O
         shell: bash
         env:
           # prepare-xnu-source.py reads public headers through the GitHub API.
           GITHUB_TOKEN: ${{ github.token }}
+          BUILD_MODE: ${{ inputs.console_release_reference && 'build-reference' || 'build' }}
         run: |
           out="$RUNNER_TEMP/console-native"
           rc=0
-          bash device/scripts/run-console-native-experiment.sh build \
+          bash device/scripts/run-console-native-experiment.sh "$BUILD_MODE" \
             "$GITHUB_WORKSPACE/unixnu" "$out" || rc=$?
           for file in "$out"/build/shennong/*/shennong/tree/.cache/sources/xnu-restored-headers.json; do
             if [[ -f "$file" ]]; then cp "$file" "$out/xnu-restored-headers.json"; fi
@@ -103,6 +108,10 @@ jobs:
             ${{ runner.temp }}/console-native/status.json
             ${{ runner.temp }}/console-native/submodule-status.txt
             ${{ runner.temp }}/console-native/native-load-commands.txt
+            ${{ runner.temp }}/console-native/native-reference-pair.json
+            ${{ runner.temp }}/console-native/build/shennong/*/shennong/tree/build/xnu/fileset-reference/*.json
+            ${{ runner.temp }}/console-native/build/shennong/*/shennong/tree/build/xnu/fileset-reference/lto-*/lto-build.log
+            ${{ runner.temp }}/console-native/build/shennong/*/shennong/tree/build/xnu/fileset-reference/lto-*/lto-command.json
             ${{ runner.temp }}/console-native/ptrauth/
             ${{ runner.temp }}/console-native/build/shennong/*/shennong/logs/*.log
             ${{ runner.temp }}/console-native/build/shennong/*/shennong/xnu-inputs.json
@@ -115,8 +124,16 @@ jobs:
           retention-days: 7
           if-no-files-found: error
           path: ${{ runner.temp }}/console-native/build/shennong/*/shennong/kernel/kernel.macho
+      - name: Preserve the comparison-only RELEASE build (not a boot image)
+        if: ${{ inputs.console_release_reference }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: console-release-comparison
+          retention-days: 7
+          if-no-files-found: error
+          path: ${{ runner.temp }}/console-native/build/shennong/*/shennong/tree/build/xnu/fileset-reference/mach.release.bcm2837.unstripped.noctf
   kernel:
-    if: ${{ !inputs.ptrauth_probe_only && !inputs.console_native_link }}
+    if: ${{ !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
     permissions:
       contents: write
     runs-on: macos-26
@@ -1169,7 +1186,7 @@ jobs:
           git push --force origin "HEAD:refs/heads/ci-logs-$GITHUB_RUN_ID" || echo push-failed
   logs:
     needs: kernel
-    if: ${{ always() && !inputs.ptrauth_probe_only && !inputs.console_native_link }}
+    if: ${{ always() && !inputs.ptrauth_probe_only && !inputs.console_native_link && !inputs.console_release_reference }}
     runs-on: ubuntu-24.04
     steps:
       - run: echo "kernel job finished"
